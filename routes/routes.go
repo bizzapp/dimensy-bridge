@@ -69,13 +69,13 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		clients.DELETE("/:id", deps.ClientHdl.Delete)
 	}
 
-	masterProducts := api.Group("/master-products")
+	products := api.Group("/products")
 	{
-		masterProducts.GET("/", deps.MasterProductHdl.List)
-		masterProducts.GET("/:id", deps.MasterProductHdl.Get)
-		masterProducts.POST("/", deps.MasterProductHdl.Create)
-		masterProducts.PUT("/:id", deps.MasterProductHdl.Update)
-		masterProducts.DELETE("/:id", deps.MasterProductHdl.Delete)
+		products.GET("/", deps.MasterProductHdl.List)
+		products.GET("/:id", deps.MasterProductHdl.Get)
+		products.POST("/", deps.MasterProductHdl.Create)
+		products.PUT("/:id", deps.MasterProductHdl.Update)
+		products.DELETE("/:id", deps.MasterProductHdl.Delete)
 	}
 	return r
 }
