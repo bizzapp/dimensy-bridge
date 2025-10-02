@@ -51,5 +51,14 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		auth.POST("/logout", deps.AuthHdl.Logout)
 	}
 
+	user := api.Group("/users")
+	{
+		user.GET("/", deps.UserHdl.List)
+		user.GET("/:id", deps.UserHdl.Get)
+		user.POST("/", deps.UserHdl.Create)
+		user.PUT("/:id", deps.UserHdl.Update)
+		user.DELETE("/:id", deps.UserHdl.Delete)
+	}
+
 	return r
 }
