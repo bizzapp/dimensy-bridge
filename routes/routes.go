@@ -60,5 +60,22 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		user.DELETE("/:id", deps.UserHdl.Delete)
 	}
 
+	clients := api.Group("/clients")
+	{
+		clients.GET("/", deps.ClientHdl.List)
+		clients.GET("/:id", deps.ClientHdl.Get)
+		clients.POST("/", deps.ClientHdl.Create)
+		clients.PUT("/:id", deps.ClientHdl.Update)
+		clients.DELETE("/:id", deps.ClientHdl.Delete)
+	}
+
+	masterProducts := api.Group("/master-products")
+	{
+		masterProducts.GET("/", deps.MasterProductHdl.List)
+		masterProducts.GET("/:id", deps.MasterProductHdl.Get)
+		masterProducts.POST("/", deps.MasterProductHdl.Create)
+		masterProducts.PUT("/:id", deps.MasterProductHdl.Update)
+		masterProducts.DELETE("/:id", deps.MasterProductHdl.Delete)
+	}
 	return r
 }

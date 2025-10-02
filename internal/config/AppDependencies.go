@@ -18,6 +18,14 @@ type AppDependencies struct {
 	UserRepo repository.UserRepository
 	UserSvc  service.UserService
 	UserHdl  *handler.UserHandler
+
+	ClientRepo repository.ClientRepository
+	ClientSvc  service.ClientService
+	ClientHdl  *handler.ClientHandler
+
+	MasterProductRepo repository.MasterProductRepository
+	MasterProductSvc  service.MasterProductService
+	MasterProductHdl  *handler.MasterProductHandler
 }
 
 func NewAppDependencies(db *gorm.DB) *AppDependencies {
@@ -29,6 +37,14 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	userRepo := repository.NewUserRepository(db)
 	userSvc := service.NewUserService(userRepo)
 	userHdl := handler.NewUserHandler(userSvc)
+
+	clientRepo := repository.NewClientRepository(db)
+	clientSvc := service.NewClientService(clientRepo, userRepo)
+	clientHdl := handler.NewClientHandler(clientSvc)
+
+	masterProductRepo := repository.NewMasterProductRepository(db)
+	masterProductSvc := service.NewMasterProductService(masterProductRepo)
+	masterProductHdl := handler.NewMasterProductHandler(masterProductSvc)
 	return &AppDependencies{
 		DB:       db,
 		AuthRepo: authRepo,
@@ -38,5 +54,13 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 		UserRepo: userRepo,
 		UserSvc:  userSvc,
 		UserHdl:  userHdl,
+
+		ClientRepo: clientRepo,
+		ClientSvc:  clientSvc,
+		ClientHdl:  clientHdl,
+
+		MasterProductRepo: masterProductRepo,
+		MasterProductSvc:  masterProductSvc,
+		MasterProductHdl:  masterProductHdl,
 	}
 }

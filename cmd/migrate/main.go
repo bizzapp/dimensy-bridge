@@ -18,6 +18,8 @@ func main() {
 
 	if err := db.AutoMigrate(
 		&model.User{},
+		&model.Client{},
+		&model.MasterProduct{},
 	); err != nil {
 		log.Fatalf("❌ Gagal migrate database: %v", err)
 	}

@@ -39,13 +39,20 @@ func (s *authService) Login(email *string, password *string) (string, *model.Use
 		return "", nil, errors.New("email not found")
 	}
 
+	// pastikan password tidak nil
+	if user.Password == nil || *user.Password == "" {
+		return "", nil, errors.New("password not set for this user")
+	}
+
 	if err := bcrypt.CompareHashAndPassword([]byte(*user.Password), []byte(*password)); err != nil {
 		return "", nil, errors.New("invalid password")
 	}
+
 	token, err := utils.GenerateJWT(user.ID, user.Email, user.Role, user.Name)
 	if err != nil {
 		return "", nil, errors.New("failed to generate token")
 	}
+
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
 		return "", nil, errors.New("JWT_SECRET not configured")

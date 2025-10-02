@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserHandler struct {
@@ -64,10 +65,28 @@ func (h *UserHandler) Create(c *gin.Context) {
 		return
 	}
 
+	// validasi password wajib
+	if user.Password == nil || *user.Password == "" {
+		response.Error(c, http.StatusBadRequest, "MISSING_PASSWORD", "Password wajib diisi", "")
+		return
+	}
+
+	// hash password sebelum simpan
+	hashed, err := bcrypt.GenerateFromPassword([]byte(*user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "HASH_ERROR", "Gagal meng-hash password", err.Error())
+		return
+	}
+	hashedStr := string(hashed)
+	user.Password = &hashedStr
+
 	if err := h.service.CreateUser(&user); err != nil {
 		response.Error(c, http.StatusInternalServerError, "USER_CREATE_ERROR", "Gagal membuat user", err.Error())
 		return
 	}
+
+	// jangan return password ke response
+	user.Password = nil
 
 	response.JSON(c, http.StatusCreated, "User berhasil dibuat", user, nil)
 }

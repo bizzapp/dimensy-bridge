@@ -25,7 +25,7 @@ func NewScheduler(deps *config.AppDependencies) *Scheduler {
 // Register semua cron jobs di sini
 func (s *Scheduler) Register() error {
 	// contoh job tiap 10 detik
-	_, err := s.cron.AddFunc("*/10 * * * * *", func() {
+	_, err := s.cron.AddFunc("*/100000000 * * * * *", func() {
 		log.Println("🔄 Running sample job: cek sesuatu di database...")
 		// kamu bisa akses s.deps untuk pakai service/DB
 	})

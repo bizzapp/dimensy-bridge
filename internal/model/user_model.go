@@ -10,7 +10,7 @@ type User struct {
 	Email           *string    `gorm:"size:255;unique;" json:"email"`
 	Username        *string    `gorm:"size:255;unique;" json:"username"`
 	EmailVerifiedAt *time.Time `json:"email_verified_at"`
-	Password        *string    `gorm:"size:255;" json:"-"`
+	Password        *string    `gorm:"size:255;" json:"password,omitempty"`
 	RememberToken   *string    `gorm:"size:100" json:"remember_token,omitempty"`
 	Role            string     `gorm:"size:255;default:admin;not null" json:"role"`
 	Image           *string    `gorm:"size:255;index" json:"image,omitempty"`
