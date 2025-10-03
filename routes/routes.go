@@ -77,5 +77,25 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		products.PUT("/:id", deps.MasterProductHdl.Update)
 		products.DELETE("/:id", deps.MasterProductHdl.Delete)
 	}
+
+	quotas := api.Group("/quotas")
+	{
+		quotas.GET("/", deps.QuotaClientHdl.List)
+		quotas.GET("/:id", deps.QuotaClientHdl.Get)
+		quotas.POST("/", deps.QuotaClientHdl.Create)
+		quotas.PUT("/:id", deps.QuotaClientHdl.Update)
+		quotas.DELETE("/:id", deps.QuotaClientHdl.Delete)
+	}
+
+	additions := api.Group("/quota-additions")
+	{
+		additions.GET("/", deps.QuotaClientAdditionHdl.List)
+		additions.GET("/:id", deps.QuotaClientAdditionHdl.Get)
+		additions.POST("/", deps.QuotaClientAdditionHdl.Create)
+		additions.PUT("/:id", deps.QuotaClientAdditionHdl.Update)
+		additions.DELETE("/:id", deps.QuotaClientAdditionHdl.Delete)
+		additions.POST("/:id/process", deps.QuotaClientAdditionHdl.Process)
+	}
+
 	return r
 }

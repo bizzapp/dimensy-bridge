@@ -20,6 +20,8 @@ func main() {
 		&model.User{},
 		&model.Client{},
 		&model.MasterProduct{},
+		&model.QuotaClient{},
+		&model.QuotaClientAddition{},
 	); err != nil {
 		log.Fatalf("❌ Gagal migrate database: %v", err)
 	}

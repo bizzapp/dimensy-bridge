@@ -26,6 +26,14 @@ type AppDependencies struct {
 	MasterProductRepo repository.MasterProductRepository
 	MasterProductSvc  service.MasterProductService
 	MasterProductHdl  *handler.MasterProductHandler
+
+	QuotaClientRepo repository.QuotaClientRepository
+	QuotaClientSvc  service.QuotaClientService
+	QuotaClientHdl  *handler.QuotaClientHandler
+
+	QuotaClientAdditionRepo repository.QuotaClientAdditionRepository
+	QuotaClientAdditionSvc  service.QuotaClientAdditionService
+	QuotaClientAdditionHdl  *handler.QuotaClientAdditionHandler
 }
 
 func NewAppDependencies(db *gorm.DB) *AppDependencies {
@@ -45,6 +53,14 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	masterProductRepo := repository.NewMasterProductRepository(db)
 	masterProductSvc := service.NewMasterProductService(masterProductRepo)
 	masterProductHdl := handler.NewMasterProductHandler(masterProductSvc)
+
+	quotaClientRepo := repository.NewQuotaClientRepository(db)
+	quotaClientSvc := service.NewQuotaClientService(quotaClientRepo)
+	quotaClientHdl := handler.NewQuotaClientHandler(quotaClientSvc)
+
+	quotaClientAdditionRepo := repository.NewQuotaClientAdditionRepository(db)
+	quotaClientAdditionSvc := service.NewQuotaClientAdditionService(quotaClientAdditionRepo, quotaClientRepo)
+	quotaClientAdditionHdl := handler.NewQuotaClientAdditionHandler(quotaClientAdditionSvc)
 	return &AppDependencies{
 		DB:       db,
 		AuthRepo: authRepo,
@@ -62,5 +78,13 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 		MasterProductRepo: masterProductRepo,
 		MasterProductSvc:  masterProductSvc,
 		MasterProductHdl:  masterProductHdl,
+
+		QuotaClientRepo: quotaClientRepo,
+		QuotaClientSvc:  quotaClientSvc,
+		QuotaClientHdl:  quotaClientHdl,
+
+		QuotaClientAdditionRepo: quotaClientAdditionRepo,
+		QuotaClientAdditionSvc:  quotaClientAdditionSvc,
+		QuotaClientAdditionHdl:  quotaClientAdditionHdl,
 	}
 }
