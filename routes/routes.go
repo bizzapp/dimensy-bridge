@@ -97,5 +97,11 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		additions.POST("/:id/process", deps.QuotaClientAdditionHdl.Process)
 	}
 
+	clientPsre := api.Group("/client-psre")
+	{
+		clientPsre.POST("/register", deps.ClientPsreHdl.Register)
+		clientPsre.GET("/:id", deps.ClientPsreHdl.Get)
+	}
+
 	return r
 }

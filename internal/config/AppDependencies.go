@@ -34,6 +34,10 @@ type AppDependencies struct {
 	QuotaClientAdditionRepo repository.QuotaClientAdditionRepository
 	QuotaClientAdditionSvc  service.QuotaClientAdditionService
 	QuotaClientAdditionHdl  *handler.QuotaClientAdditionHandler
+
+	ClientPsreRepo repository.ClientPsreRepository
+	ClientPsreSvc  service.ClientPsreService
+	ClientPsreHdl  *handler.ClientPsreHandler
 }
 
 func NewAppDependencies(db *gorm.DB) *AppDependencies {
@@ -61,6 +65,10 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	quotaClientAdditionRepo := repository.NewQuotaClientAdditionRepository(db)
 	quotaClientAdditionSvc := service.NewQuotaClientAdditionService(quotaClientAdditionRepo, quotaClientRepo)
 	quotaClientAdditionHdl := handler.NewQuotaClientAdditionHandler(quotaClientAdditionSvc)
+
+	clientPsreRepo := repository.NewClientPsreRepository(db)
+	clientPsreSvc := service.NewClientPsreService(clientPsreRepo, clientRepo)
+	clientPsreHdl := handler.NewClientPsreHandler(clientPsreSvc)
 	return &AppDependencies{
 		DB:       db,
 		AuthRepo: authRepo,
@@ -86,5 +94,9 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 		QuotaClientAdditionRepo: quotaClientAdditionRepo,
 		QuotaClientAdditionSvc:  quotaClientAdditionSvc,
 		QuotaClientAdditionHdl:  quotaClientAdditionHdl,
+
+		ClientPsreRepo: clientPsreRepo,
+		ClientPsreSvc:  clientPsreSvc,
+		ClientPsreHdl:  clientPsreHdl,
 	}
 }
