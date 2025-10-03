@@ -26,3 +26,20 @@ func (h *PsreHandler) Login(c *gin.Context) {
 
 	c.Data(http.StatusOK, "application/json", resp)
 }
+
+func (h *PsreHandler) ClientCompany(c *gin.Context) {
+	// ambil id dari query param atau body (misalnya pakai query param ?id=)
+	idStr := c.Query("id")
+	if idStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "id is required"})
+		return
+	}
+
+	resp, err := h.service.RegisterClientCompany(idStr)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": err.Error()})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", resp)
+}
