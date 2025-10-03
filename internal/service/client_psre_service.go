@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"dimensy-bridge/internal/model"
 	"dimensy-bridge/internal/repository"
+	"dimensy-bridge/pkg/utils"
 	"encoding/json"
 	"errors"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -40,9 +42,9 @@ func (s *clientPsreService) RegisterPsre(clientID int64, expiredDate time.Time, 
 	}
 
 	// cek psre sudah ada?
-	if _, err := s.psreRepo.FindByClientID(clientID); err == nil {
-		return nil, errors.New("client sudah punya psre")
-	}
+	// if _, err := s.psreRepo.FindByClientID(clientID); err == nil {
+	// 	return nil, errors.New("client sudah punya psre")
+	// }
 
 	// request ke sistem eksternal
 	payload := map[string]interface{}{
@@ -55,12 +57,21 @@ func (s *clientPsreService) RegisterPsre(clientID int64, expiredDate time.Time, 
 
 	body, _ := json.Marshal(payload)
 
-	req, err := http.NewRequest("POST", "http://10.100.20.14:2000/backend/client/create", bytes.NewBuffer(body))
+	token, err := utils.GetPsreToken()
+	if err != nil {
+		return nil, err
+	}
+
+	psreUrl := os.Getenv("PSRE_BACKEND_URL")
+	if psreUrl == "" {
+		psreUrl = "http://10.100.20.14:2000" // fallback default
+	}
+	req, err := http.NewRequest("POST", psreUrl+"/backend/client/create", bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0..L3PcscDUgrTaTb3GYtYoWw.6tpVsaiWJYVmbjWGYWfA_kjMbMlRF4959225y2ghwK73k9k4SRrFMspLGYManOta2kHwKzBuIcxUXojXh20S-UUmZqoFDSRE4ybzbrglM8HDmF5f27jlpHx2BOVQjd1e.6pFyhXmSB0nwRiODP7V56g") // TODO: inject dari config/env
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	clientHttp := &http.Client{}
 	resp, err := clientHttp.Do(req)

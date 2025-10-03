@@ -4,7 +4,7 @@ import "time"
 
 type ClientPsre struct {
 	ID         int64     `gorm:"primaryKey;autoIncrement" json:"id"`
-	ClientID   int64     `gorm:"not null;index" json:"client_id"`
+	ClientID   int64     `gorm:"not null;index;unique" json:"client_id"`
 	ExternalID string    `gorm:"size:255;not null" json:"external_id"`
 	ExpireDate time.Time `json:"expire_date"`
 

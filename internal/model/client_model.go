@@ -9,7 +9,8 @@ type Client struct {
 	UserID      int64  `gorm:"not null;index" json:"user_id"`
 
 	// Relasi ke User
-	User User `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"user"`
+	User       User        `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"user"`
+	ClientPsre *ClientPsre `gorm:"foreignKey:ClientID;constraint:OnDelete:SET NULL;" json:"client_psre,omitempty"`
 
 	CreatedAt *time.Time `json:"created_at,omitempty"`
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`

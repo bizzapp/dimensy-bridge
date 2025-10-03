@@ -26,7 +26,7 @@ func (r *clientRepository) FindAll(limit, offset int, filters map[string]interfa
 	var clients []model.Client
 	var total int64
 
-	query := r.db.Model(&model.Client{}).Preload("User")
+	query := r.db.Model(&model.Client{}).Preload("User").Preload("ClientPsre")
 
 	for key, value := range filters {
 		query = query.Where(key+" = ?", value)
@@ -45,7 +45,7 @@ func (r *clientRepository) FindAll(limit, offset int, filters map[string]interfa
 
 func (r *clientRepository) FindByID(id int64) (*model.Client, error) {
 	var client model.Client
-	if err := r.db.Preload("User").First(&client, id).Error; err != nil {
+	if err := r.db.Preload("User").Preload("ClientPsre").First(&client, id).Error; err != nil {
 		return nil, err
 	}
 	return &client, nil
