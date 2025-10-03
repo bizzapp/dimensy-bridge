@@ -12,6 +12,7 @@ type UserRepository interface {
 	Create(user *model.User) error
 	Update(user *model.User) error
 	Delete(id int64) error
+	FindByEmail(email string) (*model.User, error)
 }
 
 type userRepository struct {
@@ -20,6 +21,16 @@ type userRepository struct {
 
 func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{db}
+}
+
+func (r *userRepository) FindByEmail(email string) (*model.User, error) {
+	var user model.User
+	if err := r.db.Where("email = ?", email).
+		Preload("Client"). // preload relasi client
+		First(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 func (r *userRepository) FindAll(limit, offset int, filters map[string]interface{}) ([]model.User, int64, error) {

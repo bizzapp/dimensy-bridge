@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/time/rate"
 )
 
 func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
@@ -41,6 +42,8 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
+
+	rl := middleware.NewRateLimiter(rate.Every(200*time.Millisecond), 10)
 
 	api := r.Group("/api/v1")
 	auth := api.Group("/auth")
@@ -103,5 +106,10 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		clientPsre.GET("/:id", deps.ClientPsreHdl.Get)
 	}
 
+	psre := api.Group("/psre")
+	{
+		psre.Use(rl.Middleware()) // pasang rate limiter di group ini
+		psre.POST("/login", deps.PsreHdl.Login)
+	}
 	return r
 }

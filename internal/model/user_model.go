@@ -15,6 +15,8 @@ type User struct {
 	Role            string     `gorm:"size:255;default:admin;not null" json:"role"`
 	Image           *string    `gorm:"size:255;index" json:"image,omitempty"`
 
+	Client *Client `gorm:"foreignKey:UserID" json:"client,omitempty"`
+
 	CreatedAt *time.Time `json:"created_at,omitempty"`
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 	DeletedAt *time.Time `gorm:"index" json:"deleted_at,omitempty"`

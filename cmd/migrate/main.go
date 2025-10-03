@@ -23,6 +23,7 @@ func main() {
 		&model.QuotaClient{},
 		&model.QuotaClientAddition{},
 		&model.ClientPsre{},
+		&model.ClientRequestLog{},
 	); err != nil {
 		log.Fatalf("❌ Gagal migrate database: %v", err)
 	}
