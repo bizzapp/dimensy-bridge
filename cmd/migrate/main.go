@@ -24,6 +24,7 @@ func main() {
 		&model.QuotaClientAddition{},
 		&model.ClientPsre{},
 		&model.ClientRequestLog{},
+		&model.ClientCompany{},
 	); err != nil {
 		log.Fatalf("❌ Gagal migrate database: %v", err)
 	}

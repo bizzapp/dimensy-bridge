@@ -118,7 +118,9 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 	{
 		psre.Use(rl.Middleware()) // pasang rate limiter di group ini
 		psre.POST("/login", deps.PsreHdl.Login)
-		psre.POST("/client-company", deps.PsreHdl.ClientCompany)
+
+		company := psre.Group("/company")
+		company.POST("/create", deps.PsreHdl.CreateClientCompany)
 	}
 	return r
 }

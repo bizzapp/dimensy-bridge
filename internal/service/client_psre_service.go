@@ -7,6 +7,7 @@ import (
 	"dimensy-bridge/pkg/utils"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -70,6 +71,7 @@ func (s *clientPsreService) RegisterPsre(clientID int64, expiredDate time.Time, 
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("Request to PSRE:", req)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+token)
 

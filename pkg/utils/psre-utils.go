@@ -27,45 +27,6 @@ type loginResponse struct {
 	Token string `json:"token,omitempty"`
 }
 
-// doPsreRequest → core request ke PSRE backend (generic)
-func doPsreRequest(method, path string, payload any) ([]byte, error) {
-	psreURL := os.Getenv("PSRE_BACKEND_URL")
-	if psreURL == "" {
-		psreURL = "http://10.100.20.14:2000"
-	}
-	fullURL := psreURL + path
-
-	var body []byte
-	var err error
-	if payload != nil {
-		body, err = json.Marshal(payload)
-		if err != nil {
-			return nil, fmt.Errorf("gagal encode payload: %w", err)
-		}
-	}
-
-	req, err := http.NewRequest(method, fullURL, bytes.NewBuffer(body))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{Timeout: 15 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	// PSRE balikin 200 atau 201 untuk sukses
-	if resp.StatusCode >= 400 {
-		raw, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("request ke PSRE gagal. status=%d, body=%s", resp.StatusCode, string(raw))
-	}
-
-	return io.ReadAll(resp.Body)
-}
-
 // psreLogin → khusus untuk ambil token dari PSRE
 func psreLogin(username, password string) (string, error) {
 	payload := map[string]string{
@@ -73,7 +34,7 @@ func psreLogin(username, password string) (string, error) {
 		"password": password,
 	}
 
-	raw, err := doPsreRequest("POST", "/backend/login", payload)
+	raw, err := DoPsreRequest("POST", "/backend/login", payload,nil)
 	if err != nil {
 		return "", err
 	}
@@ -118,4 +79,49 @@ func GetPsreToken() (string, error) {
 	tokenExpiresAt = time.Now().Add(55 * time.Minute)
 
 	return tokenCache, nil
+}
+
+// DoPsreRequest adalah core utilitas untuk kirim request ke PSRE API
+func DoPsreRequest(method, path string, payload any, headers map[string]string) ([]byte, error) {
+	// marshal payload jadi JSON
+	var bodyBytes []byte
+	if payload != nil {
+		b, err := json.Marshal(payload)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal payload: %v", err)
+		}
+		bodyBytes = b
+	}
+
+url := os.Getenv("PSRE_BACKEND_URL") + path
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+
+	// set default headers
+	req.Header.Set("Content-Type", "application/json")
+
+	// tambahan header custom (misal Authorization)
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
+
+	client := &http.Client{Timeout: 15 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	resBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %v", err)
+	}
+
+	if resp.StatusCode >= 400 {
+		return resBody, fmt.Errorf("PSRE error %d: %s", resp.StatusCode, string(resBody))
+	}
+
+	return resBody, nil
 }

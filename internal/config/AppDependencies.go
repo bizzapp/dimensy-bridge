@@ -4,6 +4,7 @@ import (
 	"dimensy-bridge/internal/handler"
 	"dimensy-bridge/internal/repository"
 	"dimensy-bridge/internal/service"
+	psreintegration "dimensy-bridge/internal/service/psre_integration"
 
 	"gorm.io/gorm"
 )
@@ -84,8 +85,8 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	clientCompanySvc := service.NewClientCompanyService(clientCompanyRepo)
 	clientCompanyHdl := handler.NewClientCompanyHandler(clientCompanySvc)
 
-	psreSvc := service.NewPsreService(clientRequestLogRepo, userRepo, clientCompanyRepo)
-	psreHdl := handler.NewPsreHandler(psreSvc)
+	psreClientSvc := psreintegration.NewClientService(clientRequestLogRepo, userRepo)
+	psreHdl := handler.NewPsreHandler(psreClientSvc)
 	return &AppDependencies{
 		DB:       db,
 		AuthRepo: authRepo,
@@ -117,7 +118,6 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 		ClientPsreHdl:  clientPsreHdl,
 
 		ClientRequestLogRepo: clientRequestLogRepo,
-		PsreSvc:              psreSvc,
 		PsreHdl:              psreHdl,
 
 		ClientCompanyRepo: clientCompanyRepo,
