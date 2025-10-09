@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -25,6 +26,31 @@ type loginResponse struct {
 		Token       string `json:"token,omitempty"`
 	} `json:"data,omitempty"`
 	Token string `json:"token,omitempty"`
+}
+
+func DefaultPassword() string{
+
+	password := os.Getenv("PSRE_DEFAULT_PASSWORD")
+	if password == "" {
+		password = "DefaultP@ssw0rd!" // fallback default
+	}
+	return password
+}
+
+func ExpireDate() time.Time {
+
+	expDate := time.Now()
+	if days, _ := strconv.Atoi(os.Getenv("PSRE_EXPIRE_DAYS")); days > 0 {
+		expDate = expDate.AddDate(0, 0, days)
+	} else if months, _ := strconv.Atoi(os.Getenv("PSRE_EXPIRE_MONTHS")); months > 0 {
+		expDate = expDate.AddDate(0, months, 0)
+	} else if years, _ := strconv.Atoi(os.Getenv("PSRE_EXPIRE_YEARS")); years > 0 {
+		expDate = expDate.AddDate(years, 0, 0)
+	} else {
+		// default 1 tahun
+		expDate = expDate.AddDate(1, 0, 0)
+	}
+	return expDate
 }
 
 // psreLogin → khusus untuk ambil token dari PSRE
@@ -56,7 +82,7 @@ func psreLogin(username, password string) (string, error) {
 	}
 }
 
-func GetPsreToken() (string, error) {
+func GetAdministratorToken() (string, error) {
 	mu.Lock()
 	defer mu.Unlock()
 

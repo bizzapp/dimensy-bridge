@@ -62,7 +62,7 @@ func (s *psreService) CreateClientCompany(idStr string) ([]byte, error) {
 	req.Header.Set("Content-Type", "application/json")
 
 	// misal pakai token dari GetPsreToken()
-	token, _ := utils.GetPsreToken()
+	token, _ := utils.GetAdministratorToken()
 	req.Header.Set("Authorization", "Bearer "+token)
 
 	client := &http.Client{Timeout: 15 * time.Second}

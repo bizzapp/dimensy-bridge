@@ -65,6 +65,8 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 
 	clients := api.Group("/clients")
 	{
+		clients.GET("/profile-psre/:id", deps.ClientPsreHdl.Profile)
+		clients.GET("/fill-external-id/:id", deps.ClientPsreHdl.FillExternalId)
 		clients.GET("/", deps.ClientHdl.List)
 		clients.GET("/:id", deps.ClientHdl.Get)
 		clients.POST("/", deps.ClientHdl.Create)
@@ -103,7 +105,7 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 	clientPsre := api.Group("/client-psre")
 	{
 		clientPsre.POST("/register", deps.ClientPsreHdl.Register)
-		clientPsre.GET("/:id", deps.ClientPsreHdl.Get)
+		// clientPsre.GET("/:id", deps.ClientPsreHdl.Get)
 	}
 
 	clientCompany := api.Group("/client-companies")

@@ -77,7 +77,6 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 
 	clientPsreRepo := repository.NewClientPsreRepository(db)
 	clientPsreSvc := service.NewClientPsreService(clientPsreRepo, clientRepo)
-	clientPsreHdl := handler.NewClientPsreHandler(clientPsreSvc)
 
 	clientRequestLogRepo := repository.NewClientRequestLogRepository(db)
 
@@ -85,7 +84,8 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	clientCompanySvc := service.NewClientCompanyService(clientCompanyRepo)
 	clientCompanyHdl := handler.NewClientCompanyHandler(clientCompanySvc)
 
-	psreClientSvc := psreintegration.NewClientService(clientRequestLogRepo, userRepo)
+	psreClientSvc := psreintegration.NewClientService(clientRequestLogRepo, userRepo, clientRepo, clientPsreRepo)
+	clientPsreHdl := handler.NewClientPsreHandler(psreClientSvc)
 	psreHdl := handler.NewPsreHandler(psreClientSvc)
 	return &AppDependencies{
 		DB:       db,
