@@ -2,9 +2,10 @@ package config
 
 import (
 	"dimensy-bridge/internal/handler"
+	psre_handler "dimensy-bridge/internal/handler/psre_handler"
 	"dimensy-bridge/internal/repository"
 	"dimensy-bridge/internal/service"
-	psreintegration "dimensy-bridge/internal/service/psre_integration"
+	psre_service "dimensy-bridge/internal/service/psre_service"
 
 	"gorm.io/gorm"
 )
@@ -42,11 +43,14 @@ type AppDependencies struct {
 
 	ClientRequestLogRepo repository.ClientRequestLogRepository
 	PsreSvc              service.PsreService
-	PsreHdl              *handler.PsreHandler
 
 	ClientCompanyRepo repository.ClientCompanyRepository
 	ClientCompanySvc  service.ClientCompanyService
 	ClientCompanyHdl  *handler.ClientCompanyHandler
+
+	PsreCompanyHdl *psre_handler.PsreCompanyHandler
+
+	PsreClientHdl *psre_handler.PsreClientHandler
 }
 
 func NewAppDependencies(db *gorm.DB) *AppDependencies {
@@ -84,9 +88,11 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	clientCompanySvc := service.NewClientCompanyService(clientCompanyRepo)
 	clientCompanyHdl := handler.NewClientCompanyHandler(clientCompanySvc)
 
-	psreClientSvc := psreintegration.NewClientService(clientRequestLogRepo, userRepo, clientRepo, clientPsreRepo)
+	psreClientSvc := psre_service.NewClientService(clientRequestLogRepo, userRepo, clientRepo, clientPsreRepo)
 	clientPsreHdl := handler.NewClientPsreHandler(psreClientSvc)
-	psreHdl := handler.NewPsreHandler(psreClientSvc)
+	psreClientHdl := psre_handler.NewPsreClientHandler(psreClientSvc)
+
+	psreCompanyHdl := psre_handler.NewPsreCompanyHandler(clientSvc, clientCompanySvc)
 	return &AppDependencies{
 		DB:       db,
 		AuthRepo: authRepo,
@@ -118,10 +124,11 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 		ClientPsreHdl:  clientPsreHdl,
 
 		ClientRequestLogRepo: clientRequestLogRepo,
-		PsreHdl:              psreHdl,
 
 		ClientCompanyRepo: clientCompanyRepo,
 		ClientCompanySvc:  clientCompanySvc,
 		ClientCompanyHdl:  clientCompanyHdl,
+		PsreClientHdl:     psreClientHdl,
+		PsreCompanyHdl:    psreCompanyHdl,
 	}
 }

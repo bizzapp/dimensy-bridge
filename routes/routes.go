@@ -105,6 +105,7 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 	clientPsre := api.Group("/client-psre")
 	{
 		clientPsre.POST("/register", deps.ClientPsreHdl.Register)
+		clientPsre.POST("/register-with-fill-external-id", deps.ClientPsreHdl.RegisterWithFillExternalId)
 		// clientPsre.GET("/:id", deps.ClientPsreHdl.Get)
 	}
 
@@ -119,10 +120,11 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 	psre := api.Group("/psre")
 	{
 		psre.Use(rl.Middleware()) // pasang rate limiter di group ini
-		psre.POST("/login", deps.PsreHdl.Login)
+		psre.POST("/login", deps.PsreClientHdl.Login)
 
 		company := psre.Group("/company")
-		company.POST("/create", deps.PsreHdl.CreateClientCompany)
+		company.Use(middleware.AuthJWE())
+		company.POST("/create", deps.PsreCompanyHdl.CreateClientCompany)
 	}
 	return r
 }

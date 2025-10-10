@@ -1,7 +1,7 @@
 package handler
 
 import (
-	psreintegration "dimensy-bridge/internal/service/psre_integration"
+	psre_service "dimensy-bridge/internal/service/psre_service"
 	"dimensy-bridge/pkg/response"
 	"net/http"
 	"strconv"
@@ -10,14 +10,14 @@ import (
 )
 
 type ClientPsreHandler struct {
-	psreClientSvc psreintegration.ClientService
+	psreClientSvc psre_service.ClientService
 }
 
-func NewClientPsreHandler(psreClientSvc psreintegration.ClientService) *ClientPsreHandler {
+func NewClientPsreHandler(psreClientSvc psre_service.ClientService) *ClientPsreHandler {
 	return &ClientPsreHandler{psreClientSvc: psreClientSvc}
 }
 
-func (h *ClientPsreHandler) Register(c *gin.Context) {
+func (h *ClientPsreHandler) RegisterWithFillExternalId(c *gin.Context) {
 	var req struct {
 		ClientID int64 `json:"client_id" binding:"required"`
 	}
@@ -39,6 +39,24 @@ func (h *ClientPsreHandler) Register(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusCreated, "Client PSRE berhasil dibuat", psreClient, nil)
+}
+
+func (h *ClientPsreHandler) Register(c *gin.Context) {
+	var req struct {
+		ClientID int64 `json:"client_id" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "INVALID_REQUEST", "Input tidak valid", err.Error())
+		return
+	}
+
+	psre, err := h.psreClientSvc.Register(req.ClientID)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "PSRE_REGISTER_ERROR", "Gagal register client ke PSRE", err.Error())
+		return
+	}
+	response.JSON(c, http.StatusCreated, "Client PSRE berhasil dibuat", psre, nil)
 }
 
 func (h *ClientPsreHandler) Profile(c *gin.Context) {

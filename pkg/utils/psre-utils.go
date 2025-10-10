@@ -28,13 +28,34 @@ type loginResponse struct {
 	Token string `json:"token,omitempty"`
 }
 
-func DefaultPassword() string{
+func DefaultPassword() string {
 
 	password := os.Getenv("PSRE_DEFAULT_PASSWORD")
 	if password == "" {
 		password = "DefaultP@ssw0rd!" // fallback default
 	}
 	return password
+}
+
+func ExtractExternalID(authData any) (string, error) {
+	m1, ok := authData.(map[string]interface{})
+	if !ok {
+		return "", errors.New("invalid authData")
+	}
+
+	// Ambil "data"
+	level1, ok := m1["data"].(map[string]interface{})
+	if !ok {
+		return "", errors.New("missing data")
+	}
+
+	// Ambil "id"
+	id, ok := level1["id"].(string)
+	if !ok {
+		return "", errors.New("missing id field")
+	}
+
+	return id, nil
 }
 
 func ExpireDate() time.Time {
@@ -60,7 +81,7 @@ func psreLogin(username, password string) (string, error) {
 		"password": password,
 	}
 
-	raw, err := DoPsreRequest("POST", "/backend/login", payload,nil)
+	raw, err := DoPsreRequest("POST", "/backend/login", payload, nil)
 	if err != nil {
 		return "", err
 	}
@@ -119,7 +140,7 @@ func DoPsreRequest(method, path string, payload any, headers map[string]string) 
 		bodyBytes = b
 	}
 
-url := os.Getenv("PSRE_BACKEND_URL") + path
+	url := os.Getenv("PSRE_BACKEND_URL") + path
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(bodyBytes))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %v", err)

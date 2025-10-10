@@ -12,6 +12,7 @@ type ClientService interface {
 	CreateClient(companyName, picName, email string) (*model.Client, error)
 	UpdateClient(client *model.Client) error
 	DeleteClient(id int64) error
+	GetClientByExternalId(externalID string) (*model.Client, error)
 }
 
 type clientService struct {
@@ -21,6 +22,14 @@ type clientService struct {
 
 func NewClientService(clientRepo repository.ClientRepository, userRepo repository.UserRepository) ClientService {
 	return &clientService{clientRepo, userRepo}
+}
+
+func (s *clientService) GetClientByExternalId(externalID string) (*model.Client, error) {
+	client, err := s.clientRepo.FindByExternalID(externalID)
+	if err != nil {
+		return nil, errors.New("client not found")
+	}
+	return client, nil
 }
 
 func (s *clientService) GetClients(page, limit int, filters map[string]interface{}) ([]model.Client, int64, error) {

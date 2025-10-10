@@ -9,6 +9,7 @@ import (
 type ClientRepository interface {
 	FindAll(limit, offset int, filters map[string]interface{}) ([]model.Client, int64, error)
 	FindByID(id int64) (*model.Client, error)
+	FindByExternalID(externalID string) (*model.Client, error)
 	Create(client *model.Client) error
 	Update(client *model.Client) error
 	Delete(id int64) error
@@ -20,6 +21,20 @@ type clientRepository struct {
 
 func NewClientRepository(db *gorm.DB) ClientRepository {
 	return &clientRepository{db}
+}
+func (r *clientRepository) FindByExternalID(externalID string) (*model.Client, error) {
+	var clientPsre model.ClientPsre
+
+	// Cari di tabel client_psres dan preload Client (dan relasi lain bila perlu)
+	if err := r.db.
+		Preload("Client").
+		Where("external_id = ?", externalID).
+		First(&clientPsre).Error; err != nil {
+		return nil, err
+	}
+
+	// Kembalikan client terkait
+	return &clientPsre.Client, nil
 }
 
 func (r *clientRepository) FindAll(limit, offset int, filters map[string]interface{}) ([]model.Client, int64, error) {

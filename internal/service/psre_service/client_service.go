@@ -1,4 +1,4 @@
-package psreintegration
+package psreservice
 
 import (
 	"bytes"
