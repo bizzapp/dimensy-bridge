@@ -129,7 +129,6 @@ func (s *clientService) Profile(clientID int64) (*model.ClientPsre, error) {
 	return client.ClientPsre, nil
 }
 func (s *clientService) ProfilePsre(clientID int64) (*model.ClientPsre, error) {
-	// 1️⃣ Cek client di DB
 	client, err := s.clientRepo.FindByID(clientID)
 	if err != nil {
 		return nil, errors.New("client tidak ditemukan")

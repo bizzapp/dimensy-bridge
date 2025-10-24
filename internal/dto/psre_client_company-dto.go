@@ -9,3 +9,9 @@ type PsreCreateClientCompanyRequest struct {
 	PICName         string `json:"picName" validate:"required"`
 	PICEmail        string `json:"picEmail" validate:"required,email"`
 }
+
+type PsreRegisterCompanyResponse struct {
+	Code      int    `json:"code"`
+	Message   string `json:"message"`
+	CompanyID string `json:"companyId"`
+}

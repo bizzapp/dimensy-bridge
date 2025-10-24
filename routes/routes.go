@@ -126,6 +126,7 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		company.Use(middleware.AuthJWE())
 		company.GET("/", deps.PsreCompanyHdl.GetClientCompany)
 		company.POST("/create", deps.PsreCompanyHdl.CreateClientCompany)
+		// company.POST("/update/:id", deps.PsreCompanyHdl.UpdateClientCompany)
 	}
 	return r
 }
