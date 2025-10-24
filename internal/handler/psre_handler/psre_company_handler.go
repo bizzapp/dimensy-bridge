@@ -26,6 +26,44 @@ func NewPsreCompanyHandler(clientSvc service.ClientService, clientCompanySvc ser
 		psreClientCompanySvc: psreClientCompanySvc,
 	}
 }
+func (h *PsreCompanyHandler) GetClientCompany(c *gin.Context) {
+	// Ambil data hasil verifikasi dari middleware
+	authData, _ := c.Get("authData")
+	token := c.Request.Header.Get("Authorization")
+
+	_, err := utils.ExtractExternalID(authData)
+	if err != nil {
+		response.JSON(c, http.StatusUnauthorized, err.Error(), nil, nil)
+		return
+	}
+
+	// Ambil semua query params dan ubah jadi map[string]string
+	params := make(map[string]string)
+	for key, values := range c.Request.URL.Query() {
+		if len(values) > 0 {
+			params[key] = values[0]
+		}
+	}
+
+	// Forward ke PSRE
+	respBody, status, err := h.psreClientCompanySvc.GetCompany(token, params)
+	if err != nil {
+		var psreResp map[string]interface{}
+		if jsonErr := json.Unmarshal(respBody, &psreResp); jsonErr == nil {
+			c.JSON(status, psreResp)
+			return
+		}
+
+		c.JSON(status, gin.H{
+			"code":    status,
+			"message": string(respBody),
+		})
+		return
+	}
+
+	// Sukses → langsung teruskan response dari PSRE
+	c.JSON(status, json.RawMessage(respBody))
+}
 
 func (h *PsreCompanyHandler) CreateClientCompany(c *gin.Context) {
 
@@ -91,11 +129,25 @@ func (h *PsreCompanyHandler) CreateClientCompany(c *gin.Context) {
 		return
 	}
 
+	var psreSuccessResp struct {
+		Code      int    `json:"code"`
+		Message   string `json:"message"`
+		CompanyID string `json:"companyId"`
+	}
+	if err := json.Unmarshal(respBody, &psreSuccessResp); err != nil {
+		response.JSON(c, http.StatusInternalServerError, "Failed to parse PSRE response", nil, nil)
+		return
+	}
+
+	// Update external_id
+	if psreSuccessResp.CompanyID != "" {
+		if err := h.clientCompanySvc.UpdateExternalID(reqLocal.ID, psreSuccessResp.CompanyID); err != nil {
+			response.JSON(c, http.StatusInternalServerError, "Failed to update external ID", nil, nil)
+			return
+		}
+	}
+
 	// sukses
-	c.JSON(http.StatusCreated, gin.H{
-		"code":    http.StatusCreated,
-		"message": "Company registered successfully",
-		"data":    json.RawMessage(respBody),
-	})
+	c.JSON(status, json.RawMessage(respBody))
 
 }

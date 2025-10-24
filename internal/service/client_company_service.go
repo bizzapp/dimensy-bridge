@@ -11,6 +11,7 @@ type ClientCompanyService interface {
 	Create(company *model.ClientCompany) error
 	Update(company *model.ClientCompany) error
 	Delete(id int64) error
+	UpdateExternalID(id int64, externalID string) error
 }
 
 type clientCompanyService struct {
@@ -39,4 +40,8 @@ func (s *clientCompanyService) Update(company *model.ClientCompany) error {
 
 func (s *clientCompanyService) Delete(id int64) error {
 	return s.repo.Delete(id)
+}
+
+func (s *clientCompanyService) UpdateExternalID(id int64, externalID string) error {
+	return s.repo.UpdateExternalID(id, externalID)
 }

@@ -1,14 +1,12 @@
 package psreservice
 
 import (
-	"bytes"
 	"dimensy-bridge/internal/model"
 	"dimensy-bridge/internal/repository"
 	"dimensy-bridge/pkg/utils"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"os"
 )
 
@@ -33,9 +31,7 @@ func NewClientService(logRepo repository.ClientRequestLogRepository, userRepo re
 		clientRepo:     clientRepo,
 		clientPsreRepo: clientPsreRepo}
 }
-
 func (s *clientService) Login(body []byte) ([]byte, error) {
-	// decode body → ambil email & password
 	var req struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -44,89 +40,59 @@ func (s *clientService) Login(body []byte) ([]byte, error) {
 		return nil, errors.New("invalid request body")
 	}
 
-	// cek user di database
 	user, err := s.userRepo.FindByEmail(req.Email)
 	if err != nil {
 		return nil, errors.New("email tidak terdaftar")
 	}
 	clientID := user.Client.ID
 
-	// Kirim ke PSRE pakai utilitas
-	url := os.Getenv("PSRE_BACKEND_URL")
-	path := "/client/login"
-	respBody, err := utils.DoPsreRequest("POST", path, req, nil)
+	respBody, status, err := utils.PsreRequest("POST", "/client/login", req, "", nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("login failed: %v (status: %d)", err, status)
 	}
 
-	// Simpan log (opsional)
-	log := model.ClientRequestLog{
+	// Simpan log
+	s.logRepo.Create(&model.ClientRequestLog{
 		ClientID: &clientID,
 		Body:     string(body),
 		Response: string(respBody),
-		URL:      url + path,
+		URL:      os.Getenv("PSRE_BACKEND_URL") + "/client/login",
 		Type:     "login",
-	}
-	_ = s.logRepo.Create(&log)
+	})
 
 	return respBody, nil
 }
 func (s *clientService) Register(clientID int64) (*model.ClientPsre, error) {
-	// cek client ada
 	client, err := s.clientRepo.FindByID(clientID)
 	if err != nil {
 		return nil, errors.New("client tidak ditemukan")
 	}
-	email := client.User.Email
-
-	// request ke sistem eksternal
-	payload := map[string]interface{}{
-		"clientName":  client.CompanyName,
-		"picName":     client.PicName,
-		"email":       email,
-		"password":    utils.DefaultPassword(),
-		"expiredDate": utils.ExpireDate(),
-	}
-
-	body, _ := json.Marshal(payload)
 
 	token, err := utils.GetAdministratorToken()
 	if err != nil {
 		return nil, err
 	}
 
-	psreUrl := os.Getenv("PSRE_BACKEND_URL")
-	if psreUrl == "" {
-		psreUrl = "http://10.100.20.14:2000" // fallback default
+	payload := map[string]interface{}{
+		"clientName":  client.CompanyName,
+		"picName":     client.PicName,
+		"email":       client.User.Email,
+		"password":    utils.DefaultPassword(),
+		"expiredDate": utils.ExpireDate(),
 	}
-	req, err := http.NewRequest("POST", psreUrl+"/backend/client/create", bytes.NewBuffer(body))
+
+	respBody, status, err := utils.PsreRequest("POST", "/backend/client/create", payload, "Bearer "+token, nil)
 	if err != nil {
-		return nil, err
-	}
-	fmt.Println("Request to PSRE:", req)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
-
-	clientHttp := &http.Client{}
-	resp, err := clientHttp.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		return nil, errors.New("gagal register ke PSRE system")
+		return nil, fmt.Errorf("register PSRE failed: %v (status %d)", err, status)
 	}
 
-	// parse response (anggap dapat external_id)
 	var result struct {
 		ExternalID string `json:"externalId"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return nil, fmt.Errorf("invalid PSRE response: %w", err)
 	}
 
-	// simpan ke DB
 	psre := model.ClientPsre{
 		ClientID:   clientID,
 		ExternalID: result.ExternalID,

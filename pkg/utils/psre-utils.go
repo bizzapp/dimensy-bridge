@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -171,4 +173,69 @@ func DoPsreRequest(method, path string, payload any, headers map[string]string) 
 	}
 
 	return resBody, nil
+}
+
+func PsreRequest(method, path string, payload any, token string, queryParams map[string]string) ([]byte, int, error) {
+	// Base URL
+	baseURL := os.Getenv("PSRE_BACKEND_URL")
+	if baseURL == "" {
+		baseURL = "http://10.100.20.14:2000"
+	}
+
+	// Pastikan tidak double slash
+	baseURL = strings.TrimSuffix(baseURL, "/")
+
+	// Buat URL lengkap
+	reqURL, err := url.Parse(baseURL + path)
+	if err != nil {
+		return nil, http.StatusInternalServerError, fmt.Errorf("invalid PSRE URL: %w", err)
+	}
+
+	// Tambahkan query params jika ada
+	if len(queryParams) > 0 {
+		q := reqURL.Query()
+		for k, v := range queryParams {
+			q.Set(k, v)
+		}
+		reqURL.RawQuery = q.Encode()
+	}
+
+	// Siapkan body payload
+	var body io.Reader
+	if payload != nil {
+		data, err := json.Marshal(payload)
+		if err != nil {
+			return nil, http.StatusInternalServerError, fmt.Errorf("failed to marshal payload: %w", err)
+		}
+		body = bytes.NewBuffer(data)
+	}
+
+	// Buat HTTP request
+	req, err := http.NewRequest(method, reqURL.String(), body)
+	if err != nil {
+		return nil, http.StatusInternalServerError, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	if token != "" {
+		req.Header.Set("Authorization", token)
+	}
+
+	// Kirim request
+	client := &http.Client{Timeout: 15 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, http.StatusBadGateway, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Baca response body
+	respBody, _ := io.ReadAll(resp.Body)
+
+	// Handle status error
+	if resp.StatusCode >= 400 {
+		return respBody, resp.StatusCode, fmt.Errorf("PSRE error %d: %s", resp.StatusCode, string(respBody))
+	}
+
+	return respBody, resp.StatusCode, nil
 }

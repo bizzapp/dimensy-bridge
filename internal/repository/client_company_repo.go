@@ -12,6 +12,7 @@ type ClientCompanyRepository interface {
 	Create(company *model.ClientCompany) error
 	Update(company *model.ClientCompany) error
 	Delete(id int64) error
+	UpdateExternalID(id int64, externalID string) error
 }
 
 type clientCompanyRepository struct {
@@ -48,4 +49,10 @@ func (r *clientCompanyRepository) Update(company *model.ClientCompany) error {
 
 func (r *clientCompanyRepository) Delete(id int64) error {
 	return r.db.Delete(&model.ClientCompany{}, id).Error
+}
+
+func (r *clientCompanyRepository) UpdateExternalID(id int64, externalID string) error {
+	return r.db.Model(&model.ClientCompany{}).
+		Where("id = ?", id).
+		Update("external_id", externalID).Error
 }
