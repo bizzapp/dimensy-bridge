@@ -128,61 +128,64 @@ func (s *clientService) Profile(clientID int64) (*model.ClientPsre, error) {
 
 	return client.ClientPsre, nil
 }
-
 func (s *clientService) ProfilePsre(clientID int64) (*model.ClientPsre, error) {
-	// cek client ada
+	// 1️⃣ Cek client di DB
 	client, err := s.clientRepo.FindByID(clientID)
 	if err != nil {
 		return nil, errors.New("client tidak ditemukan")
 	}
 
-	req := map[string]interface{}{
+	// 2️⃣ Login ke PSRE untuk dapatkan token
+	loginPayload := map[string]interface{}{
 		"email":    client.User.Email,
 		"password": utils.DefaultPassword(),
 	}
-	path := "/client/login"
-	respBody, err := utils.DoPsreRequest("POST", path, req, nil)
+
+	loginPath := "/client/login"
+	respBody, _, err := utils.PsreRequest("POST", loginPath, loginPayload, "", nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("gagal login ke PSRE: %w", err)
 	}
 
-	var m map[string]interface{}
-	if err := json.Unmarshal(respBody, &m); err != nil {
-		panic(err)
+	var loginResp map[string]interface{}
+	if err := json.Unmarshal(respBody, &loginResp); err != nil {
+		return nil, fmt.Errorf("gagal decode response login: %v", err)
 	}
 
-	// ambil accessToken
+	// 3️⃣ Ambil accessToken dari response
 	var token string
-	if data, ok := m["data"].(map[string]interface{}); ok {
-		if t, ok := data["accessToken"].(string); ok {
+	if data, ok := loginResp["data"].(map[string]interface{}); ok {
+		if t, ok := data["accessToken"].(string); ok && t != "" {
 			token = t
 		}
 	}
-
-	// buat headers pakai token
-	headers := map[string]string{
-		"Authorization": "Bearer " + token,
+	if token == "" {
+		return nil, errors.New("accessToken tidak ditemukan pada response login PSRE")
 	}
 
-	// lakukan request berikutnya dengan header yang benar
-	pathLogin := "/client/profile"
-	respBody, err = utils.DoPsreRequest("GET", pathLogin, nil, headers)
+	// 4️⃣ Ambil profile dari PSRE
+	profilePath := "/client/profile"
+	respBody, _, err = utils.PsreRequest("GET", profilePath, nil, "Bearer "+token, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("gagal mengambil profile dari PSRE: %w", err)
 	}
 
-	// parsing JSON profile
 	var profile map[string]interface{}
 	if err := json.Unmarshal(respBody, &profile); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("gagal decode response profile: %v", err)
 	}
 
-	// ambil id dari profile dan masukkan ke struct
-	if id, ok := profile["id"].(string); ok {
-		client.ClientPsre.ExternalID = id
-	} else {
-		return nil, fmt.Errorf("field id tidak ditemukan dalam response profile")
+	// 5️⃣ Ambil id / external_id dari profile
+	psreID, ok := profile["id"].(string)
+	if !ok || psreID == "" {
+		return nil, fmt.Errorf("field id tidak ditemukan pada response profile: %s", string(respBody))
 	}
+
+	// 6️⃣ Update ke struct ClientPsre
+	if client.ClientPsre == nil {
+		client.ClientPsre = &model.ClientPsre{}
+	}
+	client.ClientPsre.ExternalID = psreID
 
 	return client.ClientPsre, nil
 }
