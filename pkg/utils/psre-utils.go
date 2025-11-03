@@ -131,6 +131,7 @@ func PsreRequest(method, path string, payload any, token string, queryParams map
 	if resp.StatusCode >= 400 {
 		return respBody, resp.StatusCode, fmt.Errorf("PSRE error %d: %s", resp.StatusCode, string(respBody))
 	}
+	// fmt.Println(string(respBody))
 
 	return respBody, resp.StatusCode, nil
 }

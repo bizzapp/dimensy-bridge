@@ -16,6 +16,8 @@ type ClientCompanyService interface {
 	RegisterCompany(token string, body interface{}) ([]byte, int, error)
 	GetCompany(token string, params map[string]string) ([]byte, int, error)
 	CreateClientCompany(ctx context.Context, authData interface{}, token string, req dto.PsreCreateClientCompanyRequest) (any, error)
+	DetailClientCompany(token string, id string) ([]byte, int, error)
+	InviteClientCompany(token string, body interface{}) ([]byte, int, error)
 }
 type clientCompanyService struct {
 	clientSvc         service.ClientService // gunakan interface
@@ -28,6 +30,10 @@ func NewClientCompanyService(clientSvc service.ClientService, clientCompanyRepo 
 		clientCompanyRepo: clientCompanyRepo,
 	}
 }
+func (s *clientCompanyService) DetailClientCompany(token string, id string) ([]byte, int, error) {
+
+	return utils.PsreRequest("GET", "/client/company/detail/"+id, nil, token, nil)
+}
 
 func (s *clientCompanyService) GetCompany(token string, params map[string]string) ([]byte, int, error) {
 	return utils.PsreRequest("GET", "/client/company", nil, token, params)
@@ -35,6 +41,10 @@ func (s *clientCompanyService) GetCompany(token string, params map[string]string
 
 func (s *clientCompanyService) RegisterCompany(token string, body interface{}) ([]byte, int, error) {
 	return utils.PsreRequest("POST", "/client/company/create", body, token, nil)
+}
+
+func (s *clientCompanyService) InviteClientCompany(token string, body interface{}) ([]byte, int, error) {
+	return utils.PsreRequest("POST", "/client/company/invite", body, token, nil)
 }
 
 func (s *clientCompanyService) CreateClientCompany(ctx context.Context, authData interface{}, token string, req dto.PsreCreateClientCompanyRequest) (any, error) {

@@ -64,6 +64,42 @@ func (h *PsreCompanyHandler) GetClientCompany(c *gin.Context) {
 	c.JSON(status, json.RawMessage(respBody))
 }
 
+func (h *PsreCompanyHandler) DetailClientCompany(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		response.JSON(c, http.StatusBadRequest, "Company ID is required", nil, nil)
+		return
+	}
+
+	token := c.Request.Header.Get("Authorization")
+
+	respBody, _, err := h.psreClientCompanySvc.DetailClientCompany(token, id)
+	if err != nil {
+		response.JSON(c, http.StatusInternalServerError, err.Error(), nil, nil)
+		return
+	}
+
+	c.JSON(http.StatusOK, json.RawMessage(respBody))
+}
+
+func (h *PsreCompanyHandler) InviteClientCompany(c *gin.Context) {
+
+	var req dto.PsreInviteClientCompanyRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.JSON(c, http.StatusBadRequest, "Invalid request body", nil, nil)
+		return
+	}
+
+	token := c.Request.Header.Get("Authorization")
+	respBody, status, err := h.psreClientCompanySvc.InviteClientCompany(token, req)
+	if err != nil {
+		c.JSON(status, json.RawMessage(respBody))
+		return
+	}
+
+	c.JSON(status, json.RawMessage(respBody))
+}
+
 func (h *PsreCompanyHandler) CreateClientCompany(c *gin.Context) {
 
 	var req dto.PsreCreateClientCompanyRequest

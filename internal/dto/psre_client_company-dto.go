@@ -15,3 +15,9 @@ type PsreRegisterCompanyResponse struct {
 	Message   string `json:"message"`
 	CompanyID string `json:"companyId"`
 }
+
+type PsreInviteClientCompanyRequest struct {
+	UserID    string `json:"userId" validate:"required"`
+	CompanyID string `json:"companyId" validate:"required"`
+	URL       string `json:"url" validate:"required,url"`
+}
