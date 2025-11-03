@@ -14,12 +14,11 @@ import (
 )
 
 type ClientUserService interface {
-	Register(token string, body interface{}) ([]byte, int, error)
 	RegisterUser(token, externalID string, req *dto.ClientUserRequest) ([]byte, int, error)
-	Activate(token string, body interface{}) ([]byte, int, error)
 	ActivateUser(token, externalID string, req *dto.ClientUserActivateRequest) ([]byte, int, error)
-	ResendActivation(token string, req *dto.ClientUserResendActivationRequest) ([]byte, int, error)
 	ResendActivationUser(token, externalID string, req *dto.ClientUserResendActivationRequest) ([]byte, int, error)
+	RequestPhoneActivation(token, externalID string, req *dto.ClientUserRequestPhoneActivationRequest) ([]byte, int, error)
+	PhoneActivation(token, externalID string, req *dto.ClientUserPhoneActivationRequest) ([]byte, int, error)
 }
 
 type clientUserService struct {
@@ -43,44 +42,8 @@ func NewClientUserService(
 	}
 }
 
-// --- panggil endpoint PSrE langsung ---
-func (s *clientUserService) Register(token string, body interface{}) ([]byte, int, error) {
-	return utils.PsreRequest("POST", "/user/register", body, token, nil)
-}
-
-func (s *clientUserService) Activate(token string, body interface{}) ([]byte, int, error) {
-	return utils.PsreRequest("POST", "/user/activate", body, token, nil)
-}
-
-func (s *clientUserService) ResendActivation(token string, req *dto.ClientUserResendActivationRequest) ([]byte, int, error) {
-	return utils.PsreRequest("POST", "/user/resend-activation", req, token, nil)
-}
-
-// --- logic bisnis tambahan ---
-
-func (s *clientUserService) ResendActivationUser(token, externalID string, req *dto.ClientUserResendActivationRequest) ([]byte, int, error) {
-
-	respBody, status, err := s.ResendActivation(token, req)
-	if err != nil {
-		return respBody, status, fmt.Errorf("failed call psre api: %w", err)
-	}
-
-	return respBody, status, nil
-}
-
-func (s *clientUserService) ActivateUser(token, externalID string, req *dto.ClientUserActivateRequest) ([]byte, int, error) {
-
-	respBody, status, err := s.Activate(token, req)
-	if err != nil {
-		return respBody, status, fmt.Errorf("failed call psre api: %w", err)
-	}
-
-	return respBody, status, nil
-}
-
-// logic utama: create client_user + register ke PSrE dalam satu transaction
+// 🔹 REGISTER USER + TRANSACTION
 func (s *clientUserService) RegisterUser(token, externalID string, req *dto.ClientUserRequest) ([]byte, int, error) {
-	// ambil data client PSrE
 	clientPsre, err := s.clientPsreSvc.GetByExternalID(externalID)
 	if err != nil {
 		return nil, http.StatusBadRequest, fmt.Errorf("failed get client psre: %w", err)
@@ -91,9 +54,7 @@ func (s *clientUserService) RegisterUser(token, externalID string, req *dto.Clie
 		status   int
 	)
 
-	// mulai transaction
 	txErr := s.db.Transaction(func(tx *gorm.DB) error {
-		// mapping request ke model
 		user := model.ClientUser{
 			NIK:       req.NIK,
 			Name:      req.FullName,
@@ -113,24 +74,21 @@ func (s *clientUserService) RegisterUser(token, externalID string, req *dto.Clie
 			user.ClientCompanyID = &clientCompany.ID
 		}
 
-		// create user di DB
 		if err := tx.Create(&user).Error; err != nil {
 			return fmt.Errorf("failed create user: %w", err)
 		}
 
-		// panggil PSrE API
-		data, st, err := s.Register(token, req)
-		respBody, status = data, st // simpan agar bisa dikembalikan nanti
+		// 🔹 Call PSrE Register
+		data, st, err := utils.PsreRequest("POST", "/user/register", req, token, nil)
+		respBody, status = data, st
 		if err != nil {
 			return fmt.Errorf("failed call psre api: %w", err)
 		}
 
-		// kalau PSrE return error HTTP (400/500)
 		if status >= 400 {
 			return fmt.Errorf("psre api error: %s", string(data))
 		}
 
-		// parse response PSrE
 		var psreResp struct {
 			Code    int    `json:"code"`
 			Message string `json:"message"`
@@ -140,35 +98,80 @@ func (s *clientUserService) RegisterUser(token, externalID string, req *dto.Clie
 			return errors.New("invalid psre response format")
 		}
 
-		// kalau PSrE gagal (code != 0)
 		if psreResp.Code != 0 {
 			return fmt.Errorf("psre register failed: %s", psreResp.Message)
 		}
 
-		// update external_id
 		user.ExternalID = &psreResp.UserID
 		if err := tx.Save(&user).Error; err != nil {
 			return fmt.Errorf("failed update external_id: %w", err)
 		}
 
-		// commit otomatis kalau return nil
 		return nil
 	})
 
-	// --- transaksi gagal (rollback otomatis oleh GORM) ---
 	if txErr != nil {
 		if respBody != nil {
-			// Kalau PSrE mengembalikan body JSON (misalnya {"code":400,...})
 			return respBody, status, txErr
 		}
-		// Kalau PSrE tidak merespons (network error, parsing error, dll)
-		errorJSON, _ := json.Marshal(map[string]interface{}{
-			"code":    400,
-			"message": txErr.Error(),
-		})
-		return errorJSON, http.StatusBadRequest, txErr
+		errJSON, _ := json.Marshal(map[string]any{"code": 400, "message": txErr.Error()})
+		return errJSON, http.StatusBadRequest, txErr
 	}
 
-	// --- transaksi sukses ---
 	return respBody, status, nil
+}
+
+// 🔹 ACTIVATE USER
+func (s *clientUserService) ActivateUser(token, externalID string, req *dto.ClientUserActivateRequest) ([]byte, int, error) {
+	data, status, err := utils.PsreRequest("POST", "/user/activate", req, token, nil)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+
+	// kalau PSrE return 4xx/5xx, tetap kirimkan response body JSON
+	if status >= 400 {
+		return data, status, fmt.Errorf("psre activate failed: %s", string(data))
+	}
+
+	return data, status, nil
+}
+
+// 🔹 RESEND ACTIVATION
+func (s *clientUserService) ResendActivationUser(token, externalID string, req *dto.ClientUserResendActivationRequest) ([]byte, int, error) {
+	data, status, err := utils.PsreRequest("POST", "/user/resend-activation", req, token, nil)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+
+	if status >= 400 {
+		return data, status, fmt.Errorf("psre resend activation failed: %s", string(data))
+	}
+
+	return data, status, nil
+}
+
+func (s *clientUserService) RequestPhoneActivation(token, externalID string, req *dto.ClientUserRequestPhoneActivationRequest) ([]byte, int, error) {
+	data, status, err := utils.PsreRequest("POST", "/user/request-phone-activation", req, token, nil)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+
+	if status >= 400 {
+		return data, status, fmt.Errorf("psre request phone activation failed: %s", string(data))
+	}
+
+	return data, status, nil
+}
+
+func (s *clientUserService) PhoneActivation(token, externalID string, req *dto.ClientUserPhoneActivationRequest) ([]byte, int, error) {
+	data, status, err := utils.PsreRequest("POST", "/user/phone-activation", req, token, nil)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+
+	if status >= 400 {
+		return data, status, fmt.Errorf("psre phone activation failed: %s", string(data))
+	}
+
+	return data, status, nil
 }

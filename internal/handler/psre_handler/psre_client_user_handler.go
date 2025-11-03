@@ -79,6 +79,54 @@ func (h *PsreClientUserHandler) ResendActivationUser(c *gin.Context) {
 	c.Data(status, "application/json", respBody)
 }
 
+func (h *PsreClientUserHandler) RequestPhoneActivation(c *gin.Context) {
+
+	authData, _ := c.Get("authData")
+	token := c.Request.Header.Get("Authorization")
+
+	externalID, err := utils.ExtractExternalID(authData)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	var req dto.ClientUserRequestPhoneActivationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	respBody, status, err := h.psreClientUserSvc.RequestPhoneActivation(token, externalID, &req)
+	if err != nil {
+		c.Data(status, "application/json", respBody)
+		return
+	}
+	c.Data(status, "application/json", respBody)
+
+}
+
+func (h *PsreClientUserHandler) PhoneActivation(c *gin.Context) {
+	authData, _ := c.Get("authData")
+	token := c.Request.Header.Get("Authorization")
+
+	externalID, err := utils.ExtractExternalID(authData)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	var req dto.ClientUserPhoneActivationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	respBody, status, err := h.psreClientUserSvc.PhoneActivation(token, externalID, &req)
+	if err != nil {
+		c.Data(status, "application/json", respBody)
+		return
+	}
+	c.Data(status, "application/json", respBody)
+}
+
 func (h *PsreClientUserHandler) Register(c *gin.Context) {
 	authData, _ := c.Get("authData")
 	token := c.Request.Header.Get("Authorization")

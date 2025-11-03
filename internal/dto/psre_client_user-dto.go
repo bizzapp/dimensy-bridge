@@ -16,6 +16,16 @@ type ClientUserResendActivationRequest struct {
 	URL   string `json:"url" binding:"required,url"`
 }
 
+type ClientUserRequestPhoneActivationRequest struct {
+	Phone  string `json:"phone" binding:"required"`
+	UserID string `json:"userId" binding:"required"`
+}
+
+type ClientUserPhoneActivationRequest struct {
+	UserID string `json:"userId" binding:"required"`
+	OTP    string `json:"otp" binding:"required"`
+}
+
 type ClientUserRequest struct {
 	NIK       string     `json:"nik" binding:"required"`
 	FullName  string     `json:"fullName" binding:"required"`

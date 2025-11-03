@@ -142,6 +142,7 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		user.POST("/register", deps.PsreClientUserHdl.Register)
 		user.POST("/activate", deps.PsreClientUserHdl.Activate)
 		user.POST("/resend-activation", deps.PsreClientUserHdl.ResendActivationUser)
+		user.POST("/request-phone-activation", deps.PsreClientUserHdl.RequestPhoneActivation)
 		// company.POST("/update/:id", deps.PsreCompanyHdl.UpdateClientCompany)
 	}
 	return r
