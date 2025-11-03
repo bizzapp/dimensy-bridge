@@ -13,6 +13,8 @@ type ClientUserRepository interface {
 	Create(user *model.ClientUser) error
 	Update(user *model.ClientUser) error
 	Delete(id uint) error
+	WithTx(tx *gorm.DB) ClientUserRepository
+	DB() *gorm.DB
 }
 
 type clientUserRepository struct {
@@ -28,6 +30,11 @@ func (r *clientUserRepository) FindAll() ([]model.ClientUser, error) {
 	err := r.db.Preload("ClientCompany").Preload("Client").Find(&users).Error
 	return users, err
 }
+
+func (r *clientUserRepository) WithTx(tx *gorm.DB) ClientUserRepository {
+	return &clientUserRepository{db: tx}
+}
+func (r *clientUserRepository) DB() *gorm.DB { return r.db }
 
 func (r *clientUserRepository) FindByID(id uint) (*model.ClientUser, error) {
 	var user model.ClientUser
