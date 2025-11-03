@@ -48,18 +48,16 @@ type AppDependencies struct {
 	ClientCompanySvc  service.ClientCompanyService
 	ClientCompanyHdl  *handler.ClientCompanyHandler
 
-	PsreCompanyHdl *psre_handler.PsreCompanyHandler
+	ClientUserRepo repository.ClientUserRepository
+	ClientUserSvc  service.ClientUserService
+	ClientUserHdl  *handler.ClientUserHandler
 
-	PsreClientHdl *psre_handler.PsreClientHandler
-
+	PsreCompanyHdl    *psre_handler.PsreCompanyHandler
+	PsreClientHdl     *psre_handler.PsreClientHandler
 	PsreClientUserHdl *psre_handler.PsreClientUserHandler
 
 	PsreClientCompanySvc psre_service.ClientCompanyService
 	PsreClientUserSvc    psre_service.ClientUserService
-
-	ClientUserHdl  *handler.ClientUserHandler
-	ClientUserSvc  service.ClientUserService
-	ClientUserRepo repository.ClientUserRepository
 }
 
 func NewAppDependencies(db *gorm.DB) *AppDependencies {
@@ -108,7 +106,9 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	psreClientCompanySvc := psre_service.NewClientCompanyService(clientSvc, clientCompanyRepo)
 	psreCompanyHdl := psre_handler.NewPsreCompanyHandler(clientSvc, clientCompanySvc, psreClientCompanySvc)
 
-	psreClientUserSvc := psre_service.NewClientUserService()
+	psreSvc := service.NewPsreService(clientRequestLogRepo, userRepo, clientCompanyRepo)
+
+	psreClientUserSvc := psre_service.NewClientUserService(clientPsreSvc, clientCompanySvc, ClientUserSvc)
 	psreClientUserHdl := psre_handler.NewPsreClientUserHandler(ClientUserSvc, clientPsreSvc, clientCompanySvc, psreClientUserSvc)
 	return &AppDependencies{
 		DB:       db,
@@ -145,12 +145,16 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 		ClientUserHdl:  ClientUserHdl,
 
 		ClientRequestLogRepo: clientRequestLogRepo,
+		PsreSvc:              psreSvc,
 
 		ClientCompanyRepo: clientCompanyRepo,
 		ClientCompanySvc:  clientCompanySvc,
 		ClientCompanyHdl:  clientCompanyHdl,
-		PsreClientHdl:     psreClientHdl,
-		PsreCompanyHdl:    psreCompanyHdl,
-		PsreClientUserHdl: psreClientUserHdl,
+
+		PsreClientHdl:        psreClientHdl,
+		PsreCompanyHdl:       psreCompanyHdl,
+		PsreClientUserHdl:    psreClientUserHdl,
+		PsreClientCompanySvc: psreClientCompanySvc,
+		PsreClientUserSvc:    psreClientUserSvc,
 	}
 }
