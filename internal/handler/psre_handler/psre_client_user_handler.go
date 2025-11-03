@@ -50,10 +50,9 @@ func (h *PsreClientUserHandler) Register(c *gin.Context) {
 
 	respBody, status, err := h.psreClientUserSvc.RegisterUser(token, externalID, &req)
 	if err != nil {
-		// langsung kirim JSON dari PSrE bila ada
 		c.Data(status, "application/json", respBody)
 		return
 	}
+	c.Data(status, "application/json", respBody)
 
-	response.JSON(c, http.StatusCreated, "Client user berhasil didaftarkan", respBody, nil)
 }
