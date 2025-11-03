@@ -12,6 +12,8 @@ type ClientCompanyService interface {
 	Update(company *model.ClientCompany) error
 	Delete(id int64) error
 	UpdateExternalID(id int64, externalID string) error
+
+	GetByExternalID(externalID string) (*model.ClientCompany, error)
 }
 
 type clientCompanyService struct {
@@ -20,6 +22,10 @@ type clientCompanyService struct {
 
 func NewClientCompanyService(repo repository.ClientCompanyRepository) ClientCompanyService {
 	return &clientCompanyService{repo}
+}
+
+func (s *clientCompanyService) GetByExternalID(externalID string) (*model.ClientCompany, error) {
+	return s.repo.FindByExternalID(externalID)
 }
 
 func (s *clientCompanyService) GetAll() ([]model.ClientCompany, error) {

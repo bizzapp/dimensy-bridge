@@ -13,6 +13,7 @@ type ClientCompanyRepository interface {
 	Update(company *model.ClientCompany) error
 	Delete(id int64) error
 	UpdateExternalID(id int64, externalID string) error
+	FindByExternalID(externalID string) (*model.ClientCompany, error)
 }
 
 type clientCompanyRepository struct {
@@ -21,6 +22,14 @@ type clientCompanyRepository struct {
 
 func NewClientCompanyRepository(db *gorm.DB) ClientCompanyRepository {
 	return &clientCompanyRepository{db}
+}
+
+func (r *clientCompanyRepository) FindByExternalID(externalID string) (*model.ClientCompany, error) {
+	var company model.ClientCompany
+	if err := r.db.Where("external_id = ?", externalID).First(&company).Error; err != nil {
+		return nil, err
+	}
+	return &company, nil
 }
 
 func (r *clientCompanyRepository) FindAll() ([]model.ClientCompany, error) {
