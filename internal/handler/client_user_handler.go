@@ -43,11 +43,12 @@ func (h *ClientUserHandler) Create(c *gin.Context) {
 		response.JSON(c, http.StatusBadRequest, "INVALID_REQUEST", "Input tidak valid", nil)
 		return
 	}
-	if err := h.service.Create(&user); err != nil {
+	createdUser, err := h.service.Create(&user)
+	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "USER_CREATE_ERROR", "Gagal buat user", err.Error())
 		return
 	}
-	response.JSON(c, http.StatusCreated, "User berhasil dibuat", user, nil)
+	response.JSON(c, http.StatusCreated, "User berhasil dibuat", createdUser, nil)
 }
 
 func (h *ClientUserHandler) Update(c *gin.Context) {

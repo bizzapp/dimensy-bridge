@@ -4,31 +4,36 @@ import (
 	"dimensy-bridge/internal/dto"
 	"dimensy-bridge/internal/model"
 	"dimensy-bridge/internal/service"
+	psreservice "dimensy-bridge/internal/service/psre_service"
 	"dimensy-bridge/pkg/response"
 	"dimensy-bridge/pkg/utils"
+	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 type PsreClientUserHandler struct {
-	clientUserSvc    service.ClientUserService
-	clientPsreSvc    service.ClientPsreService
-	clientCompanySvc service.ClientCompanyService
+	clientUserSvc     service.ClientUserService
+	psreClientUserSvc psreservice.ClientUserService
+	clientPsreSvc     service.ClientPsreService
+	clientCompanySvc  service.ClientCompanyService
 }
 
-func NewPsreClientUserHandler(clientUserSvc service.ClientUserService, clientPsreSvc service.ClientPsreService, clientCompanySvc service.ClientCompanyService) *PsreClientUserHandler {
+func NewPsreClientUserHandler(clientUserSvc service.ClientUserService, clientPsreSvc service.ClientPsreService, clientCompanySvc service.ClientCompanyService, psreClientUserSvc psreservice.ClientUserService) *PsreClientUserHandler {
 	return &PsreClientUserHandler{
-		clientUserSvc:    clientUserSvc,
-		clientPsreSvc:    clientPsreSvc,
-		clientCompanySvc: clientCompanySvc,
+		clientUserSvc:     clientUserSvc,
+		clientPsreSvc:     clientPsreSvc,
+		clientCompanySvc:  clientCompanySvc,
+		psreClientUserSvc: psreClientUserSvc,
 	}
 }
 
 func (h *PsreClientUserHandler) Register(c *gin.Context) {
 
 	authData, _ := c.Get("authData")
-	// token := c.Request.Header.Get("Authorization")
+	token := c.Request.Header.Get("Authorization")
 
 	externalID, err := utils.ExtractExternalID(authData)
 	if err != nil {
@@ -67,12 +72,41 @@ func (h *PsreClientUserHandler) Register(c *gin.Context) {
 		user.ClientCompanyID = &clientCompany.ID
 	}
 
-	if err := h.clientUserSvc.Create(&user); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	userPtr, err := h.clientUserSvc.Create(&user)
+	if err != nil {
+		response.JSON(c, http.StatusInternalServerError, err.Error(), nil, nil)
 		return
 	}
 
+	data, _, err := h.psreClientUserSvc.Register(token, req)
+	fmt.Println("data psre register user:", string(data))
+	if err != nil {
+		response.JSON(c, http.StatusInternalServerError, err.Error(), nil, nil)
+		return
+	}
+
+	// --- parse JSON PSrE response ---
+	var psreResp struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+		UserID  string `json:"userId"`
+	}
+	if err := json.Unmarshal(data, &psreResp); err != nil {
+		response.JSON(c, http.StatusInternalServerError, "invalid psre response", nil, nil)
+		return
+	}
+
+	// --- kalau sukses, update external_id ---
+	if psreResp.Code == 0 && psreResp.UserID != "" {
+		userPtr.ExternalID = &psreResp.UserID
+
+		if err := h.clientUserSvc.Update(userPtr); err != nil {
+			response.JSON(c, http.StatusInternalServerError, "failed to update external_id", nil, nil)
+			return
+		}
+	}
+
 	// c.JSON(http.StatusCreated, user)
-	response.JSON(c, http.StatusCreated, "Client user berhasil didaftarkan", user, nil)
+	response.JSON(c, http.StatusCreated, "Client user berhasil didaftarkan", userPtr, nil)
 
 }

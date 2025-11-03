@@ -1,7 +1,9 @@
 package psreservice
 
+import "dimensy-bridge/pkg/utils"
+
 type ClientUserService interface {
-	Register(body []byte) ([]byte, error)
+	Register(token string, body interface{}) ([]byte, int, error)
 }
 
 type clientUserService struct {
@@ -9,12 +11,9 @@ type clientUserService struct {
 }
 
 func NewClientUserService() ClientUserService {
-	return &clientUserService{
-		// inisialisasi dependency repository jika diperlukan
-	}
+	return &clientUserService{}
 }
 
-func (s *clientUserService) Register(body []byte) ([]byte, error) {
-	// implementasi logika pendaftaran user PSRE di sini
-	return nil, nil
+func (s *clientUserService) Register(token string, body interface{}) ([]byte, int, error) {
+	return utils.PsreRequest("POST", "/user/register", body, token, nil)
 }
