@@ -25,6 +25,7 @@ func main() {
 		&model.ClientPsre{},
 		&model.ClientRequestLog{},
 		&model.ClientCompany{},
+		&model.ClientUser{},
 	); err != nil {
 		log.Fatalf("❌ Gagal migrate database: %v", err)
 	}
