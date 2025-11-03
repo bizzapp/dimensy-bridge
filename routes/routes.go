@@ -29,11 +29,6 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 	for i, origin := range clientOriginsRaw {
 		clientOrigins[i] = strings.TrimSpace(origin)
 	}
-	jwtSecret := os.Getenv("JWT_SECRET")
-	if jwtSecret == "" {
-		panic("JWT_SECRET environment variable is required")
-	}
-
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     clientOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -42,6 +37,10 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		panic("JWT_SECRET environment variable is required")
+	}
 
 	rl := middleware.NewRateLimiter(rate.Every(200*time.Millisecond), 10)
 
