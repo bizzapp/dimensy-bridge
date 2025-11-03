@@ -140,6 +140,8 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		user := psre.Group("/user")
 		user.Use(middleware.AuthJWE())
 		user.POST("/register", deps.PsreClientUserHdl.Register)
+		user.POST("/activate", deps.PsreClientUserHdl.Activate)
+		user.POST("/resend-activation", deps.PsreClientUserHdl.ResendActivationUser)
 		// company.POST("/update/:id", deps.PsreCompanyHdl.UpdateClientCompany)
 	}
 	return r

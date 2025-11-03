@@ -6,6 +6,7 @@ import (
 	psreservice "dimensy-bridge/internal/service/psre_service"
 	"dimensy-bridge/pkg/response"
 	"dimensy-bridge/pkg/utils"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -32,6 +33,52 @@ func NewPsreClientUserHandler(
 	}
 }
 
+func (h *PsreClientUserHandler) Activate(c *gin.Context) {
+	authData, _ := c.Get("authData")
+	token := c.Request.Header.Get("Authorization")
+
+	externalID, err := utils.ExtractExternalID(authData)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	var req dto.ClientUserActivateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	respBody, status, err := h.psreClientUserSvc.ActivateUser(token, externalID, &req)
+	if err != nil {
+		fmt.Println(respBody, "respBody")
+		c.Data(status, "application/json", respBody)
+		return
+	}
+	c.Data(status, "application/json", respBody)
+}
+func (h *PsreClientUserHandler) ResendActivationUser(c *gin.Context) {
+	authData, _ := c.Get("authData")
+	token := c.Request.Header.Get("Authorization")
+
+	externalID, err := utils.ExtractExternalID(authData)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	var req dto.ClientUserResendActivationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	respBody, status, err := h.psreClientUserSvc.ResendActivationUser(token, externalID, &req)
+	if err != nil {
+		c.Data(status, "application/json", respBody)
+		return
+	}
+	c.Data(status, "application/json", respBody)
+}
+
 func (h *PsreClientUserHandler) Register(c *gin.Context) {
 	authData, _ := c.Get("authData")
 	token := c.Request.Header.Get("Authorization")
@@ -54,5 +101,4 @@ func (h *PsreClientUserHandler) Register(c *gin.Context) {
 		return
 	}
 	c.Data(status, "application/json", respBody)
-
 }

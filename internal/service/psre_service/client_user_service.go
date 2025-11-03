@@ -16,6 +16,10 @@ import (
 type ClientUserService interface {
 	Register(token string, body interface{}) ([]byte, int, error)
 	RegisterUser(token, externalID string, req *dto.ClientUserRequest) ([]byte, int, error)
+	Activate(token string, body interface{}) ([]byte, int, error)
+	ActivateUser(token, externalID string, req *dto.ClientUserActivateRequest) ([]byte, int, error)
+	ResendActivation(token string, req *dto.ClientUserResendActivationRequest) ([]byte, int, error)
+	ResendActivationUser(token, externalID string, req *dto.ClientUserResendActivationRequest) ([]byte, int, error)
 }
 
 type clientUserService struct {
@@ -42,6 +46,36 @@ func NewClientUserService(
 // --- panggil endpoint PSrE langsung ---
 func (s *clientUserService) Register(token string, body interface{}) ([]byte, int, error) {
 	return utils.PsreRequest("POST", "/user/register", body, token, nil)
+}
+
+func (s *clientUserService) Activate(token string, body interface{}) ([]byte, int, error) {
+	return utils.PsreRequest("POST", "/user/activate", body, token, nil)
+}
+
+func (s *clientUserService) ResendActivation(token string, req *dto.ClientUserResendActivationRequest) ([]byte, int, error) {
+	return utils.PsreRequest("POST", "/user/resend-activation", req, token, nil)
+}
+
+// --- logic bisnis tambahan ---
+
+func (s *clientUserService) ResendActivationUser(token, externalID string, req *dto.ClientUserResendActivationRequest) ([]byte, int, error) {
+
+	respBody, status, err := s.ResendActivation(token, req)
+	if err != nil {
+		return respBody, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+
+	return respBody, status, nil
+}
+
+func (s *clientUserService) ActivateUser(token, externalID string, req *dto.ClientUserActivateRequest) ([]byte, int, error) {
+
+	respBody, status, err := s.Activate(token, req)
+	if err != nil {
+		return respBody, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+
+	return respBody, status, nil
 }
 
 // logic utama: create client_user + register ke PSrE dalam satu transaction

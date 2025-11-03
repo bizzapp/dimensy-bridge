@@ -5,7 +5,17 @@ import (
 	"time"
 )
 
+type ClientUserActivateRequest struct {
+	ActivationToken string `json:"activationToken" binding:"required"`
+}
+
 // ClientUserRequest digunakan untuk Create & Update
+
+type ClientUserResendActivationRequest struct {
+	Email string `json:"email" binding:"required,email"`
+	URL   string `json:"url" binding:"required,url"`
+}
+
 type ClientUserRequest struct {
 	NIK       string     `json:"nik" binding:"required"`
 	FullName  string     `json:"fullName" binding:"required"`
