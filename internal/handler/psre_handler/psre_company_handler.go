@@ -110,11 +110,10 @@ func (h *PsreCompanyHandler) CreateClientCompany(c *gin.Context) {
 
 	authData, _ := c.Get("authData")
 	token := c.Request.Header.Get("Authorization")
-	result, err := h.psreClientCompanySvc.CreateClientCompany(c, authData, token, req)
+	respBody, status, err := h.psreClientCompanySvc.CreateClientCompany(c, authData, token, req)
 	if err != nil {
-		response.JSON(c, http.StatusInternalServerError, err.Error(), nil, nil)
+		c.Data(status, "application/json", respBody)
 		return
 	}
-
-	c.JSON(http.StatusOK, result)
+	c.Data(status, "application/json", respBody)
 }

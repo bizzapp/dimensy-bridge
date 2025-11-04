@@ -10,12 +10,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 )
 
 type ClientCompanyService interface {
 	RegisterCompany(token string, body interface{}) ([]byte, int, error)
 	GetCompany(token string, params map[string]string) ([]byte, int, error)
-	CreateClientCompany(ctx context.Context, authData interface{}, token string, req dto.PsreCreateClientCompanyRequest) (any, error)
+	CreateClientCompany(ctx context.Context, authData interface{}, token string, req dto.PsreCreateClientCompanyRequest) ([]byte, int, error)
 	DetailClientCompany(token string, id string) ([]byte, int, error)
 	InviteClientCompany(token string, body interface{}) ([]byte, int, error)
 }
@@ -47,15 +48,15 @@ func (s *clientCompanyService) InviteClientCompany(token string, body interface{
 	return utils.PsreRequest("POST", "/client/company/invite", body, token, nil)
 }
 
-func (s *clientCompanyService) CreateClientCompany(ctx context.Context, authData interface{}, token string, req dto.PsreCreateClientCompanyRequest) (any, error) {
+func (s *clientCompanyService) CreateClientCompany(ctx context.Context, authData interface{}, token string, req dto.PsreCreateClientCompanyRequest) ([]byte, int, error) {
 	externalID, err := utils.ExtractExternalID(authData)
 	if err != nil {
-		return nil, errors.New("unauthorized")
+		return nil, http.StatusUnauthorized, errors.New("unauthorized")
 	}
 
 	client, err := s.clientSvc.GetClientByExternalId(externalID)
 	if err != nil {
-		return nil, err
+		return nil, http.StatusUnauthorized, err
 	}
 
 	clientCompany := model.ClientCompany{
@@ -70,22 +71,22 @@ func (s *clientCompanyService) CreateClientCompany(ctx context.Context, authData
 	}
 
 	if err := s.clientCompanyRepo.Create(&clientCompany); err != nil {
-		return nil, err
+		return nil, http.StatusBadRequest, err
 	}
 
-	respBody, _, err := s.RegisterCompany(token, req)
+	respBody, status, err := s.RegisterCompany(token, req)
 	if err != nil {
-		return nil, fmt.Errorf("psre error: %s", string(respBody))
+		return respBody, status, fmt.Errorf("failed call psre api: %w", err)
 	}
 
 	var resp dto.PsreRegisterCompanyResponse
 	if err := json.Unmarshal(respBody, &resp); err != nil {
-		return nil, err
+		return nil, http.StatusBadRequest, err
 	}
 
 	if resp.CompanyID != "" {
 		_ = s.clientCompanyRepo.UpdateExternalID(clientCompany.ID, resp.CompanyID)
 	}
 
-	return resp, nil
+	return respBody, status, nil
 }

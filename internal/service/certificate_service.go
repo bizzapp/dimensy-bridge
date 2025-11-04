@@ -3,7 +3,6 @@ package service
 import (
 	"dimensy-bridge/internal/model"
 	"dimensy-bridge/internal/repository"
-	"errors"
 	"time"
 )
 
@@ -23,9 +22,6 @@ func NewCertificateService(repo repository.CertificateRepository) CertificateSer
 }
 
 func (s *certificateService) CreateCertificate(cert *model.Certificate) error {
-	if cert.SerialNumber == "" {
-		return errors.New("serial number required")
-	}
 	return s.repo.Create(cert)
 }
 
