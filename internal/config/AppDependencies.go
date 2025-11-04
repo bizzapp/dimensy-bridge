@@ -108,7 +108,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 
 	psreSvc := service.NewPsreService(clientRequestLogRepo, userRepo, clientCompanyRepo)
 
-	psreClientUserSvc := psre_service.NewClientUserService(db, clientPsreSvc, clientCompanySvc, ClientUserSvc)
+	psreClientUserSvc := psre_service.NewClientUserService(db, clientPsreSvc, clientCompanySvc, ClientUserSvc, ClientUserRepo)
 	psreClientUserHdl := psre_handler.NewPsreClientUserHandler(ClientUserSvc, clientPsreSvc, clientCompanySvc, psreClientUserSvc)
 	return &AppDependencies{
 		DB:       db,

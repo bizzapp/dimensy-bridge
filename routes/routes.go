@@ -139,11 +139,15 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 
 		user := psre.Group("/user")
 		user.Use(middleware.AuthJWE())
+		user.GET("/", deps.PsreClientUserHdl.List)
+		user.GET("/:id", deps.PsreClientUserHdl.Detail)
 		user.POST("/register", deps.PsreClientUserHdl.Register)
 		user.POST("/activate", deps.PsreClientUserHdl.Activate)
 		user.POST("/resend-activation", deps.PsreClientUserHdl.ResendActivationUser)
 		user.POST("/request-phone-activation", deps.PsreClientUserHdl.RequestPhoneActivation)
 		user.POST("/phone-activation", deps.PsreClientUserHdl.PhoneActivation)
+		user.POST("/request-kyc", deps.PsreClientUserHdl.RequestKYC)
+		user.POST("/verify-kyc", deps.PsreClientUserHdl.VerifyKYC)
 	}
 	return r
 }

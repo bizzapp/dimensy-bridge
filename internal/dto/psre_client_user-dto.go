@@ -26,6 +26,15 @@ type ClientUserPhoneActivationRequest struct {
 	OTP    string `json:"otp" binding:"required"`
 }
 
+type ClientUserKYCRequest struct {
+	UserID     string `json:"userId" binding:"required"`
+	SuccessURL string `json:"successUrl" binding:"required,url"`
+	FailedURL  string `json:"failedUrl" binding:"required,url"`
+}
+
+type ClientUserVerifyKYCRequest struct {
+	SignatureID string `json:"signatureId" binding:"required"`
+}
 type ClientUserRequest struct {
 	NIK       string     `json:"nik" binding:"required"`
 	FullName  string     `json:"fullName" binding:"required"`

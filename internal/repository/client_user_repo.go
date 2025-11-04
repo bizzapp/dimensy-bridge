@@ -13,8 +13,8 @@ type ClientUserRepository interface {
 	Create(user *model.ClientUser) error
 	Update(user *model.ClientUser) error
 	Delete(id uint) error
-	WithTx(tx *gorm.DB) ClientUserRepository
-	DB() *gorm.DB
+	UpdateActiveStatus(externalID string, active bool) error
+	UpdateVerifyPhoneStatus(externalID string, verify bool) error
 }
 
 type clientUserRepository struct {
@@ -31,15 +31,20 @@ func (r *clientUserRepository) FindAll() ([]model.ClientUser, error) {
 	return users, err
 }
 
-func (r *clientUserRepository) WithTx(tx *gorm.DB) ClientUserRepository {
-	return &clientUserRepository{db: tx}
-}
-func (r *clientUserRepository) DB() *gorm.DB { return r.db }
-
 func (r *clientUserRepository) FindByID(id uint) (*model.ClientUser, error) {
 	var user model.ClientUser
 	err := r.db.Preload("Client").Preload("ClientCompany").First(&user, id).Error
 	return &user, err
+}
+func (r *clientUserRepository) UpdateActiveStatus(externalID string, active bool) error {
+	return r.db.Model(&model.ClientUser{}).
+		Where("external_id = ?", externalID).
+		Update("is_active", active).Error
+}
+func (r *clientUserRepository) UpdateVerifyPhoneStatus(externalID string, verify bool) error {
+	return r.db.Model(&model.ClientUser{}).
+		Where("external_id = ?", externalID).
+		Update("is_verify_phone", verify).Error
 }
 
 func (r *clientUserRepository) Create(user *model.ClientUser) error {

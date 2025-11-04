@@ -13,7 +13,8 @@ type ClientUser struct {
 	Email           string    `json:"email"`
 	Phone           string    `json:"phone"`
 	IsWNI           bool      `json:"is_wni"`
-	IsActive        bool      `gorm:"column:is_active;default:true" json:"is_active"`
+	IsActive        bool      `gorm:"column:is_active;default:false" json:"is_active"`
+	IsVerifyPhone   bool      `gorm:"column:is_verify_phone;default:false" json:"is_verify_phone"`
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
 

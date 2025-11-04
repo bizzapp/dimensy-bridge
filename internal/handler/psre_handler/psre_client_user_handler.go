@@ -127,6 +127,47 @@ func (h *PsreClientUserHandler) PhoneActivation(c *gin.Context) {
 	c.Data(status, "application/json", respBody)
 }
 
+func (h *PsreClientUserHandler) List(c *gin.Context) {
+	authData, _ := c.Get("authData")
+	token := c.Request.Header.Get("Authorization")
+
+	externalID, err := utils.ExtractExternalID(authData)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	filter := c.Query("filter") // <--- ambil filter di sini
+	page := c.Query("page")
+	limit := c.Query("limit")
+
+	data, status, err := h.psreClientUserSvc.GetUsers(token, externalID, filter, page, limit)
+	if err != nil {
+		c.Data(status, "application/json", data)
+		return
+	}
+	c.Data(status, "application/json", data)
+}
+func (h *PsreClientUserHandler) Detail(c *gin.Context) {
+	token := c.GetHeader("Authorization")
+	authData, _ := c.Get("authData")
+
+	externalID, err := utils.ExtractExternalID(authData)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	id := c.Param("id")
+
+	data, status, err := h.psreClientUserSvc.GetUserDetail(token, externalID, id)
+	if err != nil {
+		c.Data(status, "application/json", data)
+		return
+	}
+	c.Data(status, "application/json", data)
+}
+
 func (h *PsreClientUserHandler) Register(c *gin.Context) {
 	authData, _ := c.Get("authData")
 	token := c.Request.Header.Get("Authorization")
@@ -144,6 +185,54 @@ func (h *PsreClientUserHandler) Register(c *gin.Context) {
 	}
 
 	respBody, status, err := h.psreClientUserSvc.RegisterUser(token, externalID, &req)
+	if err != nil {
+		c.Data(status, "application/json", respBody)
+		return
+	}
+	c.Data(status, "application/json", respBody)
+}
+
+func (h *PsreClientUserHandler) RequestKYC(c *gin.Context) {
+	authData, _ := c.Get("authData")
+	token := c.Request.Header.Get("Authorization")
+
+	externalID, err := utils.ExtractExternalID(authData)
+	if err != nil {
+		response.JSON(c, http.StatusUnauthorized, err.Error(), nil, nil)
+		return
+	}
+
+	var req dto.ClientUserKYCRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.JSON(c, http.StatusBadRequest, err.Error(), nil, nil)
+		return
+	}
+
+	respBody, status, err := h.psreClientUserSvc.RequestKYC(token, externalID, &req)
+	if err != nil {
+		c.Data(status, "application/json", respBody)
+		return
+	}
+	c.Data(status, "application/json", respBody)
+}
+
+func (h *PsreClientUserHandler) VerifyKYC(c *gin.Context) {
+	authData, _ := c.Get("authData")
+	token := c.Request.Header.Get("Authorization")
+
+	externalID, err := utils.ExtractExternalID(authData)
+	if err != nil {
+		response.JSON(c, http.StatusUnauthorized, err.Error(), nil, nil)
+		return
+	}
+
+	var req dto.ClientUserVerifyKYCRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.JSON(c, http.StatusBadRequest, err.Error(), nil, nil)
+		return
+	}
+
+	respBody, status, err := h.psreClientUserSvc.VerifyKYC(token, externalID, &req)
 	if err != nil {
 		c.Data(status, "application/json", respBody)
 		return

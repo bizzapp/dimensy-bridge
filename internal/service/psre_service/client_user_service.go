@@ -3,22 +3,28 @@ package psreservice
 import (
 	"dimensy-bridge/internal/dto"
 	"dimensy-bridge/internal/model"
+	"dimensy-bridge/internal/repository"
 	"dimensy-bridge/internal/service"
 	"dimensy-bridge/pkg/utils"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"gorm.io/gorm"
 )
 
 type ClientUserService interface {
+	GetUsers(token, externalID, filter, page, limit string) ([]byte, int, error)
+	GetUserDetail(token, externalID, id string) ([]byte, int, error)
 	RegisterUser(token, externalID string, req *dto.ClientUserRequest) ([]byte, int, error)
 	ActivateUser(token, externalID string, req *dto.ClientUserActivateRequest) ([]byte, int, error)
 	ResendActivationUser(token, externalID string, req *dto.ClientUserResendActivationRequest) ([]byte, int, error)
 	RequestPhoneActivation(token, externalID string, req *dto.ClientUserRequestPhoneActivationRequest) ([]byte, int, error)
 	PhoneActivation(token, externalID string, req *dto.ClientUserPhoneActivationRequest) ([]byte, int, error)
+	RequestKYC(token, externalID string, req *dto.ClientUserKYCRequest) ([]byte, int, error)
+	VerifyKYC(token, externalID string, req *dto.ClientUserVerifyKYCRequest) ([]byte, int, error)
 }
 
 type clientUserService struct {
@@ -26,6 +32,7 @@ type clientUserService struct {
 	clientPsreSvc    service.ClientPsreService
 	clientCompanySvc service.ClientCompanyService
 	clientUserSvc    service.ClientUserService
+	clientUserRepo   repository.ClientUserRepository
 }
 
 func NewClientUserService(
@@ -33,13 +40,48 @@ func NewClientUserService(
 	clientPsreSvc service.ClientPsreService,
 	clientCompanySvc service.ClientCompanyService,
 	clientUserSvc service.ClientUserService,
+	clientUserRepo repository.ClientUserRepository,
 ) ClientUserService {
 	return &clientUserService{
 		db:               db,
 		clientPsreSvc:    clientPsreSvc,
 		clientCompanySvc: clientCompanySvc,
 		clientUserSvc:    clientUserSvc,
+		clientUserRepo:   clientUserRepo,
 	}
+}
+
+func (s *clientUserService) GetUsers(token, externalID, filter, page, limit string) ([]byte, int, error) {
+	query := fmt.Sprintf("/user?page=%s&limit=%s", page, limit)
+	if filter != "" {
+		query += "&filter=" + url.QueryEscape(filter)
+	}
+
+	data, status, err := utils.PsreRequest("GET", query, nil, token, nil)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+
+	if status >= 400 {
+		return data, status, fmt.Errorf("psre get users failed: %s", string(data))
+	}
+
+	return data, status, nil
+}
+
+func (s *clientUserService) GetUserDetail(token, externalID, id string) ([]byte, int, error) {
+	path := fmt.Sprintf("/user/%s", id)
+
+	data, status, err := utils.PsreRequest("GET", path, nil, token, nil)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+
+	if status >= 400 {
+		return data, status, fmt.Errorf("psre get user detail failed: %s", string(data))
+	}
+
+	return data, status, nil
 }
 
 // 🔹 REGISTER USER + TRANSACTION
@@ -120,17 +162,45 @@ func (s *clientUserService) RegisterUser(token, externalID string, req *dto.Clie
 
 	return respBody, status, nil
 }
-
-// 🔹 ACTIVATE USER
 func (s *clientUserService) ActivateUser(token, externalID string, req *dto.ClientUserActivateRequest) ([]byte, int, error) {
 	data, status, err := utils.PsreRequest("POST", "/user/activate", req, token, nil)
 	if err != nil {
 		return data, status, fmt.Errorf("failed call psre api: %w", err)
 	}
 
-	// kalau PSrE return 4xx/5xx, tetap kirimkan response body JSON
 	if status >= 400 {
 		return data, status, fmt.Errorf("psre activate failed: %s", string(data))
+	}
+
+	var resp struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+		Data    struct {
+			UserID string `json:"userId"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return data, status, fmt.Errorf("failed to parse psre response: %w", err)
+	}
+
+	// ✅ Panggil repository untuk update DB
+	if resp.Code == 0 {
+		if err := s.clientUserRepo.UpdateActiveStatus(resp.Data.UserID, true); err != nil {
+			return data, status, fmt.Errorf("failed to update user active status: %w", err)
+		}
+	}
+
+	return data, status, nil
+}
+
+func (s *clientUserService) RequestKYC(token, externalID string, req *dto.ClientUserKYCRequest) ([]byte, int, error) {
+	data, status, err := utils.PsreRequest("POST", "/user/request-kyc", req, token, nil)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+
+	if status >= 400 {
+		return data, status, fmt.Errorf("psre request kyc failed: %s", string(data))
 	}
 
 	return data, status, nil
@@ -165,6 +235,32 @@ func (s *clientUserService) RequestPhoneActivation(token, externalID string, req
 
 func (s *clientUserService) PhoneActivation(token, externalID string, req *dto.ClientUserPhoneActivationRequest) ([]byte, int, error) {
 	data, status, err := utils.PsreRequest("POST", "/user/phone-activation", req, token, nil)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+
+	if status >= 400 {
+		return data, status, fmt.Errorf("psre phone activation failed: %s", string(data))
+	}
+
+	var resp struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+	}
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return data, status, fmt.Errorf("failed to parse psre response: %w", err)
+	}
+	if resp.Code == 0 {
+		if err := s.clientUserRepo.UpdateVerifyPhoneStatus(externalID, true); err != nil {
+			return data, status, fmt.Errorf("failed to update user verify phone status: %w", err)
+		}
+	}
+
+	return data, status, nil
+}
+
+func (s *clientUserService) VerifyKYC(token, externalID string, req *dto.ClientUserVerifyKYCRequest) ([]byte, int, error) {
+	data, status, err := utils.PsreRequest("POST", "/user/verify-kyc", req, token, nil)
 	if err != nil {
 		return data, status, fmt.Errorf("failed call psre api: %w", err)
 	}
