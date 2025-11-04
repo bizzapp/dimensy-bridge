@@ -22,6 +22,7 @@ func main() {
 		&model.MasterProduct{},
 		&model.QuotaClient{},
 		&model.QuotaClientAddition{},
+		&model.QuotaClientReduction{},
 		&model.ClientPsre{},
 		&model.ClientRequestLog{},
 		&model.ClientCompany{},

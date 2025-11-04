@@ -152,6 +152,9 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		certificate := psre.Group("/certificate")
 		certificate.Use(middleware.AuthJWE())
 		certificate.POST("/issue", deps.PsreCertificateHdl.Issue)
+		certificate.POST("/active", deps.PsreCertificateHdl.Active)
+		certificate.POST("/revoke-request", deps.PsreCertificateHdl.RevokeRequest)
+		certificate.POST("/revoke", deps.PsreCertificateHdl.Revoke)
 	}
 	return r
 }

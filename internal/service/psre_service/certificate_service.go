@@ -8,9 +8,9 @@ import (
 
 type CertificateService interface {
 	Issue(token, externalID string, req *dto.CertificateIssueRequest) ([]byte, int, error)
-	Active(token, externalID string, req *dto.CertificateIssueRequest) ([]byte, int, error)
-	RevokeRequest(token, externalID string, req *dto.CertificateIssueRequest) ([]byte, int, error)
-	Revoke(token, externalID string, req *dto.CertificateIssueRequest) ([]byte, int, error)
+	Active(token, externalID string, req *dto.CertificateActiveRequest) ([]byte, int, error)
+	RevokeRequest(token, externalID string, req *dto.CertificateRevokeRequest) ([]byte, int, error)
+	Revoke(token, externalID string, req *dto.CertificateRevokeValidateRequest) ([]byte, int, error)
 }
 
 type certificateService struct {
@@ -33,7 +33,7 @@ func (s *certificateService) Issue(token, externalID string, req *dto.Certificat
 	return data, status, nil
 }
 
-func (s *certificateService) Active(token, externalID string, req *dto.CertificateIssueRequest) ([]byte, int, error) {
+func (s *certificateService) Active(token, externalID string, req *dto.CertificateActiveRequest) ([]byte, int, error) {
 	data, status, err := utils.PsreRequest("POST", "/certificate/active", req, token, nil)
 	if err != nil {
 		return data, status, fmt.Errorf("failed call psre api: %w", err)
@@ -46,7 +46,7 @@ func (s *certificateService) Active(token, externalID string, req *dto.Certifica
 	return data, status, nil
 }
 
-func (s *certificateService) RevokeRequest(token, externalID string, req *dto.CertificateIssueRequest) ([]byte, int, error) {
+func (s *certificateService) RevokeRequest(token, externalID string, req *dto.CertificateRevokeRequest) ([]byte, int, error) {
 	data, status, err := utils.PsreRequest("POST", "/certificate/revoke-request", req, token, nil)
 	if err != nil {
 		return data, status, fmt.Errorf("failed call psre api: %w", err)
@@ -58,7 +58,7 @@ func (s *certificateService) RevokeRequest(token, externalID string, req *dto.Ce
 
 	return data, status, nil
 }
-func (s *certificateService) Revoke(token, externalID string, req *dto.CertificateIssueRequest) ([]byte, int, error) {
+func (s *certificateService) Revoke(token, externalID string, req *dto.CertificateRevokeValidateRequest) ([]byte, int, error) {
 	data, status, err := utils.PsreRequest("POST", "/certificate/revoke", req, token, nil)
 	if err != nil {
 		return data, status, fmt.Errorf("failed call psre api: %w", err)
