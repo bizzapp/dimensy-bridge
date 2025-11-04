@@ -14,6 +14,9 @@ type ClientCompanyRepository interface {
 	Delete(id int64) error
 	UpdateExternalID(id int64, externalID string) error
 	FindByExternalID(externalID string) (*model.ClientCompany, error)
+	CreateTx(tx *gorm.DB, c *model.ClientCompany) error
+	UpdateExternalIDTx(tx *gorm.DB, id int64, externalID string) error
+	UpdateTx(tx *gorm.DB, c *model.ClientCompany) error
 }
 
 type clientCompanyRepository struct {
@@ -22,6 +25,18 @@ type clientCompanyRepository struct {
 
 func NewClientCompanyRepository(db *gorm.DB) ClientCompanyRepository {
 	return &clientCompanyRepository{db}
+}
+
+func (r *clientCompanyRepository) CreateTx(tx *gorm.DB, c *model.ClientCompany) error {
+	return tx.Create(c).Error
+}
+
+func (r *clientCompanyRepository) UpdateExternalIDTx(tx *gorm.DB, id int64, externalID string) error {
+	return tx.Model(&model.ClientCompany{}).Where("id = ?", id).Update("external_id", externalID).Error
+}
+
+func (r *clientCompanyRepository) UpdateTx(tx *gorm.DB, c *model.ClientCompany) error {
+	return tx.Save(c).Error
 }
 
 func (r *clientCompanyRepository) FindByExternalID(externalID string) (*model.ClientCompany, error) {
