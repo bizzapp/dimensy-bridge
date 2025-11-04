@@ -148,6 +148,10 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		user.POST("/phone-activation", deps.PsreClientUserHdl.PhoneActivation)
 		user.POST("/request-kyc", deps.PsreClientUserHdl.RequestKYC)
 		user.POST("/verify-kyc", deps.PsreClientUserHdl.VerifyKYC)
+
+		certificate := psre.Group("/certificate")
+		certificate.Use(middleware.AuthJWE())
+		certificate.POST("/issue", deps.PsreCertificateHdl.Issue)
 	}
 	return r
 }

@@ -58,6 +58,9 @@ type AppDependencies struct {
 
 	PsreClientCompanySvc psre_service.ClientCompanyService
 	PsreClientUserSvc    psre_service.ClientUserService
+
+	PsreCertificateHdl *psre_handler.PsreCertificateHandler
+	PsreCertificateSvc psre_service.CertificateService
 }
 
 func NewAppDependencies(db *gorm.DB) *AppDependencies {
@@ -110,6 +113,10 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 
 	psreClientUserSvc := psre_service.NewClientUserService(db, clientPsreSvc, clientCompanySvc, ClientUserSvc, ClientUserRepo)
 	psreClientUserHdl := psre_handler.NewPsreClientUserHandler(ClientUserSvc, clientPsreSvc, clientCompanySvc, psreClientUserSvc)
+
+	psreCertificateSvc := psre_service.NewCertificateService()
+
+	psreCertificateHdl := psre_handler.NewPsreCertificateHandler(psreCertificateSvc)
 	return &AppDependencies{
 		DB:       db,
 		AuthRepo: authRepo,
@@ -156,5 +163,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 		PsreClientUserHdl:    psreClientUserHdl,
 		PsreClientCompanySvc: psreClientCompanySvc,
 		PsreClientUserSvc:    psreClientUserSvc,
+
+		PsreCertificateHdl: psreCertificateHdl,
 	}
 }

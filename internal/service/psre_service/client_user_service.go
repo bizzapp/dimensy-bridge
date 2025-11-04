@@ -269,5 +269,18 @@ func (s *clientUserService) VerifyKYC(token, externalID string, req *dto.ClientU
 		return data, status, fmt.Errorf("psre phone activation failed: %s", string(data))
 	}
 
+	var resp struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+	}
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return data, status, fmt.Errorf("failed to parse psre response: %w", err)
+	}
+	if resp.Code == 0 {
+		if err := s.clientUserRepo.UpdateVerifyKYCStatus(externalID, true); err != nil {
+			return data, status, fmt.Errorf("failed to update user verify phone status: %w", err)
+		}
+	}
+
 	return data, status, nil
 }

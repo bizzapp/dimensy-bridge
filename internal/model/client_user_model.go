@@ -15,6 +15,7 @@ type ClientUser struct {
 	IsWNI           bool      `json:"is_wni"`
 	IsActive        bool      `gorm:"column:is_active;default:false" json:"is_active"`
 	IsVerifyPhone   bool      `gorm:"column:is_verify_phone;default:false" json:"is_verify_phone"`
+	IsVerifyKYC     bool      `gorm:"column:is_verify_kyc;default:false" json:"is_verify_kyc"`
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
 

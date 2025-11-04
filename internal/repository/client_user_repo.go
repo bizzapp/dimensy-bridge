@@ -15,6 +15,7 @@ type ClientUserRepository interface {
 	Delete(id uint) error
 	UpdateActiveStatus(externalID string, active bool) error
 	UpdateVerifyPhoneStatus(externalID string, verify bool) error
+	UpdateVerifyKYCStatus(externalID string, verify bool) error
 }
 
 type clientUserRepository struct {
@@ -45,6 +46,12 @@ func (r *clientUserRepository) UpdateVerifyPhoneStatus(externalID string, verify
 	return r.db.Model(&model.ClientUser{}).
 		Where("external_id = ?", externalID).
 		Update("is_verify_phone", verify).Error
+}
+
+func (r *clientUserRepository) UpdateVerifyKYCStatus(externalID string, verify bool) error {
+	return r.db.Model(&model.ClientUser{}).
+		Where("external_id = ?", externalID).
+		Update("is_verify_kyc", verify).Error
 }
 
 func (r *clientUserRepository) Create(user *model.ClientUser) error {
