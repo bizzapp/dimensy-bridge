@@ -26,6 +26,7 @@ func main() {
 		&model.ClientRequestLog{},
 		&model.ClientCompany{},
 		&model.ClientUser{},
+		&model.Certificate{},
 	); err != nil {
 		log.Fatalf("❌ Gagal migrate database: %v", err)
 	}
