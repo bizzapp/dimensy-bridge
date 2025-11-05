@@ -1,14 +1,14 @@
 package config
 
 import (
-	"dimensy-bridge/internal/model"
+	"dimensy-bridge/internal/model/seeder"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
 func SeedMasterProducts(db *gorm.DB) error {
-	products := model.SeedMasterProducts()
+	products := seeder.SeedMasterProducts()
 	for _, p := range products {
 		if err := db.Clauses(clause.OnConflict{DoNothing: true}).Create(&p).Error; err != nil {
 			return err

@@ -4,6 +4,7 @@ import (
 	"context"
 	"dimensy-bridge/internal/dto"
 	"dimensy-bridge/internal/model"
+	"dimensy-bridge/internal/model/seeder"
 	"dimensy-bridge/internal/repository"
 	"dimensy-bridge/internal/service"
 	"dimensy-bridge/pkg/utils"
@@ -82,7 +83,7 @@ func (s *clientCompanyService) CreateClientCompany(
 		}
 
 		reqUseQuota := dto.UseQuotaClientRequest{
-			MasterProductID: model.ID_PRODUCT_COMPANY,
+			MasterProductID: seeder.ID_PRODUCT_COMPANY,
 			ClientID:        client.ID,
 			Quantity:        1,
 		}
