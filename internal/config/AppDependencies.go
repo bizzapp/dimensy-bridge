@@ -76,7 +76,6 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	userHdl := handler.NewUserHandler(userSvc)
 
 	clientRepo := repository.NewClientRepository(db)
-	clientSvc := service.NewClientService(clientRepo, userRepo)
 
 	masterProductRepo := repository.NewMasterProductRepository(db)
 	masterProductSvc := service.NewMasterProductService(masterProductRepo)
@@ -111,6 +110,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	certificateSvc := service.NewCertificateService(certificateRepo)
 	certificateHdl := handler.NewCertificateHandler(certificateSvc)
 
+	clientSvc := service.NewClientService(clientRepo, userRepo, quotaClientRepo, quotaClientAdditionRepo)
 	psreClientCompanySvc := psre_service.NewClientCompanyService(db, clientSvc, clientCompanyRepo)
 	psreCompanyHdl := psre_handler.NewPsreCompanyHandler(clientSvc, clientCompanySvc, psreClientCompanySvc)
 

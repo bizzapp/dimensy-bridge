@@ -8,10 +8,13 @@ type QuotaClientAddition struct {
 	Quantity      int    `json:"quantity"`
 	LatestQuota   int    `json:"latest_quota"`
 	Type          string `gorm:"size:50" json:"type"`
-	ProcessBy     *int64 `json:"process_by,omitempty"` // bisa FK ke user admin
-	IsProcess     bool   `gorm:"default:false" json:"is_process"`
+	CreatedBy     int64  `json:"created_by"`
+	ProcessBy     *int64 `json:"process_by,omitempty"`
+
+	IsProcess bool `gorm:"default:false" json:"is_process"`
 
 	// Relasi
+	CreatedByUser *User       `gorm:"foreignKey:CreatedBy;references:ID;constraint:OnDelete:CASCADE" json:"created_by_user,omitempty"`
 	QuotaClient   QuotaClient `gorm:"foreignKey:QuotaClientID;references:ID;constraint:OnDelete:CASCADE" json:"quota_client"`
 	ProcessByUser *User       `gorm:"foreignKey:ProcessBy;references:ID;constraint:OnDelete:CASCADE" json:"process_by_user,omitempty"`
 

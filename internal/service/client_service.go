@@ -1,6 +1,7 @@
 package service
 
 import (
+	"dimensy-bridge/internal/dto"
 	"dimensy-bridge/internal/model"
 	"dimensy-bridge/internal/repository"
 	"errors"
@@ -13,15 +14,19 @@ type ClientService interface {
 	UpdateClient(client *model.Client) error
 	DeleteClient(id int64) error
 	GetClientByExternalId(externalID string) (*model.Client, error)
+
+	AddQuota(dto.AddQuotaClientRequest) error
 }
 
 type clientService struct {
-	clientRepo repository.ClientRepository
-	userRepo   repository.UserRepository
+	clientRepo              repository.ClientRepository
+	userRepo                repository.UserRepository
+	quotaClientRepo         repository.QuotaClientRepository
+	quotaClientAdditionRepo repository.QuotaClientAdditionRepository
 }
 
-func NewClientService(clientRepo repository.ClientRepository, userRepo repository.UserRepository) ClientService {
-	return &clientService{clientRepo, userRepo}
+func NewClientService(clientRepo repository.ClientRepository, userRepo repository.UserRepository, quotaClientRepo repository.QuotaClientRepository, quotaClientAdditionRepo repository.QuotaClientAdditionRepository) ClientService {
+	return &clientService{clientRepo, userRepo, quotaClientRepo, quotaClientAdditionRepo}
 }
 
 func (s *clientService) GetClientByExternalId(externalID string) (*model.Client, error) {
@@ -30,6 +35,33 @@ func (s *clientService) GetClientByExternalId(externalID string) (*model.Client,
 		return nil, errors.New("client not found")
 	}
 	return client, nil
+}
+
+func (s *clientService) AddQuota(req dto.AddQuotaClientRequest) error {
+	reqFind := dto.FindQuotaClientByClientProductRequest{
+		ClientID:        req.ClientID,
+		MasterProductId: req.MasterProductId,
+	}
+	quotaClient, err := s.quotaClientRepo.FindByClientProduct(reqFind)
+	if err != nil {
+		return err
+	}
+	typeAddition := "addition"
+	reqQuotaAddition := model.QuotaClientAddition{
+		QuotaClientID: quotaClient.ID,
+		Quantity:      int(req.Quantity),
+		LatestQuota:   quotaClient.Quantity,
+		Type:          typeAddition,
+		CreatedBy:     req.CreatedBy,
+	}
+
+	err = s.quotaClientAdditionRepo.Create(&reqQuotaAddition)
+	if err != nil {
+		return err
+	}
+
+	return nil
+	// return s.clientRepo.AddQuota(req)
 }
 
 func (s *clientService) GetClients(page, limit int, filters map[string]interface{}) ([]model.Client, int64, error) {

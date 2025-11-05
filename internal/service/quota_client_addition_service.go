@@ -1,6 +1,7 @@
 package service
 
 import (
+	"dimensy-bridge/internal/dto"
 	"dimensy-bridge/internal/model"
 	"dimensy-bridge/internal/repository"
 	"errors"
@@ -16,7 +17,7 @@ type QuotaClientAdditionService interface {
 	CreateAddition(addition *model.QuotaClientAddition) error
 	UpdateAddition(addition *model.QuotaClientAddition) error
 	DeleteAddition(id int64) error
-	ApproveAddition(additionID int64, approvedBy *int64) error
+	ApproveAddQuota(dto.ApproveAddQuotaClientRequest) error
 }
 
 type quotaClientAdditionService struct {
@@ -74,10 +75,10 @@ func (s *quotaClientAdditionService) DeleteAddition(id int64) error {
 }
 
 // 🔹 Step 2: Approve addition (apply quota & reduce stock)
-func (s *quotaClientAdditionService) ApproveAddition(additionID int64, approvedBy *int64) error {
+func (s *quotaClientAdditionService) ApproveAddQuota(req dto.ApproveAddQuotaClientRequest) error {
 	return s.db.Transaction(func(tx *gorm.DB) error {
 		var addition model.QuotaClientAddition
-		if err := tx.Preload("QuotaClient").First(&addition, additionID).Error; err != nil {
+		if err := tx.Preload("QuotaClient").First(&addition, req.QuotaAdditionID).Error; err != nil {
 			return fmt.Errorf("addition not found: %w", err)
 		}
 
@@ -117,9 +118,8 @@ func (s *quotaClientAdditionService) ApproveAddition(additionID int64, approvedB
 		// Update addition record
 		if err := tx.Model(&addition).Updates(map[string]interface{}{
 			"latest_quota": newQuota,
-			"status":       "APPROVED",
 			"is_process":   true,
-			"process_by":   approvedBy,
+			"process_by":   req.ProcessBy,
 			"updated_at":   time.Now(),
 		}).Error; err != nil {
 			return fmt.Errorf("failed to update addition: %w", err)

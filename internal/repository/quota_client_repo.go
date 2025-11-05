@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"dimensy-bridge/internal/dto"
 	"dimensy-bridge/internal/model"
 
 	"gorm.io/gorm"
@@ -12,6 +13,7 @@ type QuotaClientRepository interface {
 	Create(quota *model.QuotaClient) error
 	Update(quota *model.QuotaClient) error
 	Delete(id int64) error
+	FindByClientProduct(req dto.FindQuotaClientByClientProductRequest) (*model.QuotaClient, error)
 }
 
 type quotaClientRepository struct {
@@ -41,6 +43,16 @@ func (r *quotaClientRepository) FindAll(limit, offset int, filters map[string]in
 	}
 
 	return quotas, total, nil
+}
+
+func (r *quotaClientRepository) FindByClientProduct(req dto.FindQuotaClientByClientProductRequest) (*model.QuotaClient, error) {
+	var quota model.QuotaClient
+	if err := r.db.Preload("MasterProduct").Preload("Client").
+		Where("client_id = ? AND master_product_id = ?", req.ClientID, req.MasterProductId).
+		First(&quota).Error; err != nil {
+		return nil, err
+	}
+	return &quota, nil
 }
 
 func (r *quotaClientRepository) FindByID(id int64) (*model.QuotaClient, error) {

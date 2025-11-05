@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"dimensy-bridge/internal/dto"
 	"dimensy-bridge/internal/model"
 	"dimensy-bridge/internal/service"
 	"dimensy-bridge/pkg/response"
+	"dimensy-bridge/pkg/utils/jwtutil"
 	"net/http"
 	"strconv"
 
@@ -108,38 +110,44 @@ func (h *ClientHandler) Delete(c *gin.Context) {
 
 	response.JSON(c, http.StatusOK, "Client berhasil dihapus", nil, nil)
 }
-func (h *ClientHandler) CreateQuotaAddition(c *gin.Context) {
-	var req model.QuotaClientAddition
+
+func (h *ClientHandler) AddQuota(c *gin.Context) {
+	var req dto.AddQuotaClientRequest
+
+	userId, err := jwtutil.GetUserIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	req.CreatedBy = userId
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if err := h.quotaClientAdditionSvc.CreateAddition(&req); err != nil {
+	if err := h.service.AddQuota(req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"message": "quota addition created successfully",
-		"data":    req,
-	})
+	c.JSON(http.StatusCreated, gin.H{"message": "Quota added successfully"})
 }
 
-func (h *ClientHandler) ApproveQuotaAddition(c *gin.Context) {
-	var req struct {
-		AdditionID int64  `json:"addition_id"`
-		ProcessBy  *int64 `json:"process_by"`
+func (h *ClientHandler) ApproveAddQuota(c *gin.Context) {
+	var req dto.ApproveAddQuotaClientRequest
+	userId, err := jwtutil.GetUserIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
 	}
+	req.ProcessBy = &userId
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if err := h.quotaClientAdditionSvc.ApproveAddition(req.AdditionID, req.ProcessBy); err != nil {
+	if err := h.quotaClientAdditionSvc.ApproveAddQuota(req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "quota addition approved successfully"})
 }

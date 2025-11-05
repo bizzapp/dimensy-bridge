@@ -64,6 +64,7 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 
 	clients := api.Group("/clients")
 	{
+		clients.Use(middleware.JWTAuthMiddleware())
 		clients.GET("/profile-psre/:id", deps.ClientPsreHdl.Profile)
 		clients.GET("/fill-external-id/:id", deps.ClientPsreHdl.FillExternalId)
 		clients.GET("/", deps.ClientHdl.List)
@@ -71,8 +72,8 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		clients.POST("/", deps.ClientHdl.Create)
 		clients.PUT("/:id", deps.ClientHdl.Update)
 		clients.DELETE("/:id", deps.ClientHdl.Delete)
-		clients.POST("/add-quota", deps.ClientHdl.CreateQuotaAddition)
-		clients.POST("/approve-quota", deps.ClientHdl.ApproveQuotaAddition)
+		clients.POST("/add-quota", deps.ClientHdl.AddQuota)
+		clients.POST("/approve-add-quota", deps.ClientHdl.ApproveAddQuota)
 
 	}
 
@@ -101,7 +102,6 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		additions.POST("/", deps.QuotaClientAdditionHdl.Create)
 		additions.PUT("/:id", deps.QuotaClientAdditionHdl.Update)
 		additions.DELETE("/:id", deps.QuotaClientAdditionHdl.Delete)
-		additions.POST("/:id/process", deps.QuotaClientAdditionHdl.Process)
 	}
 
 	clientPsre := api.Group("/client-psre")
