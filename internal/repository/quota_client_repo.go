@@ -48,7 +48,7 @@ func (r *quotaClientRepository) FindAll(limit, offset int, filters map[string]in
 func (r *quotaClientRepository) FindByClientProduct(req dto.FindQuotaClientByClientProductRequest) (*model.QuotaClient, error) {
 	var quota model.QuotaClient
 	if err := r.db.Preload("MasterProduct").Preload("Client").
-		Where("client_id = ? AND master_product_id = ?", req.ClientID, req.MasterProductId).
+		Where("client_id = ? AND master_product_id = ?", req.ClientID, req.MasterProductID).
 		First(&quota).Error; err != nil {
 		return nil, err
 	}

@@ -26,17 +26,20 @@ type clientCompanyService struct {
 	db                *gorm.DB
 	clientSvc         service.ClientService
 	clientCompanyRepo repository.ClientCompanyRepository
+	quotaClientSvc    service.QuotaClientService
 }
 
 func NewClientCompanyService(
 	db *gorm.DB,
 	clientSvc service.ClientService,
 	clientCompanyRepo repository.ClientCompanyRepository,
+	quotaClientSvc service.QuotaClientService,
 ) ClientCompanyService {
 	return &clientCompanyService{
 		db:                db,
 		clientSvc:         clientSvc,
 		clientCompanyRepo: clientCompanyRepo,
+		quotaClientSvc:    quotaClientSvc,
 	}
 }
 
@@ -77,6 +80,23 @@ func (s *clientCompanyService) CreateClientCompany(
 		if err != nil {
 			return fmt.Errorf("unauthorized client: %w", err)
 		}
+
+		reqUseQuota := dto.UseQuotaClientRequest{
+			MasterProductID: model.ID_PRODUCT_COMPANY,
+			ClientID:        client.ID,
+			Quantity:        1,
+		}
+		useQuota, err := s.quotaClientSvc.UseQuota(reqUseQuota)
+		if err != nil {
+			dataResp := map[string]interface{}{
+				"error": err.Error(),
+			}
+			respBody, _ = json.Marshal(dataResp)
+			status = http.StatusBadRequest
+
+			return fmt.Errorf("failed to use quota: %w", err)
+		}
+		fmt.Println("Use Quota Success:", useQuota)
 
 		clientCompany := &model.ClientCompany{
 			ClientID: client.ID,

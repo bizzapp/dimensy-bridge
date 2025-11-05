@@ -2,6 +2,10 @@ package model
 
 import "time"
 
+const (
+	ID_PRODUCT_COMPANY int64 = 12
+)
+
 type MasterProduct struct {
 	ID           int64   `gorm:"primaryKey;autoIncrement" json:"id"`
 	Name         string  `gorm:"size:255;not null" json:"name"`

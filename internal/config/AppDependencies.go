@@ -37,6 +37,9 @@ type AppDependencies struct {
 	QuotaClientAdditionSvc  service.QuotaClientAdditionService
 	QuotaClientAdditionHdl  *handler.QuotaClientAdditionHandler
 
+	QuotaClientReductionRepo repository.QuotaClientReductionRepository
+	// QuotaClientReductionSvc service.
+
 	ClientPsreRepo repository.ClientPsreRepository
 	ClientPsreSvc  service.ClientPsreService
 	ClientPsreHdl  *handler.ClientPsreHandler
@@ -82,7 +85,8 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	masterProductHdl := handler.NewMasterProductHandler(masterProductSvc)
 
 	quotaClientRepo := repository.NewQuotaClientRepository(db)
-	quotaClientSvc := service.NewQuotaClientService(db, quotaClientRepo)
+	quotaClientReductionRepo := repository.NewQuotaClientReductionRepository(db)
+	quotaClientSvc := service.NewQuotaClientService(db, quotaClientRepo, quotaClientReductionRepo)
 	quotaClientHdl := handler.NewQuotaClientHandler(quotaClientSvc)
 
 	quotaClientAdditionRepo := repository.NewQuotaClientAdditionRepository(db)
@@ -95,7 +99,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	clientRequestLogRepo := repository.NewClientRequestLogRepository(db)
 
 	clientCompanyRepo := repository.NewClientCompanyRepository(db)
-	clientCompanySvc := service.NewClientCompanyService(clientCompanyRepo)
+	clientCompanySvc := service.NewClientCompanyService(clientCompanyRepo, quotaClientSvc)
 	clientCompanyHdl := handler.NewClientCompanyHandler(clientCompanySvc)
 
 	ClientUserRepo := repository.NewClientUserRepository(db)
@@ -111,7 +115,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	certificateHdl := handler.NewCertificateHandler(certificateSvc)
 
 	clientSvc := service.NewClientService(clientRepo, userRepo, quotaClientRepo, quotaClientAdditionRepo)
-	psreClientCompanySvc := psre_service.NewClientCompanyService(db, clientSvc, clientCompanyRepo)
+	psreClientCompanySvc := psre_service.NewClientCompanyService(db, clientSvc, clientCompanyRepo, quotaClientSvc)
 	psreCompanyHdl := psre_handler.NewPsreCompanyHandler(clientSvc, clientCompanySvc, psreClientCompanySvc)
 
 	psreSvc := service.NewPsreService(clientRequestLogRepo, userRepo, clientCompanyRepo)

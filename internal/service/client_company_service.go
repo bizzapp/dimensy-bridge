@@ -3,6 +3,7 @@ package service
 import (
 	"dimensy-bridge/internal/model"
 	"dimensy-bridge/internal/repository"
+	// "dimensy-bridge/internal/service"
 )
 
 type ClientCompanyService interface {
@@ -17,11 +18,12 @@ type ClientCompanyService interface {
 }
 
 type clientCompanyService struct {
-	repo repository.ClientCompanyRepository
+	repo           repository.ClientCompanyRepository
+	quotaClientSvc QuotaClientService
 }
 
-func NewClientCompanyService(repo repository.ClientCompanyRepository) ClientCompanyService {
-	return &clientCompanyService{repo}
+func NewClientCompanyService(repo repository.ClientCompanyRepository, quotaClientSvc QuotaClientService) ClientCompanyService {
+	return &clientCompanyService{repo, quotaClientSvc}
 }
 
 func (s *clientCompanyService) GetByExternalID(externalID string) (*model.ClientCompany, error) {

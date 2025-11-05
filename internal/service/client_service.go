@@ -40,7 +40,7 @@ func (s *clientService) GetClientByExternalId(externalID string) (*model.Client,
 func (s *clientService) AddQuota(req dto.AddQuotaClientRequest) error {
 	reqFind := dto.FindQuotaClientByClientProductRequest{
 		ClientID:        req.ClientID,
-		MasterProductId: req.MasterProductId,
+		MasterProductID: req.MasterProductID,
 	}
 	quotaClient, err := s.quotaClientRepo.FindByClientProduct(reqFind)
 	if err != nil {
