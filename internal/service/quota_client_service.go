@@ -3,6 +3,8 @@ package service
 import (
 	"dimensy-bridge/internal/model"
 	"dimensy-bridge/internal/repository"
+
+	"gorm.io/gorm"
 )
 
 type QuotaClientService interface {
@@ -14,11 +16,12 @@ type QuotaClientService interface {
 }
 
 type quotaClientService struct {
+	db   *gorm.DB
 	repo repository.QuotaClientRepository
 }
 
-func NewQuotaClientService(repo repository.QuotaClientRepository) QuotaClientService {
-	return &quotaClientService{repo}
+func NewQuotaClientService(db *gorm.DB, repo repository.QuotaClientRepository) QuotaClientService {
+	return &quotaClientService{db, repo}
 }
 
 func (s *quotaClientService) GetQuotas(page, limit int, filters map[string]interface{}) ([]model.QuotaClient, int64, error) {

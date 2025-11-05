@@ -96,11 +96,11 @@ func (h *QuotaClientAdditionHandler) Process(c *gin.Context) {
 	id, _ := strconv.ParseInt(c.Param("id"), 10, 64)
 	processBy, _ := strconv.ParseInt(c.DefaultQuery("process_by", "0"), 10, 64)
 
-	addition, err := h.service.ProcessAddition(id, processBy)
+	err := h.service.ApproveAddition(id, &processBy)
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, "ADDITION_PROCESS_ERROR", "Gagal memproses quota addition", err.Error())
 		return
 	}
 
-	response.JSON(c, http.StatusOK, "Quota addition berhasil diproses", addition, nil)
+	response.JSON(c, http.StatusOK, "Quota addition berhasil diproses", nil, nil)
 }

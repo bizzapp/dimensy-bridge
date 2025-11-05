@@ -77,18 +77,17 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 
 	clientRepo := repository.NewClientRepository(db)
 	clientSvc := service.NewClientService(clientRepo, userRepo)
-	clientHdl := handler.NewClientHandler(clientSvc)
 
 	masterProductRepo := repository.NewMasterProductRepository(db)
 	masterProductSvc := service.NewMasterProductService(masterProductRepo)
 	masterProductHdl := handler.NewMasterProductHandler(masterProductSvc)
 
 	quotaClientRepo := repository.NewQuotaClientRepository(db)
-	quotaClientSvc := service.NewQuotaClientService(quotaClientRepo)
+	quotaClientSvc := service.NewQuotaClientService(db, quotaClientRepo)
 	quotaClientHdl := handler.NewQuotaClientHandler(quotaClientSvc)
 
 	quotaClientAdditionRepo := repository.NewQuotaClientAdditionRepository(db)
-	quotaClientAdditionSvc := service.NewQuotaClientAdditionService(quotaClientAdditionRepo, quotaClientRepo)
+	quotaClientAdditionSvc := service.NewQuotaClientAdditionService(db, quotaClientAdditionRepo, quotaClientRepo)
 	quotaClientAdditionHdl := handler.NewQuotaClientAdditionHandler(quotaClientAdditionSvc)
 
 	clientPsreRepo := repository.NewClientPsreRepository(db)
@@ -123,6 +122,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	psreCertificateSvc := psre_service.NewCertificateService(certificateRepo, clientSvc)
 
 	psreCertificateHdl := psre_handler.NewPsreCertificateHandler(psreCertificateSvc)
+	clientHdl := handler.NewClientHandler(clientSvc, quotaClientSvc, quotaClientAdditionSvc)
 	return &AppDependencies{
 		DB:       db,
 		AuthRepo: authRepo,

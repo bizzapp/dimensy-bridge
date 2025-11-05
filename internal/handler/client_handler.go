@@ -11,11 +11,17 @@ import (
 )
 
 type ClientHandler struct {
-	service service.ClientService
+	service                service.ClientService
+	quotaClientSvc         service.QuotaClientService
+	quotaClientAdditionSvc service.QuotaClientAdditionService
 }
 
-func NewClientHandler(s service.ClientService) *ClientHandler {
-	return &ClientHandler{s}
+func NewClientHandler(s service.ClientService, qs service.QuotaClientService, qas service.QuotaClientAdditionService) *ClientHandler {
+	return &ClientHandler{
+		service:                s,
+		quotaClientSvc:         qs,
+		quotaClientAdditionSvc: qas,
+	}
 }
 
 func (h *ClientHandler) List(c *gin.Context) {
@@ -101,4 +107,39 @@ func (h *ClientHandler) Delete(c *gin.Context) {
 	}
 
 	response.JSON(c, http.StatusOK, "Client berhasil dihapus", nil, nil)
+}
+func (h *ClientHandler) CreateQuotaAddition(c *gin.Context) {
+	var req model.QuotaClientAddition
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.quotaClientAdditionSvc.CreateAddition(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "quota addition created successfully",
+		"data":    req,
+	})
+}
+
+func (h *ClientHandler) ApproveQuotaAddition(c *gin.Context) {
+	var req struct {
+		AdditionID int64  `json:"addition_id"`
+		ProcessBy  *int64 `json:"process_by"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.quotaClientAdditionSvc.ApproveAddition(req.AdditionID, req.ProcessBy); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "quota addition approved successfully"})
 }
