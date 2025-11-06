@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 )
 
@@ -15,6 +16,8 @@ type ClientService interface {
 	Register(clientID int64) (*model.ClientPsre, error)
 	FillExternalId(clientID int64) (*model.ClientPsre, error)
 	Profile(clientID int64) (*model.ClientPsre, error)
+	GetDocuments(token, externalID, filter, page, limit string) ([]byte, int, error)
+	GetDocumentDetail(token, externalID, id string) ([]byte, int, error)
 }
 
 type clientService struct {
@@ -30,6 +33,35 @@ func NewClientService(logRepo repository.ClientRequestLogRepository, userRepo re
 		userRepo:       userRepo,
 		clientRepo:     clientRepo,
 		clientPsreRepo: clientPsreRepo}
+}
+func (s *clientService) GetDocuments(token, externalID, filter, page, limit string) ([]byte, int, error) {
+
+	query := fmt.Sprintf("/client/documents?page=%s&limit=%s", page, limit)
+	if filter != "" {
+		query += "&filter=" + url.QueryEscape(filter)
+	}
+
+	data, status, err := utils.PsreRequest("GET", query, nil, token, nil)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+
+	if status >= 400 {
+		return data, status, fmt.Errorf("psre get users failed: %s", string(data))
+	}
+
+	return data, status, nil
+}
+func (s *clientService) GetDocumentDetail(token, externalID, id string) ([]byte, int, error) {
+	path := fmt.Sprintf("/client/documents/%s", id)
+	data, status, err := utils.PsreRequest("GET", path, nil, token, nil)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+	if status >= 400 {
+		return data, status, fmt.Errorf("psre get document detail failed: %s", string(data))
+	}
+	return data, status, nil
 }
 func (s *clientService) Login(body []byte) ([]byte, error) {
 	var req struct {

@@ -158,6 +158,22 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		certificate.POST("/active", deps.PsreCertificateHdl.Active)
 		certificate.POST("/revoke-request", deps.PsreCertificateHdl.RevokeRequest)
 		certificate.POST("/revoke", deps.PsreCertificateHdl.Revoke)
+
+		document := psre.Group("/document")
+		certificate.Use(middleware.AuthJWE())
+		document.POST("/upload", deps.PsreDocumentHdl.Upload)
+		document.POST("/upload-bulk", deps.PsreDocumentHdl.UploadBulk)
+		document.POST("/request-sign", deps.PsreDocumentHdl.RequestSign)
+		document.POST("/process-sign", deps.PsreDocumentHdl.ProcessSign)
+		document.POST("/request-stamp", deps.PsreDocumentHdl.RequestStamp)
+		document.POST("/process-stamp", deps.PsreDocumentHdl.ProcessStamp)
+		document.POST("/request-otp-sign", deps.PsreDocumentHdl.RequestOtpSign)
+		document.GET("/preview/:id", deps.PsreDocumentHdl.PreviewDocument)
+
+		client := psre.Group("/client")
+		client.Use(middleware.AuthJWE())
+		client.GET("/documents", deps.PsreClientHdl.Documents)
+		client.GET("/documents/:id", deps.PsreClientHdl.DocumentDetail)
 	}
 	return r
 }
