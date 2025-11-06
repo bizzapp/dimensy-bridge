@@ -213,15 +213,73 @@ func (s *clientDocumentService) UploadBulk(token, externalID string, dto dto.Psr
 }
 
 func (s *clientDocumentService) RequestSign(token, externalID string, dto dto.PsreDocumentSignRequest) ([]byte, int, error) {
-	data, status, err := utils.PsreRequest("POST", "/document/request-sign", dto, token, nil)
+	client, err := s.clientPsreSvc.GetByExternalID(externalID)
 	if err != nil {
-		return data, status, fmt.Errorf("failed call psre api: %w", err)
+		return nil, http.StatusBadRequest, fmt.Errorf("failed get client psre: %w", err)
 	}
-	return data, status, nil
+	var (
+		respBody []byte
+		status   int
+	)
+	txErr := s.db.Transaction(func(tx *gorm.DB) error {
+		clientDocumentProcess := &model.ClientDocumentProcess{
+			ClientID:          client.ID,
+			ExternalID:        dto.DocumentOrGroupID,
+			ExternalUserID:    dto.UserID,
+			ExternalCompanyID: dto.CompanyID,
+			Status:            model.ClientDocumentProcessStatusWaiting,
+		}
+		if err := tx.Create(&clientDocumentProcess).Error; err != nil {
+			return fmt.Errorf("failed create client document process: %w", err)
+		}
+		for _, position := range dto.Positions {
+
+			fileSize, err := utils.CalculateBase64FileSize(position.Image)
+			if err != nil {
+				return fmt.Errorf("failed to calculate file size: %w", err)
+			}
+
+			clientDocumenProcessDetail := &model.ClientDocumentProcessDetail{
+				ClientID:                client.ID,
+				ClientDocumentProcessID: clientDocumentProcess.ID,
+				Type:                    position.StampType,
+				Reason:                  position.Reason,
+				Location:                position.Location,
+				X:                       *position.X,
+				Y:                       *position.Y,
+				W:                       *position.W,
+				H:                       *position.H,
+				Page:                    position.Page,
+				ImageFileSizeKB:         &fileSize,
+			}
+			if err := tx.Create(&clientDocumenProcessDetail).Error; err != nil {
+				return fmt.Errorf("failed create client document process detail: %w", err)
+			}
+		}
+		data, st, err := utils.PsreRequest("POST", "/document/request-sign", dto, token, nil)
+		respBody, status = data, st
+		if err != nil {
+			return fmt.Errorf("failed call psre api: %w", err)
+		}
+		if status >= 400 {
+			return fmt.Errorf("psre api error: %s", string(data))
+		}
+		return nil
+	})
+
+	if txErr != nil {
+		if respBody != nil {
+			return respBody, status, txErr
+		}
+		errJSON, _ := json.Marshal(map[string]any{"code": 400, "message": txErr.Error()})
+		return errJSON, http.StatusBadRequest, txErr
+	}
+
+	return respBody, status, nil
 }
 
 func (s *clientDocumentService) ProcessSign(token, externalID string, dto dto.PsreDocumentProcessSignRequest) ([]byte, int, error) {
-	data, status, err := utils.PsreRequest("POST", "/document/process-sign", dto, token, nil)
+	data, status, err := utils.PsreRequest("POST", "/document/proccess-sign", dto, token, nil)
 	if err != nil {
 		return data, status, fmt.Errorf("failed call psre api: %w", err)
 	}

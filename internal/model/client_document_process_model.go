@@ -2,6 +2,12 @@ package model
 
 import "time"
 
+const (
+	ClientDocumentProcessStatusWaiting   = "WAITING"
+	ClientDocumentProcessStatusOnProcess = "ON_PROCESS"
+	ClientDocumentProcessStatusSigned    = "SIGNED"
+)
+
 type ClientDocumentProcess struct {
 	ID                int64   `gorm:"primaryKey;autoIncrement" json:"id"`
 	ClientID          int64   `gorm:"not null;index" json:"client_id"`

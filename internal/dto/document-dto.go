@@ -48,8 +48,10 @@ type PsreDocumentSignPosition struct {
 
 // PsreDocumentProcessSignRequest untuk process signature dengan OTP
 type PsreDocumentProcessSignRequest struct {
-	DocumentID string `json:"documentId" binding:"required"`
-	OTP        string `json:"otp" binding:"required,len=6"`
+	IsApprove         bool   `json:"isApprove" binding:"required"`
+	DocumentOrGroupID string `json:"documentOrGroupId" binding:"required"`
+	Otp               string `json:"otp" binding:"required"`
+	IP                string `json:"ip" binding:"required,ip"` // validasi IP otomatis
 }
 
 // PsreDocumentStampRequest untuk request digital stamp
