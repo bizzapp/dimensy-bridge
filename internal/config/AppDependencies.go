@@ -13,137 +13,146 @@ import (
 type AppDependencies struct {
 	DB *gorm.DB
 
+	// Auth Module
 	AuthRepo repository.AuthRepository
 	AuthSvc  service.AuthService
 	AuthHdl  *handler.AuthHandler
 
+	// User Module
 	UserRepo repository.UserRepository
 	UserSvc  service.UserService
 	UserHdl  *handler.UserHandler
 
+	// Client Module
 	ClientRepo repository.ClientRepository
 	ClientSvc  service.ClientService
 	ClientHdl  *handler.ClientHandler
 
-	MasterProductRepo repository.MasterProductRepository
-	MasterProductSvc  service.MasterProductService
-	MasterProductHdl  *handler.MasterProductHandler
-
-	QuotaClientRepo repository.QuotaClientRepository
-	QuotaClientSvc  service.QuotaClientService
-	QuotaClientHdl  *handler.QuotaClientHandler
-
-	QuotaClientAdditionRepo repository.QuotaClientAdditionRepository
-	QuotaClientAdditionSvc  service.QuotaClientAdditionService
-	QuotaClientAdditionHdl  *handler.QuotaClientAdditionHandler
-
-	QuotaClientReductionRepo repository.QuotaClientReductionRepository
-	// QuotaClientReductionSvc service.
-
+	// Client PSRE Module
 	ClientPsreRepo repository.ClientPsreRepository
 	ClientPsreSvc  service.ClientPsreService
 	ClientPsreHdl  *handler.ClientPsreHandler
 
-	ClientRequestLogRepo repository.ClientRequestLogRepository
-	PsreSvc              service.PsreService
-
+	// Client Company Module
 	ClientCompanyRepo repository.ClientCompanyRepository
 	ClientCompanySvc  service.ClientCompanyService
 	ClientCompanyHdl  *handler.ClientCompanyHandler
 
+	// Client User Module
 	ClientUserRepo repository.ClientUserRepository
 	ClientUserSvc  service.ClientUserService
 	ClientUserHdl  *handler.ClientUserHandler
 
+	// Master Product Module
+	MasterProductRepo repository.MasterProductRepository
+	MasterProductSvc  service.MasterProductService
+	MasterProductHdl  *handler.MasterProductHandler
+
+	// Quota Client Module
+	QuotaClientRepo          repository.QuotaClientRepository
+	QuotaClientReductionRepo repository.QuotaClientReductionRepository
+	QuotaClientSvc           service.QuotaClientService
+	QuotaClientHdl           *handler.QuotaClientHandler
+
+	// Quota Client Addition Module
+	QuotaClientAdditionRepo repository.QuotaClientAdditionRepository
+	QuotaClientAdditionSvc  service.QuotaClientAdditionService
+	QuotaClientAdditionHdl  *handler.QuotaClientAdditionHandler
+
+	// Certificate Module
 	CertificateHdl *handler.CertificateHandler
 
-	PsreCompanyHdl    *psre_handler.PsreCompanyHandler
-	PsreClientHdl     *psre_handler.PsreClientHandler
-	PsreClientUserHdl *psre_handler.PsreClientUserHandler
+	// Client Request Log Module
+	ClientRequestLogRepo repository.ClientRequestLogRepository
 
+	// PSRE Service Module
+	PsreSvc service.PsreService
+
+	// PSRE Client Module
+	PsreClientHdl *psre_handler.PsreClientHandler
+
+	// PSRE Company Module
+	PsreCompanyHdl       *psre_handler.PsreCompanyHandler
 	PsreClientCompanySvc psre_service.ClientCompanyService
-	PsreClientUserSvc    psre_service.ClientUserService
 
+	// PSRE User Module
+	PsreClientUserHdl *psre_handler.PsreClientUserHandler
+	PsreClientUserSvc psre_service.ClientUserService
+
+	// PSRE Certificate Module
 	PsreCertificateHdl *psre_handler.PsreCertificateHandler
 	PsreCertificateSvc psre_service.CertificateService
 
+	// PSRE Document Module
 	PsreDocumentHdl *psre_handler.PsreDocumentHandler
 	PsreDocumentSvc psre_service.DocumentService
 
+	// PSRE Dashboard Module
 	PsreDashboardHdl *psre_handler.PsreDashboardHandler
 	PsreDashboardSvc psre_service.DashboardService
 
+	// PSRE Backend Module
 	PsreBackendHdl *psre_handler.PsreBackendHandler
 	PsreBackendSvc psre_service.BackendService
 }
 
 func NewAppDependencies(db *gorm.DB) *AppDependencies {
-
+	// === REPOSITORIES ===
 	authRepo := repository.NewAuthRepository(db)
-	authSvc := service.NewAuthService(authRepo)
-	authHdl := handler.NewAuthHandler(authSvc)
-
 	userRepo := repository.NewUserRepository(db)
-	userSvc := service.NewUserService(userRepo)
-	userHdl := handler.NewUserHandler(userSvc)
-
 	clientRepo := repository.NewClientRepository(db)
-
+	clientPsreRepo := repository.NewClientPsreRepository(db)
+	clientCompanyRepo := repository.NewClientCompanyRepository(db)
+	clientUserRepo := repository.NewClientUserRepository(db)
 	masterProductRepo := repository.NewMasterProductRepository(db)
-	masterProductSvc := service.NewMasterProductService(masterProductRepo)
-	masterProductHdl := handler.NewMasterProductHandler(masterProductSvc)
-
 	quotaClientRepo := repository.NewQuotaClientRepository(db)
 	quotaClientReductionRepo := repository.NewQuotaClientReductionRepository(db)
-	quotaClientSvc := service.NewQuotaClientService(db, quotaClientRepo, quotaClientReductionRepo)
-	quotaClientHdl := handler.NewQuotaClientHandler(quotaClientSvc)
-
 	quotaClientAdditionRepo := repository.NewQuotaClientAdditionRepository(db)
-	quotaClientAdditionSvc := service.NewQuotaClientAdditionService(db, quotaClientAdditionRepo, quotaClientRepo)
-	quotaClientAdditionHdl := handler.NewQuotaClientAdditionHandler(quotaClientAdditionSvc)
-
-	clientPsreRepo := repository.NewClientPsreRepository(db)
-	clientPsreSvc := service.NewClientPsreService(clientPsreRepo, clientRepo)
-
 	clientRequestLogRepo := repository.NewClientRequestLogRepository(db)
-
-	clientCompanyRepo := repository.NewClientCompanyRepository(db)
-	clientCompanySvc := service.NewClientCompanyService(clientCompanyRepo, quotaClientSvc)
-	clientCompanyHdl := handler.NewClientCompanyHandler(clientCompanySvc)
-
-	ClientUserRepo := repository.NewClientUserRepository(db)
-	ClientUserSvc := service.NewClientUserService(ClientUserRepo)
-	ClientUserHdl := handler.NewClientUserHandler(ClientUserSvc)
-
-	psreClientSvc := psre_service.NewClientService(clientRequestLogRepo, userRepo, clientRepo, clientPsreRepo)
-	clientPsreHdl := handler.NewClientPsreHandler(psreClientSvc)
-	psreClientHdl := psre_handler.NewPsreClientHandler(psreClientSvc)
-
 	certificateRepo := repository.NewCertificateRepository(db)
-	certificateSvc := service.NewCertificateService(certificateRepo)
-	certificateHdl := handler.NewCertificateHandler(certificateSvc)
 
+	// === CORE SERVICES ===
+	authSvc := service.NewAuthService(authRepo)
+	userSvc := service.NewUserService(userRepo)
+	quotaClientSvc := service.NewQuotaClientService(db, quotaClientRepo, quotaClientReductionRepo)
+	quotaClientAdditionSvc := service.NewQuotaClientAdditionService(db, quotaClientAdditionRepo, quotaClientRepo)
 	clientSvc := service.NewClientService(clientRepo, userRepo, quotaClientRepo, quotaClientAdditionRepo)
-	psreClientCompanySvc := psre_service.NewClientCompanyService(db, clientSvc, clientCompanyRepo, quotaClientSvc)
-	psreCompanyHdl := psre_handler.NewPsreCompanyHandler(clientSvc, clientCompanySvc, psreClientCompanySvc)
-
-	psreDashboardSvc := psre_service.NewDashboardService()
-	psreDashboardHdl := psre_handler.NewPsreDashboardHandler(psreDashboardSvc)
-
-	psreBackendSvc := psre_service.NewBackendService()
-	psreBackendHdl := psre_handler.NewPsreBackendHandler(psreBackendSvc)
-
-	psreDocumentSvc := psre_service.NewDocumentService()
-	psreDocumentHdl := psre_handler.NewPsreDocumentHandler(psreDocumentSvc)
+	clientPsreSvc := service.NewClientPsreService(clientPsreRepo, clientRepo)
+	clientCompanySvc := service.NewClientCompanyService(clientCompanyRepo, quotaClientSvc)
+	clientUserSvc := service.NewClientUserService(clientUserRepo)
+	masterProductSvc := service.NewMasterProductService(masterProductRepo)
+	certificateSvc := service.NewCertificateService(certificateRepo)
 	psreSvc := service.NewPsreService(clientRequestLogRepo, userRepo, clientCompanyRepo)
 
-	psreClientUserSvc := psre_service.NewClientUserService(db, clientPsreSvc, clientCompanySvc, ClientUserSvc, ClientUserRepo)
-	psreClientUserHdl := psre_handler.NewPsreClientUserHandler(ClientUserSvc, clientPsreSvc, clientCompanySvc, psreClientUserSvc)
-
+	// === PSRE SERVICES ===
+	psreClientSvc := psre_service.NewClientService(clientRequestLogRepo, userRepo, clientRepo, clientPsreRepo)
+	psreClientCompanySvc := psre_service.NewClientCompanyService(db, clientSvc, clientCompanyRepo, quotaClientSvc)
+	psreClientUserSvc := psre_service.NewClientUserService(db, clientPsreSvc, clientCompanySvc, clientUserSvc, clientUserRepo)
 	psreCertificateSvc := psre_service.NewCertificateService(certificateRepo, clientSvc)
+	psreDocumentSvc := psre_service.NewDocumentService()
+	psreDashboardSvc := psre_service.NewDashboardService()
+	psreBackendSvc := psre_service.NewBackendService()
 
-	psreCertificateHdl := psre_handler.NewPsreCertificateHandler(psreCertificateSvc)
+	// === CORE HANDLERS ===
+	authHdl := handler.NewAuthHandler(authSvc)
+	userHdl := handler.NewUserHandler(userSvc)
 	clientHdl := handler.NewClientHandler(clientSvc, quotaClientSvc, quotaClientAdditionSvc)
+	clientPsreHdl := handler.NewClientPsreHandler(psreClientSvc)
+	clientCompanyHdl := handler.NewClientCompanyHandler(clientCompanySvc)
+	clientUserHdl := handler.NewClientUserHandler(clientUserSvc)
+	masterProductHdl := handler.NewMasterProductHandler(masterProductSvc)
+	quotaClientHdl := handler.NewQuotaClientHandler(quotaClientSvc)
+	quotaClientAdditionHdl := handler.NewQuotaClientAdditionHandler(quotaClientAdditionSvc)
+	certificateHdl := handler.NewCertificateHandler(certificateSvc)
+
+	// === PSRE HANDLERS ===
+	psreClientHdl := psre_handler.NewPsreClientHandler(psreClientSvc)
+	psreCompanyHdl := psre_handler.NewPsreCompanyHandler(clientSvc, clientCompanySvc, psreClientCompanySvc)
+	psreClientUserHdl := psre_handler.NewPsreClientUserHandler(clientUserSvc, clientPsreSvc, clientCompanySvc, psreClientUserSvc)
+	psreCertificateHdl := psre_handler.NewPsreCertificateHandler(psreCertificateSvc)
+	psreDocumentHdl := psre_handler.NewPsreDocumentHandler(psreDocumentSvc)
+	psreDashboardHdl := psre_handler.NewPsreDashboardHandler(psreDashboardSvc)
+	psreBackendHdl := psre_handler.NewPsreBackendHandler(psreBackendSvc)
 	return &AppDependencies{
 		DB:       db,
 		AuthRepo: authRepo,
@@ -162,9 +171,10 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 		MasterProductSvc:  masterProductSvc,
 		MasterProductHdl:  masterProductHdl,
 
-		QuotaClientRepo: quotaClientRepo,
-		QuotaClientSvc:  quotaClientSvc,
-		QuotaClientHdl:  quotaClientHdl,
+		QuotaClientRepo:          quotaClientRepo,
+		QuotaClientReductionRepo: quotaClientReductionRepo,
+		QuotaClientSvc:           quotaClientSvc,
+		QuotaClientHdl:           quotaClientHdl,
 
 		QuotaClientAdditionRepo: quotaClientAdditionRepo,
 		QuotaClientAdditionSvc:  quotaClientAdditionSvc,
@@ -174,9 +184,9 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 		ClientPsreSvc:  clientPsreSvc,
 		ClientPsreHdl:  clientPsreHdl,
 
-		ClientUserRepo: ClientUserRepo,
-		ClientUserSvc:  ClientUserSvc,
-		ClientUserHdl:  ClientUserHdl,
+		ClientUserRepo: clientUserRepo,
+		ClientUserSvc:  clientUserSvc,
+		ClientUserHdl:  clientUserHdl,
 
 		ClientRequestLogRepo: clientRequestLogRepo,
 		PsreSvc:              psreSvc,

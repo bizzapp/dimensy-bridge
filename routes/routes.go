@@ -128,62 +128,7 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		group.DELETE("/:id", deps.ClientUserHdl.Delete)
 	}
 
-	psre := api.Group("/psre")
-	{
-		psre.Use(rl.Middleware()) // pasang rate limiter di group ini
-		psre.POST("/login", deps.PsreClientHdl.Login)
-
-		company := psre.Group("/company")
-		company.Use(middleware.AuthJWE())
-		company.GET("/", deps.PsreCompanyHdl.GetClientCompany)
-		company.GET("/detail/:id", deps.PsreCompanyHdl.DetailClientCompany)
-		company.POST("/create", deps.PsreCompanyHdl.CreateClientCompany)
-		company.POST("/invite", deps.PsreCompanyHdl.InviteClientCompany)
-
-		user := psre.Group("/user")
-		user.Use(middleware.AuthJWE())
-		user.GET("/", deps.PsreClientUserHdl.List)
-		user.GET("/:id", deps.PsreClientUserHdl.Detail)
-		user.POST("/register", deps.PsreClientUserHdl.Register)
-		user.POST("/activate", deps.PsreClientUserHdl.Activate)
-		user.POST("/resend-activation", deps.PsreClientUserHdl.ResendActivationUser)
-		user.POST("/request-phone-activation", deps.PsreClientUserHdl.RequestPhoneActivation)
-		user.POST("/phone-activation", deps.PsreClientUserHdl.PhoneActivation)
-		user.POST("/request-kyc", deps.PsreClientUserHdl.RequestKYC)
-		user.POST("/verify-kyc", deps.PsreClientUserHdl.VerifyKYC)
-
-		certificate := psre.Group("/certificate")
-		certificate.Use(middleware.AuthJWE())
-		certificate.POST("/issue", deps.PsreCertificateHdl.Issue)
-		certificate.POST("/active", deps.PsreCertificateHdl.Active)
-		certificate.POST("/revoke-request", deps.PsreCertificateHdl.RevokeRequest)
-		certificate.POST("/revoke", deps.PsreCertificateHdl.Revoke)
-
-		document := psre.Group("/document")
-		certificate.Use(middleware.AuthJWE())
-		document.POST("/upload", deps.PsreDocumentHdl.Upload)
-		document.POST("/upload-bulk", deps.PsreDocumentHdl.UploadBulk)
-		document.POST("/request-sign", deps.PsreDocumentHdl.RequestSign)
-		document.POST("/process-sign", deps.PsreDocumentHdl.ProcessSign)
-		document.POST("/request-stamp", deps.PsreDocumentHdl.RequestStamp)
-		document.POST("/process-stamp", deps.PsreDocumentHdl.ProcessStamp)
-		document.POST("/request-otp-sign", deps.PsreDocumentHdl.RequestOtpSign)
-		document.GET("/preview/:id", deps.PsreDocumentHdl.PreviewDocument)
-
-		client := psre.Group("/client")
-		client.Use(middleware.AuthJWE())
-		client.GET("/documents", deps.PsreClientHdl.Documents)
-		client.GET("/documents/:id", deps.PsreClientHdl.DocumentDetail)
-
-		backend := psre.Group("/backend")
-		backend.POST("/login", deps.PsreBackendHdl.Login)
-		backend.POST("/client/create", deps.PsreBackendHdl.CreateClient)
-		backend.GET("/client", deps.PsreBackendHdl.ListClient)
-		backend.POST("/client/update/:id", deps.PsreBackendHdl.UpdateClient)
-		backend.POST("/client/update_status/:id", deps.PsreBackendHdl.UpdateClientStatus)
-		backend.Use(middleware.AuthJWE())
-		backend.GET("/dashboard/certificate", deps.PsreDashboardHdl.Certificate)
-		backend.GET("/dashboard/document", deps.PsreDashboardHdl.Document)
-	}
+	// Setup PSRE routes
+	SetupPsreRoutes(api, deps, rl)
 	return r
 }
