@@ -176,6 +176,11 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		client.GET("/documents/:id", deps.PsreClientHdl.DocumentDetail)
 
 		backend := psre.Group("/backend")
+		backend.POST("/login", deps.PsreBackendHdl.Login)
+		backend.POST("/client/create", deps.PsreBackendHdl.CreateClient)
+		backend.GET("/client", deps.PsreBackendHdl.ListClient)
+		backend.POST("/client/update/:id", deps.PsreBackendHdl.UpdateClient)
+		backend.POST("/client/update_status/:id", deps.PsreBackendHdl.UpdateClientStatus)
 		backend.Use(middleware.AuthJWE())
 		backend.GET("/dashboard/certificate", deps.PsreDashboardHdl.Certificate)
 		backend.GET("/dashboard/document", deps.PsreDashboardHdl.Document)

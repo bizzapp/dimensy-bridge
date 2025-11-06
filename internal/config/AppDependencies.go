@@ -72,6 +72,9 @@ type AppDependencies struct {
 
 	PsreDashboardHdl *psre_handler.PsreDashboardHandler
 	PsreDashboardSvc psre_service.DashboardService
+
+	PsreBackendHdl *psre_handler.PsreBackendHandler
+	PsreBackendSvc psre_service.BackendService
 }
 
 func NewAppDependencies(db *gorm.DB) *AppDependencies {
@@ -126,6 +129,9 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 
 	psreDashboardSvc := psre_service.NewDashboardService()
 	psreDashboardHdl := psre_handler.NewPsreDashboardHandler(psreDashboardSvc)
+
+	psreBackendSvc := psre_service.NewBackendService()
+	psreBackendHdl := psre_handler.NewPsreBackendHandler(psreBackendSvc)
 
 	psreDocumentSvc := psre_service.NewDocumentService()
 	psreDocumentHdl := psre_handler.NewPsreDocumentHandler(psreDocumentSvc)
@@ -193,5 +199,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 		PsreDocumentSvc:  psreDocumentSvc,
 		PsreDashboardHdl: psreDashboardHdl,
 		PsreDashboardSvc: psreDashboardSvc,
+		PsreBackendHdl:   psreBackendHdl,
+		PsreBackendSvc:   psreBackendSvc,
 	}
 }

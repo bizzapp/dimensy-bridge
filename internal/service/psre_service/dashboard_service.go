@@ -17,7 +17,6 @@ type dashboardService struct {
 func NewDashboardService() DashboardService {
 	return &dashboardService{}
 }
-
 func (s *dashboardService) GetCertificateDashboard(token, externalID string) ([]byte, int, error) {
 	path := "/dashboard/certificates"
 	data, status, err := utils.PsreRequest("GET", path, nil, token, map[string]string{
