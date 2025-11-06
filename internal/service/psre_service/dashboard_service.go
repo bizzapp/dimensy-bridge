@@ -6,8 +6,8 @@ import (
 )
 
 type DashboardService interface {
-	GetCertificateDashboard(token, externalID string) ([]byte, int, error)
-	GetDocumentDashboard(token, externalID string) ([]byte, int, error)
+	GetCertificateDashboard(token string) ([]byte, int, error)
+	GetDocumentDashboard(token string) ([]byte, int, error)
 }
 
 type dashboardService struct {
@@ -17,30 +17,25 @@ type dashboardService struct {
 func NewDashboardService() DashboardService {
 	return &dashboardService{}
 }
-func (s *dashboardService) GetCertificateDashboard(token, externalID string) ([]byte, int, error) {
-	path := "/dashboard/certificates"
-	data, status, err := utils.PsreRequest("GET", path, nil, token, map[string]string{
-		"external_id": externalID,
-	})
+func (s *dashboardService) GetCertificateDashboard(token string) ([]byte, int, error) {
+	data, status, err := utils.PsreRequest("GET", "/backend/dashboard/certificate", nil, token, nil)
+	fmt.Println(token)
 	if err != nil {
 		return data, status, fmt.Errorf("failed call psre api: %w", err)
 	}
 	if status >= 400 {
-		return data, status, fmt.Errorf("psre get certificate dashboard failed: %s", string(data))
+		return data, status, fmt.Errorf("psre login failed: %s", string(data))
 	}
 	return data, status, nil
 }
 
-func (s *dashboardService) GetDocumentDashboard(token, externalID string) ([]byte, int, error) {
-	path := "/dashboard/documents"
-	data, status, err := utils.PsreRequest("GET", path, nil, token, map[string]string{
-		"external_id": externalID,
-	})
+func (s *dashboardService) GetDocumentDashboard(token string) ([]byte, int, error) {
+	data, status, err := utils.PsreRequest("GET", "/backend/dashboard/document", nil, token, nil)
 	if err != nil {
 		return data, status, fmt.Errorf("failed call psre api: %w", err)
 	}
 	if status >= 400 {
-		return data, status, fmt.Errorf("psre get document dashboard failed: %s", string(data))
+		return data, status, fmt.Errorf("psre login failed: %s", string(data))
 	}
 	return data, status, nil
 }

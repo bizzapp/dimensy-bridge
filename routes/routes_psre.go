@@ -61,7 +61,6 @@ func SetupPsreRoutes(api *gin.RouterGroup, deps *config.AppDependencies, rl *mid
 		backend.GET("/client", deps.PsreBackendHdl.ListClient)
 		backend.POST("/client/update/:id", deps.PsreBackendHdl.UpdateClient)
 		backend.POST("/client/update_status/:id", deps.PsreBackendHdl.UpdateClientStatus)
-		backend.Use(middleware.AuthJWE())
 		backend.GET("/dashboard/certificate", deps.PsreDashboardHdl.Certificate)
 		backend.GET("/dashboard/document", deps.PsreDashboardHdl.Document)
 	}

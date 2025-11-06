@@ -2,8 +2,7 @@ package psrehandler
 
 import (
 	psreservice "dimensy-bridge/internal/service/psre_service"
-	"dimensy-bridge/pkg/utils"
-	"net/http"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,16 +18,9 @@ func NewPsreDashboardHandler(dashboardService psreservice.DashboardService) *Psr
 }
 
 func (h *PsreDashboardHandler) Certificate(c *gin.Context) {
-	authData, _ := c.Get("authData")
 	token := c.Request.Header.Get("Authorization")
 
-	externalID, err := utils.ExtractExternalID(authData)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, err.Error())
-		return
-	}
-
-	respBody, status, err := h.dashboardService.GetCertificateDashboard(token, externalID)
+	respBody, status, err := h.dashboardService.GetCertificateDashboard(token)
 	if err != nil {
 		c.Data(status, "application/json", respBody)
 		return
@@ -37,16 +29,10 @@ func (h *PsreDashboardHandler) Certificate(c *gin.Context) {
 }
 
 func (h *PsreDashboardHandler) Document(c *gin.Context) {
-	authData, _ := c.Get("authData")
 	token := c.Request.Header.Get("Authorization")
 
-	externalID, err := utils.ExtractExternalID(authData)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, err.Error())
-		return
-	}
-
-	respBody, status, err := h.dashboardService.GetDocumentDashboard(token, externalID)
+	respBody, status, err := h.dashboardService.GetDocumentDashboard(token)
+	fmt.Println(respBody)
 	if err != nil {
 		c.Data(status, "application/json", respBody)
 		return
