@@ -31,6 +31,8 @@ func main() {
 		&model.SubscriptionPlan{},
 		&model.SubscriptionPlanDetail{},
 		&model.ClientDocument{},
+		&model.ClientDocumentProcess{},
+		&model.ClientDocumentProcessDetail{},
 	); err != nil {
 		log.Fatalf("❌ Gagal migrate database: %v", err)
 	}
