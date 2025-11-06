@@ -30,6 +30,7 @@ func main() {
 		&model.Certificate{},
 		&model.SubscriptionPlan{},
 		&model.SubscriptionPlanDetail{},
+		&model.ClientDocument{},
 	); err != nil {
 		log.Fatalf("❌ Gagal migrate database: %v", err)
 	}
