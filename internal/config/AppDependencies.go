@@ -69,6 +69,9 @@ type AppDependencies struct {
 
 	PsreDocumentHdl *psre_handler.PsreDocumentHandler
 	PsreDocumentSvc psre_service.DocumentService
+
+	PsreDashboardHdl *psre_handler.PsreDashboardHandler
+	PsreDashboardSvc psre_service.DashboardService
 }
 
 func NewAppDependencies(db *gorm.DB) *AppDependencies {
@@ -120,6 +123,9 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	clientSvc := service.NewClientService(clientRepo, userRepo, quotaClientRepo, quotaClientAdditionRepo)
 	psreClientCompanySvc := psre_service.NewClientCompanyService(db, clientSvc, clientCompanyRepo, quotaClientSvc)
 	psreCompanyHdl := psre_handler.NewPsreCompanyHandler(clientSvc, clientCompanySvc, psreClientCompanySvc)
+
+	psreDashboardSvc := psre_service.NewDashboardService()
+	psreDashboardHdl := psre_handler.NewPsreDashboardHandler(psreDashboardSvc)
 
 	psreDocumentSvc := psre_service.NewDocumentService()
 	psreDocumentHdl := psre_handler.NewPsreDocumentHandler(psreDocumentSvc)
@@ -183,7 +189,9 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 		PsreCertificateHdl: psreCertificateHdl,
 		PsreCertificateSvc: psreCertificateSvc,
 
-		PsreDocumentHdl: psreDocumentHdl,
-		PsreDocumentSvc: psreDocumentSvc,
+		PsreDocumentHdl:  psreDocumentHdl,
+		PsreDocumentSvc:  psreDocumentSvc,
+		PsreDashboardHdl: psreDashboardHdl,
+		PsreDashboardSvc: psreDashboardSvc,
 	}
 }
