@@ -59,6 +59,9 @@ type AppDependencies struct {
 	QuotaClientAdditionSvc  service.QuotaClientAdditionService
 	QuotaClientAdditionHdl  *handler.QuotaClientAdditionHandler
 
+	ClientDocumentRepo repository.ClientDocumentRepository
+	ClientDocumentSvc  psre_service.ClientDocumentService
+
 	// Certificate Module
 	CertificateHdl *handler.CertificateHandler
 
@@ -84,8 +87,8 @@ type AppDependencies struct {
 	PsreCertificateSvc psre_service.CertificateService
 
 	// PSRE Document Module
-	PsreDocumentHdl *psre_handler.PsreDocumentHandler
-	PsreDocumentSvc psre_service.DocumentService
+	PsreClientDocumentHdl *psre_handler.PsreClientDocumentHandler
+	PsreDocumentSvc       psre_service.ClientDocumentService
 
 	// PSRE Dashboard Module
 	PsreDashboardHdl *psre_handler.PsreDashboardHandler
@@ -110,6 +113,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	quotaClientAdditionRepo := repository.NewQuotaClientAdditionRepository(db)
 	clientRequestLogRepo := repository.NewClientRequestLogRepository(db)
 	certificateRepo := repository.NewCertificateRepository(db)
+	clientDocumentRepo := repository.NewClientDocumentRepository(db)
 
 	// === CORE SERVICES ===
 	authSvc := service.NewAuthService(authRepo)
@@ -129,7 +133,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	psreClientCompanySvc := psre_service.NewClientCompanyService(db, clientSvc, clientCompanyRepo, quotaClientSvc)
 	psreClientUserSvc := psre_service.NewClientUserService(db, clientPsreSvc, clientCompanySvc, clientUserSvc, clientUserRepo)
 	psreCertificateSvc := psre_service.NewCertificateService(certificateRepo, clientSvc)
-	psreDocumentSvc := psre_service.NewDocumentService()
+	psreClientDocumentSvc := psre_service.NewClientDocumentService(db, clientPsreSvc, clientDocumentRepo)
 	psreDashboardSvc := psre_service.NewDashboardService()
 	psreBackendSvc := psre_service.NewBackendService()
 
@@ -150,7 +154,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	psreCompanyHdl := psre_handler.NewPsreCompanyHandler(clientSvc, clientCompanySvc, psreClientCompanySvc)
 	psreClientUserHdl := psre_handler.NewPsreClientUserHandler(clientUserSvc, clientPsreSvc, clientCompanySvc, psreClientUserSvc)
 	psreCertificateHdl := psre_handler.NewPsreCertificateHandler(psreCertificateSvc)
-	psreDocumentHdl := psre_handler.NewPsreDocumentHandler(psreDocumentSvc)
+	psreClientDocumentHdl := psre_handler.NewPsreClientDocumentHandler(psreClientDocumentSvc)
 	psreDashboardHdl := psre_handler.NewPsreDashboardHandler(psreDashboardSvc)
 	psreBackendHdl := psre_handler.NewPsreBackendHandler(psreBackendSvc)
 	return &AppDependencies{
@@ -205,11 +209,11 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 		PsreCertificateHdl: psreCertificateHdl,
 		PsreCertificateSvc: psreCertificateSvc,
 
-		PsreDocumentHdl:  psreDocumentHdl,
-		PsreDocumentSvc:  psreDocumentSvc,
-		PsreDashboardHdl: psreDashboardHdl,
-		PsreDashboardSvc: psreDashboardSvc,
-		PsreBackendHdl:   psreBackendHdl,
-		PsreBackendSvc:   psreBackendSvc,
+		PsreClientDocumentHdl: psreClientDocumentHdl,
+		PsreDocumentSvc:       psreClientDocumentSvc,
+		PsreDashboardHdl:      psreDashboardHdl,
+		PsreDashboardSvc:      psreDashboardSvc,
+		PsreBackendHdl:        psreBackendHdl,
+		PsreBackendSvc:        psreBackendSvc,
 	}
 }

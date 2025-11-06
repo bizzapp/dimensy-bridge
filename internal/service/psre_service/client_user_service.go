@@ -86,7 +86,7 @@ func (s *clientUserService) GetUserDetail(token, externalID, id string) ([]byte,
 
 // 🔹 REGISTER USER + TRANSACTION
 func (s *clientUserService) RegisterUser(token, externalID string, req *dto.ClientUserRequest) ([]byte, int, error) {
-	clientPsre, err := s.clientPsreSvc.GetByExternalID(externalID)
+	client, err := s.clientPsreSvc.GetByExternalID(externalID)
 	if err != nil {
 		return nil, http.StatusBadRequest, fmt.Errorf("failed get client psre: %w", err)
 	}
@@ -104,7 +104,7 @@ func (s *clientUserService) RegisterUser(token, externalID string, req *dto.Clie
 			Email:     req.Email,
 			Phone:     req.Phone,
 			IsWNI:     req.IsWNI,
-			ClientID:  clientPsre.ClientID,
+			ClientID:  client.ID,
 		}
 
 		// jika ada company

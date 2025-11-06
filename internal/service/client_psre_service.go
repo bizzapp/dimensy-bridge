@@ -7,7 +7,7 @@ import (
 
 type ClientPsreService interface {
 	GetByID(id int64) (*model.ClientPsre, error)
-	GetByExternalID(externalID string) (*model.ClientPsre, error)
+	GetByExternalID(externalID string) (*model.Client, error)
 	GetByClientID(clientID int64) (*model.ClientPsre, error)
 	UpdatePsre(psre *model.ClientPsre) error
 	DeletePsre(id int64) error
@@ -26,7 +26,7 @@ func (s *clientPsreService) GetByID(id int64) (*model.ClientPsre, error) {
 	return s.psreRepo.FindByID(id)
 }
 
-func (s *clientPsreService) GetByExternalID(externalID string) (*model.ClientPsre, error) {
+func (s *clientPsreService) GetByExternalID(externalID string) (*model.Client, error) {
 	return s.psreRepo.FindByExternalID(externalID)
 }
 

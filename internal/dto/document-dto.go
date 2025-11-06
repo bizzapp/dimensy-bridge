@@ -1,0 +1,71 @@
+package dto
+
+// PsreDocumentSingleFileRequest untuk upload single document
+type PsreDocumentSingleFileRequest struct {
+	CallbackURL string `json:"callbackUrl" binding:"required,url"`
+	FileName    string `json:"fileName" binding:"required"`
+	Document    string `json:"document" binding:"required,base64"` // Base64 encoded document
+}
+
+// PsreDocumentBulkFileRequest untuk upload multiple documents
+
+type PsreDocumentBulkFileRequest struct {
+	CallbackUrl string                     `json:"callbackUrl" binding:"required,url"`
+	Documents   []PsreDocumentBulkFileItem `json:"documents" binding:"required,min=1,dive"`
+}
+
+type PsreDocumentBulkFileItem struct {
+	FileName string `json:"fileName" binding:"required"`
+	Document string `json:"document" binding:"required"` // base64 string
+}
+
+// PsreDocumentFileRequest untuk individual document dalam bulk upload
+type PsreDocumentFileRequest struct {
+	FileName string `json:"fileName" binding:"required"`
+	Document string `json:"document" binding:"required,base64"` // Base64 encoded document
+}
+
+// PsreDocumentSignRequest untuk request digital signature
+
+type PsreDocumentSignRequest struct {
+	DocumentOrGroupID string                     `json:"documentOrGroupId" binding:"required"`
+	UserID            *string                    `json:"userId,omitempty"`
+	CompanyID         *string                    `json:"companyId,omitempty"`
+	Positions         []PsreDocumentSignPosition `json:"positions" binding:"required,min=1,dive"`
+}
+
+type PsreDocumentSignPosition struct {
+	StampType string   `json:"stampType" binding:"required"` // SIGN / EMETERAI
+	Reason    string   `json:"reason" binding:"required"`
+	Location  string   `json:"location" binding:"required"`
+	X         *float64 `json:"x"` // gunakan pointer agar 0 tidak dianggap "kosong"
+	Y         *float64 `json:"y"`
+	W         *float64 `json:"w"`
+	H         *float64 `json:"h"`
+	Page      int      `json:"page" binding:"required"`
+	Image     string   `json:"image" binding:"required"` // base64 string
+}
+
+// PsreDocumentProcessSignRequest untuk process signature dengan OTP
+type PsreDocumentProcessSignRequest struct {
+	DocumentID string `json:"documentId" binding:"required"`
+	OTP        string `json:"otp" binding:"required,len=6"`
+}
+
+// PsreDocumentStampRequest untuk request digital stamp
+type PsreDocumentStampRequest struct {
+	DocumentID  string `json:"documentId" binding:"required"`
+	CallbackURL string `json:"callbackUrl" binding:"required,url"`
+	StampType   string `json:"stampType" binding:"required,oneof=official corporate"`
+}
+
+// PsreDocumentProcessStampRequest untuk process stamping
+type PsreDocumentProcessStampRequest struct {
+	DocumentID string `json:"documentId" binding:"required"`
+}
+
+// PsreDocumentOtpSignRequest untuk request OTP untuk signing
+type PsreDocumentOtpSignRequest struct {
+	DocumentID  string `json:"documentId" binding:"required"`
+	SignerEmail string `json:"signerEmail" binding:"required,email"`
+}

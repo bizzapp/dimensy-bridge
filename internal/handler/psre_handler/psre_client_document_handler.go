@@ -1,6 +1,7 @@
 package psrehandler
 
 import (
+	"dimensy-bridge/internal/dto"
 	psreservice "dimensy-bridge/internal/service/psre_service"
 	"dimensy-bridge/pkg/utils"
 	"net/http"
@@ -8,17 +9,40 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type PsreDocumentHandler struct {
-	documentService psreservice.DocumentService
+type PsreClientDocumentHandler struct {
+	clientDocumentSvc psreservice.ClientDocumentService
 }
 
-func NewPsreDocumentHandler(documentService psreservice.DocumentService) *PsreDocumentHandler {
-	return &PsreDocumentHandler{
-		documentService: documentService,
+func NewPsreClientDocumentHandler(clientDocumentSvc psreservice.ClientDocumentService) *PsreClientDocumentHandler {
+	return &PsreClientDocumentHandler{
+		clientDocumentSvc: clientDocumentSvc,
 	}
 }
 
-func (h *PsreDocumentHandler) Upload(c *gin.Context) {
+func (h *PsreClientDocumentHandler) Upload(c *gin.Context) {
+	authData, _ := c.Get("authData")
+	token := c.Request.Header.Get("Authorization")
+
+	externalID, err := utils.ExtractExternalID(authData)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, err.Error())
+		return
+	}
+	var req dto.PsreDocumentSingleFileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	respBody, status, err := h.clientDocumentSvc.UploadSingle(token, externalID, req)
+	if err != nil {
+		c.Data(status, "application/json", respBody)
+		return
+	}
+	c.Data(status, "application/json", respBody)
+}
+
+func (h *PsreClientDocumentHandler) UploadBulk(c *gin.Context) {
 	authData, _ := c.Get("authData")
 	token := c.Request.Header.Get("Authorization")
 
@@ -28,21 +52,19 @@ func (h *PsreDocumentHandler) Upload(c *gin.Context) {
 		return
 	}
 
-	file, err := c.FormFile("file")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, "File is required")
+	var req dto.PsreDocumentBulkFileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
-
-	respBody, status, err := h.documentService.Upload(token, externalID, file)
+	respBody, status, err := h.clientDocumentSvc.UploadBulk(token, externalID, req)
 	if err != nil {
 		c.Data(status, "application/json", respBody)
 		return
 	}
 	c.Data(status, "application/json", respBody)
 }
-
-func (h *PsreDocumentHandler) UploadBulk(c *gin.Context) {
+func (h *PsreClientDocumentHandler) RequestSign(c *gin.Context) {
 	authData, _ := c.Get("authData")
 	token := c.Request.Header.Get("Authorization")
 
@@ -52,20 +74,20 @@ func (h *PsreDocumentHandler) UploadBulk(c *gin.Context) {
 		return
 	}
 
-	file, err := c.FormFile("file")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, "File is required")
+	var req dto.PsreDocumentSignRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
-	respBody, status, err := h.documentService.Upload(token, externalID, file)
+	respBody, status, err := h.clientDocumentSvc.RequestSign(token, externalID, req)
 	if err != nil {
 		c.Data(status, "application/json", respBody)
 		return
 	}
 	c.Data(status, "application/json", respBody)
 }
-func (h *PsreDocumentHandler) RequestSign(c *gin.Context) {
+func (h *PsreClientDocumentHandler) ProcessSign(c *gin.Context) {
 	authData, _ := c.Get("authData")
 	token := c.Request.Header.Get("Authorization")
 
@@ -75,20 +97,19 @@ func (h *PsreDocumentHandler) RequestSign(c *gin.Context) {
 		return
 	}
 
-	file, err := c.FormFile("file")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, "File is required")
+	var req dto.PsreDocumentProcessSignRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
-
-	respBody, status, err := h.documentService.Upload(token, externalID, file)
+	respBody, status, err := h.clientDocumentSvc.ProcessSign(token, externalID, req)
 	if err != nil {
 		c.Data(status, "application/json", respBody)
 		return
 	}
 	c.Data(status, "application/json", respBody)
 }
-func (h *PsreDocumentHandler) ProcessSign(c *gin.Context) {
+func (h *PsreClientDocumentHandler) RequestStamp(c *gin.Context) {
 	authData, _ := c.Get("authData")
 	token := c.Request.Header.Get("Authorization")
 
@@ -98,20 +119,20 @@ func (h *PsreDocumentHandler) ProcessSign(c *gin.Context) {
 		return
 	}
 
-	file, err := c.FormFile("file")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, "File is required")
+	var req dto.PsreDocumentStampRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
-
-	respBody, status, err := h.documentService.Upload(token, externalID, file)
+	respBody, status, err := h.clientDocumentSvc.RequestStamp(token, externalID, req)
 	if err != nil {
 		c.Data(status, "application/json", respBody)
 		return
 	}
 	c.Data(status, "application/json", respBody)
 }
-func (h *PsreDocumentHandler) RequestStamp(c *gin.Context) {
+
+func (h *PsreClientDocumentHandler) ProcessStamp(c *gin.Context) {
 	authData, _ := c.Get("authData")
 	token := c.Request.Header.Get("Authorization")
 
@@ -121,21 +142,20 @@ func (h *PsreDocumentHandler) RequestStamp(c *gin.Context) {
 		return
 	}
 
-	file, err := c.FormFile("file")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, "File is required")
+	var req dto.PsreDocumentProcessStampRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
-	respBody, status, err := h.documentService.Upload(token, externalID, file)
+	respBody, status, err := h.clientDocumentSvc.ProcessStamp(token, externalID, req)
 	if err != nil {
 		c.Data(status, "application/json", respBody)
 		return
 	}
 	c.Data(status, "application/json", respBody)
 }
-
-func (h *PsreDocumentHandler) ProcessStamp(c *gin.Context) {
+func (h *PsreClientDocumentHandler) RequestOtpSign(c *gin.Context) {
 	authData, _ := c.Get("authData")
 	token := c.Request.Header.Get("Authorization")
 
@@ -145,43 +165,20 @@ func (h *PsreDocumentHandler) ProcessStamp(c *gin.Context) {
 		return
 	}
 
-	file, err := c.FormFile("file")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, "File is required")
+	var req dto.PsreDocumentOtpSignRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
-	respBody, status, err := h.documentService.Upload(token, externalID, file)
+	respBody, status, err := h.clientDocumentSvc.RequestOtpSign(token, externalID, req)
 	if err != nil {
 		c.Data(status, "application/json", respBody)
 		return
 	}
 	c.Data(status, "application/json", respBody)
 }
-func (h *PsreDocumentHandler) RequestOtpSign(c *gin.Context) {
-	authData, _ := c.Get("authData")
-	token := c.Request.Header.Get("Authorization")
-
-	externalID, err := utils.ExtractExternalID(authData)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, err.Error())
-		return
-	}
-
-	file, err := c.FormFile("file")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, "File is required")
-		return
-	}
-
-	respBody, status, err := h.documentService.Upload(token, externalID, file)
-	if err != nil {
-		c.Data(status, "application/json", respBody)
-		return
-	}
-	c.Data(status, "application/json", respBody)
-}
-func (h *PsreDocumentHandler) PreviewDocument(c *gin.Context) {
+func (h *PsreClientDocumentHandler) PreviewDocument(c *gin.Context) {
 	authData, _ := c.Get("authData")
 	token := c.Request.Header.Get("Authorization")
 
@@ -193,7 +190,7 @@ func (h *PsreDocumentHandler) PreviewDocument(c *gin.Context) {
 
 	documentID := c.Param("id")
 
-	respBody, status, err := h.documentService.Upload(token, externalID, documentID)
+	respBody, status, err := h.clientDocumentSvc.Preview(token, externalID, documentID)
 	if err != nil {
 		c.Data(status, "application/json", respBody)
 		return

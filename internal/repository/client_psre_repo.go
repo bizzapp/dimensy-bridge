@@ -9,7 +9,7 @@ import (
 type ClientPsreRepository interface {
 	FindByID(id int64) (*model.ClientPsre, error)
 	FindByClientID(clientID int64) (*model.ClientPsre, error)
-	FindByExternalID(externalID string) (*model.ClientPsre, error)
+	FindByExternalID(externalID string) (*model.Client, error)
 	Create(psre *model.ClientPsre) error
 	Update(psre *model.ClientPsre) error
 	Delete(id int64) error
@@ -31,12 +31,12 @@ func (r *clientPsreRepository) FindByID(id int64) (*model.ClientPsre, error) {
 	return &psre, nil
 }
 
-func (r *clientPsreRepository) FindByExternalID(externalID string) (*model.ClientPsre, error) {
+func (r *clientPsreRepository) FindByExternalID(externalID string) (*model.Client, error) {
 	var psre model.ClientPsre
 	if err := r.db.Preload("Client").Where("external_id = ?", externalID).First(&psre).Error; err != nil {
 		return nil, err
 	}
-	return &psre, nil
+	return &psre.Client, nil
 }
 func (r *clientPsreRepository) FindByClientID(clientID int64) (*model.ClientPsre, error) {
 	var psre model.ClientPsre

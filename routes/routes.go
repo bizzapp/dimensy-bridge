@@ -74,7 +74,6 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		clients.DELETE("/:id", deps.ClientHdl.Delete)
 		clients.POST("/add-quota", deps.ClientHdl.AddQuota)
 		clients.POST("/approve-add-quota", deps.ClientHdl.ApproveAddQuota)
-
 	}
 
 	products := api.Group("/products")
