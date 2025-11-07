@@ -16,19 +16,22 @@ type QuotaClientService interface {
 	UpdateQuota(quota *model.QuotaClient) error
 	DeleteQuota(id int64) error
 	UseQuota(dto.UseQuotaClientRequest) (*model.QuotaClient, error)
+	AddQuota(tx *gorm.DB, req dto.AddQuotaClientRequest) (*model.QuotaClient, error)
 }
 
 type quotaClientService struct {
-	db                   *gorm.DB
-	quotaClientRepo      repository.QuotaClientRepository
-	quotaClientReduction repository.QuotaClientReductionRepository
+	db                      *gorm.DB
+	quotaClientRepo         repository.QuotaClientRepository
+	quotaClientReduction    repository.QuotaClientReductionRepository
+	quotaClientAdditionRepo repository.QuotaClientAdditionRepository
 }
 
-func NewQuotaClientService(db *gorm.DB, quotaClientRepo repository.QuotaClientRepository, quotaClientReduction repository.QuotaClientReductionRepository) QuotaClientService {
+func NewQuotaClientService(db *gorm.DB, quotaClientRepo repository.QuotaClientRepository, quotaClientReduction repository.QuotaClientReductionRepository, quotaClientAdditionRepo repository.QuotaClientAdditionRepository) QuotaClientService {
 	return &quotaClientService{
-		db:                   db,
-		quotaClientRepo:      quotaClientRepo,
-		quotaClientReduction: quotaClientReduction,
+		db:                      db,
+		quotaClientRepo:         quotaClientRepo,
+		quotaClientReduction:    quotaClientReduction,
+		quotaClientAdditionRepo: quotaClientAdditionRepo,
 	}
 }
 
@@ -79,5 +82,83 @@ func (s *quotaClientService) UseQuota(req dto.UseQuotaClientRequest) (*model.Quo
 	if err := s.quotaClientReduction.Create(&reduction); err != nil {
 		return nil, fmt.Errorf("failed to create quota reduction record: %w", err)
 	}
+	return &quota, nil
+}
+
+// CreateOrUpdateQuota creates new quota or updates existing quota based on clientID and masterProductID
+func (s *quotaClientService) AddQuota(tx *gorm.DB, req dto.AddQuotaClientRequest) (*model.QuotaClient, error) {
+	var quota model.QuotaClient
+
+	// Try to find existing quota
+	err := tx.Where("client_id = ? AND master_product_id = ?", req.ClientID, req.MasterProductID).First(&quota).Error
+
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			// Create new quota if not exists
+			quota = model.QuotaClient{
+				MasterProductID:       req.MasterProductID,
+				Quantity:              req.Quantity,
+				CurrentQuota:          req.Quantity,
+				ClientID:              req.ClientID,
+				IsUnlimited:           req.IsUnlimited,
+				MaxSingleUpload:       req.MaxSingleUpload,
+				MaxBulkUploadLimitPcs: req.MaxBulkUploadLimitPcs,
+				MaxBulkUploadLimitAll: req.MaxBulkUploadLimitAll,
+				MaxBulkUploadCount:    req.MaxBulkUploadCount,
+			}
+
+			if err := tx.Create(&quota).Error; err != nil {
+				return nil, fmt.Errorf("failed to create quota: %w", err)
+			}
+
+			if req.Quantity > 0 {
+				// Create initial quota addition record
+				addition := model.QuotaClientAddition{
+					QuotaClientID: quota.ID,
+					Quantity:      req.Quantity,
+					LatestQuota:   quota.CurrentQuota,
+					Type:          "initial",
+					CreatedBy:     req.CreatedBy,
+					IsProcess:     true,
+				}
+
+				if err := tx.Create(&addition).Error; err != nil {
+					return nil, fmt.Errorf("failed to create initial quota addition record: %w", err)
+				}
+			}
+		} else {
+			return nil, fmt.Errorf("failed to query quota: %w", err)
+		}
+	} else {
+		// Update existing quota - add to current values
+		quota.Quantity += req.Quantity
+		quota.CurrentQuota += req.Quantity
+		quota.IsUnlimited = req.IsUnlimited // Update unlimited status
+		quota.MaxSingleUpload = req.MaxSingleUpload
+		quota.MaxBulkUploadLimitPcs = req.MaxBulkUploadLimitPcs
+		quota.MaxBulkUploadLimitAll = req.MaxBulkUploadLimitAll
+		quota.MaxBulkUploadCount = req.MaxBulkUploadCount
+
+		if err := tx.Save(&quota).Error; err != nil {
+			return nil, fmt.Errorf("failed to update quota: %w", err)
+		}
+
+		// Create quota addition record for the update
+		if req.Quantity > 0 {
+			addition := model.QuotaClientAddition{
+				QuotaClientID: quota.ID,
+				Quantity:      req.Quantity,
+				LatestQuota:   quota.CurrentQuota,
+				Type:          "addition",
+				CreatedBy:     req.CreatedBy,
+				IsProcess:     true,
+			}
+
+			if err := tx.Create(&addition).Error; err != nil {
+				return nil, fmt.Errorf("failed to create quota addition record: %w", err)
+			}
+		}
+	}
+
 	return &quota, nil
 }

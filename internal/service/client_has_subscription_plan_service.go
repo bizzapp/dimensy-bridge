@@ -23,17 +23,20 @@ type clientHasSubscriptionPlanService struct {
 	repo             repository.ClientHasSubscriptionPlanRepository
 	quotaClientRepo  repository.QuotaClientRepository
 	subscriptionRepo repository.SubscriptionPlanRepository
+	quotaClientSvc   QuotaClientService
 }
 
 func NewClientHasSubscriptionPlanService(
 	repo repository.ClientHasSubscriptionPlanRepository,
 	quotaRepo repository.QuotaClientRepository,
 	subRepo repository.SubscriptionPlanRepository,
+	quotaClientSvc QuotaClientService,
 ) ClientHasSubscriptionPlanService {
 	return &clientHasSubscriptionPlanService{
 		repo:             repo,
 		quotaClientRepo:  quotaRepo,
 		subscriptionRepo: subRepo,
+		quotaClientSvc:   quotaClientSvc,
 	}
 }
 
@@ -87,16 +90,24 @@ func (s *clientHasSubscriptionPlanService) Process(id int64, processedBy int64) 
 				}
 			}
 
-			// Buat quota untuk client
-			quota := model.QuotaClient{
-				MasterProductID: master.ID,
-				Quantity:        int64(detail.Quantity),
-				CurrentQuota:    int64(detail.Quantity),
-				ClientID:        sub.ClientID,
-				IsUnlimited:     detail.IsUnlimited,
+			// Create or update quota untuk client dengan addition record
+			req := dto.AddQuotaClientRequest{
+				ClientID:              sub.ClientID,
+				MasterProductID:       master.ID,
+				Quantity:              int64(detail.Quantity),
+				IsUnlimited:           detail.IsUnlimited,
+				CreatedBy:             *sub.ProcessBy, // Use processedBy as createdBy for addition record
+				MaxSingleUpload:       detail.MaxSingleUpload,
+				MaxBulkUploadLimitPcs: detail.MaxBulkUploadLimitPcs,
+				MaxBulkUploadLimitAll: detail.MaxBulkUploadLimitAll,
+				MaxBulkUploadCount:    detail.MaxBulkUploadCount,
 			}
-			if err := tx.Create(&quota).Error; err != nil {
-				return fmt.Errorf("failed to create quota: %w", err)
+			_, err = s.quotaClientSvc.AddQuota(
+				tx,
+				req,
+			)
+			if err != nil {
+				return fmt.Errorf("failed to create or update quota: %w", err)
 			}
 		}
 
