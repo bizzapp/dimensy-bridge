@@ -11,12 +11,16 @@ const (
 	ClientDocumentProcessStatusOnProcess = "ON_PROCESS"
 	ClientDocumentProcessStatusSigned    = "SIGNED"
 
+	TypeSignMeterai = "SIGN_METERAI"
+	TypeStamp       = "STAMP"
+
 	DocumentProcessExpiredHour int = 24
 )
 
 type ClientDocumentProcess struct {
 	ID                 int64      `gorm:"primaryKey;autoIncrement" json:"id"`
 	ClientID           int64      `gorm:"not null;index" json:"client_id"`
+	Type               string     `gorm:"size:50;not null;default:'SIGN_METERAI'" json:"type"`
 	ExternalID         string     `gorm:"size:255;not null;uniqueIndex" json:"external_id"`
 	ExternalUserID     *string    `gorm:"size:255" json:"external_user_id,omitempty"`
 	ExternalCompanyID  *string    `gorm:"size:255" json:"external_company_id,omitempty"`

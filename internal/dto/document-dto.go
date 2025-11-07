@@ -55,19 +55,38 @@ type PsreDocumentProcessSignRequest struct {
 }
 
 // PsreDocumentStampRequest untuk request digital stamp
+
 type PsreDocumentStampRequest struct {
-	DocumentID  string `json:"documentId" binding:"required"`
-	CallbackURL string `json:"callbackUrl" binding:"required,url"`
-	StampType   string `json:"stampType" binding:"required,oneof=official corporate"`
+	DocumentOrGroupID string                      `json:"documentOrGroupId" binding:"required"`
+	CompanyID         string                      `json:"companyId" binding:"required"`
+	UserID            string                      `json:"userId,omitempty"`
+	Positions         []PsreDocumentStampPosition `json:"positions" binding:"required,dive"`
+}
+
+// PsreDocumentStampPosition mendefinisikan posisi tanda tangan/stempel dalam dokumen
+type PsreDocumentStampPosition struct {
+	Reason   string   `json:"reason,omitempty"`
+	Location string   `json:"location,omitempty"`
+	X        *float64 `json:"x"` // gunakan pointer agar 0 tidak dianggap "kosong"
+	Y        *float64 `json:"y"`
+	W        *float64 `json:"w"`
+	H        *float64 `json:"h"`
+	Page     int      `json:"page" binding:"required"`
+	Image    string   `json:"image" binding:"required,base64"` // base64 encoded image
 }
 
 // PsreDocumentProcessStampRequest untuk process stamping
 type PsreDocumentProcessStampRequest struct {
-	DocumentID string `json:"documentId" binding:"required"`
+	IsApprove         bool   `json:"isApprove" binding:"required"`
+	DocumentOrGroupID string `json:"documentOrGroupId" binding:"required"`
+	Otp               string `json:"otp" binding:"required"`
+	IP                string `json:"ip" binding:"required,ip"` // validasi IP otomatis
 }
 
 // PsreDocumentOtpSignRequest untuk request OTP untuk signing
 type PsreDocumentOtpSignRequest struct {
-	DocumentID  string `json:"documentId" binding:"required"`
-	SignerEmail string `json:"signerEmail" binding:"required,email"`
+	DocumentOrGroupID string  `json:"documentOrGroupId" binding:"required"`
+	UserID            *string `json:"userId,omitempty"`    // boleh null
+	CompanyID         *string `json:"companyId,omitempty"` // boleh null
+	DocumentType      string  `json:"documentType" binding:"required,oneof=SIGN STAMP"`
 }

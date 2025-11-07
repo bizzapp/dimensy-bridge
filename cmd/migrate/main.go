@@ -33,6 +33,7 @@ func main() {
 		&model.ClientDocument{},
 		&model.ClientDocumentProcess{},
 		&model.ClientDocumentProcessDetail{},
+		&model.ClientDocumentResendOtp{},
 	); err != nil {
 		log.Fatalf("❌ Gagal migrate database: %v", err)
 	}
