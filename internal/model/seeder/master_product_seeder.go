@@ -15,8 +15,8 @@ const (
 	ID_PRODUCT_COMPANY                     int64 = 10
 	ID_PRODUCT_USER_PERSONAL               int64 = 11
 	ID_PRODUCT_USER_PERSONAL_COMPANY       int64 = 12
-	ID_PRODUCT_UPLOAD_SINGLE               int64 = 13
-	ID_PRODUCT_UPLOAD_BULK                 int64 = 14
+	ID_PRODUCT_UPLOAD_SINGLE_DOCUMENT      int64 = 13
+	ID_PRODUCT_UPLOAD_BULK_DOCUMENT        int64 = 14
 )
 
 // SeedMasterProducts returns initial data for master_products table.
@@ -104,8 +104,8 @@ func SeedMasterProducts() []model.MasterProduct {
 			ID:           ID_PRODUCT_DOCUMENT_STORAGE_KB,
 			Name:         "Document Storage KB",
 			Code:         "DOCUMENT_STORAGE_KB",
-			Quantity:     100000,
-			CurrentStock: 100000,
+			Quantity:     1000000000000,
+			CurrentStock: 1000000000000,
 			IsUnlimited:  false,
 			Sort:         int(ID_PRODUCT_DOCUMENT_STORAGE_KB),
 			Icon:         strPtr("https://example.com/icon-email.png"),
@@ -152,6 +152,28 @@ func SeedMasterProducts() []model.MasterProduct {
 			CurrentStock: 100000,
 			IsUnlimited:  false,
 			Sort:         int(ID_PRODUCT_USER_PERSONAL_COMPANY),
+			Icon:         strPtr("https://example.com/icon-customstamp.png"),
+			Notes:        strPtr("Company"),
+		},
+		{
+			ID:           ID_PRODUCT_UPLOAD_SINGLE_DOCUMENT,
+			Name:         "Upload Single Document",
+			Code:         "UPLOAD_SINGLE_DOCUMENT",
+			Quantity:     0,
+			CurrentStock: 0,
+			IsUnlimited:  true,
+			Sort:         int(ID_PRODUCT_UPLOAD_SINGLE_DOCUMENT),
+			Icon:         strPtr("https://example.com/icon-customstamp.png"),
+			Notes:        strPtr("Company"),
+		},
+		{
+			ID:           ID_PRODUCT_UPLOAD_BULK_DOCUMENT,
+			Name:         "Upload Bulk Document",
+			Code:         "UPLOAD_BULK_DOCUMENT",
+			Quantity:     0,
+			CurrentStock: 0,
+			IsUnlimited:  true,
+			Sort:         int(ID_PRODUCT_UPLOAD_BULK_DOCUMENT),
 			Icon:         strPtr("https://example.com/icon-customstamp.png"),
 			Notes:        strPtr("Company"),
 		},

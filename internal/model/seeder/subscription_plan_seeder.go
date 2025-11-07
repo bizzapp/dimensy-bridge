@@ -72,12 +72,12 @@ func SeedSubscriptionPlans(db *gorm.DB) error {
 					Quantity:        10000,
 				},
 				{
-					MasterProductID: ID_PRODUCT_UPLOAD_SINGLE,
+					MasterProductID: ID_PRODUCT_UPLOAD_SINGLE_DOCUMENT,
 					Quantity:        10000,
 					MaxSingleUpload: intPtr(20),
 				},
 				{
-					MasterProductID:       ID_PRODUCT_UPLOAD_BULK,
+					MasterProductID:       ID_PRODUCT_UPLOAD_BULK_DOCUMENT,
 					Quantity:              10000,
 					MaxBulkUploadLimitPcs: intPtr(1),
 					MaxBulkUploadLimitAll: intPtr(5),
@@ -144,12 +144,12 @@ func SeedSubscriptionPlans(db *gorm.DB) error {
 					Quantity:        20000,
 				},
 				{
-					MasterProductID: ID_PRODUCT_UPLOAD_SINGLE,
+					MasterProductID: ID_PRODUCT_UPLOAD_SINGLE_DOCUMENT,
 					Quantity:        20000,
 					MaxSingleUpload: intPtr(100),
 				},
 				{
-					MasterProductID:       ID_PRODUCT_UPLOAD_BULK,
+					MasterProductID:       ID_PRODUCT_UPLOAD_BULK_DOCUMENT,
 					Quantity:              20000,
 					MaxBulkUploadLimitPcs: intPtr(10),
 					MaxBulkUploadLimitAll: intPtr(50),
