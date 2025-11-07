@@ -91,18 +91,19 @@ func (s *clientHasSubscriptionPlanService) Process(id int64, processedBy int64) 
 			}
 
 			// Create or update quota untuk client dengan addition record
-			req := dto.AddQuotaClientRequest{
+			req := dto.AddQuotaClientWithApproveRequest{
 				ClientID:              sub.ClientID,
 				MasterProductID:       master.ID,
 				Quantity:              int64(detail.Quantity),
 				IsUnlimited:           detail.IsUnlimited,
-				CreatedBy:             *sub.ProcessBy, // Use processedBy as createdBy for addition record
+				CreatedBy:             sub.CreatedBy, // Use createdBy as createdBy for addition record
+				ProcessBy:             sub.ProcessBy,
 				MaxSingleUpload:       detail.MaxSingleUpload,
 				MaxBulkUploadLimitPcs: detail.MaxBulkUploadLimitPcs,
 				MaxBulkUploadLimitAll: detail.MaxBulkUploadLimitAll,
 				MaxBulkUploadCount:    detail.MaxBulkUploadCount,
 			}
-			_, err = s.quotaClientSvc.AddQuota(
+			_, err = s.quotaClientSvc.AddQuotaWithApprove(
 				tx,
 				req,
 			)

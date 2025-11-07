@@ -16,7 +16,7 @@ type QuotaClientService interface {
 	UpdateQuota(quota *model.QuotaClient) error
 	DeleteQuota(id int64) error
 	UseQuota(dto.UseQuotaClientRequest) (*model.QuotaClient, error)
-	AddQuota(tx *gorm.DB, req dto.AddQuotaClientRequest) (*model.QuotaClient, error)
+	AddQuotaWithApprove(tx *gorm.DB, req dto.AddQuotaClientWithApproveRequest) (*model.QuotaClient, error)
 }
 
 type quotaClientService struct {
@@ -86,7 +86,7 @@ func (s *quotaClientService) UseQuota(req dto.UseQuotaClientRequest) (*model.Quo
 }
 
 // CreateOrUpdateQuota creates new quota or updates existing quota based on clientID and masterProductID
-func (s *quotaClientService) AddQuota(tx *gorm.DB, req dto.AddQuotaClientRequest) (*model.QuotaClient, error) {
+func (s *quotaClientService) AddQuotaWithApprove(tx *gorm.DB, req dto.AddQuotaClientWithApproveRequest) (*model.QuotaClient, error) {
 	var quota model.QuotaClient
 
 	// Try to find existing quota
@@ -150,6 +150,7 @@ func (s *quotaClientService) AddQuota(tx *gorm.DB, req dto.AddQuotaClientRequest
 				LatestQuota:   quota.CurrentQuota,
 				Type:          "addition",
 				CreatedBy:     req.CreatedBy,
+				ProcessBy:     req.ProcessBy,
 				IsProcess:     true,
 			}
 

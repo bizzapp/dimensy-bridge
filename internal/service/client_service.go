@@ -5,8 +5,6 @@ import (
 	"dimensy-bridge/internal/model"
 	"dimensy-bridge/internal/repository"
 	"errors"
-
-	"gorm.io/gorm"
 )
 
 type ClientService interface {
@@ -21,22 +19,14 @@ type ClientService interface {
 }
 
 type clientService struct {
-	tx                      *gorm.DB
 	clientRepo              repository.ClientRepository
 	userRepo                repository.UserRepository
 	quotaClientRepo         repository.QuotaClientRepository
 	quotaClientAdditionRepo repository.QuotaClientAdditionRepository
-	quotaClientSvc          QuotaClientService
 }
 
-func NewClientService(clientRepo repository.ClientRepository, userRepo repository.UserRepository, quotaClientRepo repository.QuotaClientRepository, quotaClientAdditionRepo repository.QuotaClientAdditionRepository, quotaClientSvc QuotaClientService) ClientService {
-	return &clientService{
-		clientRepo:              clientRepo,
-		userRepo:                userRepo,
-		quotaClientRepo:         quotaClientRepo,
-		quotaClientAdditionRepo: quotaClientAdditionRepo,
-		quotaClientSvc:          quotaClientSvc,
-	}
+func NewClientService(clientRepo repository.ClientRepository, userRepo repository.UserRepository, quotaClientRepo repository.QuotaClientRepository, quotaClientAdditionRepo repository.QuotaClientAdditionRepository) ClientService {
+	return &clientService{clientRepo, userRepo, quotaClientRepo, quotaClientAdditionRepo}
 }
 
 func (s *clientService) GetClientByExternalId(externalID string) (*model.Client, error) {
@@ -48,8 +38,24 @@ func (s *clientService) GetClientByExternalId(externalID string) (*model.Client,
 }
 
 func (s *clientService) AddQuota(req dto.AddQuotaClientRequest) error {
-	// Use quota client service to handle both quota update and addition record
-	_, err := s.quotaClientSvc.AddQuota(s.tx, req)
+	reqFind := dto.FindQuotaClientByClientProductRequest{
+		ClientID:        req.ClientID,
+		MasterProductID: req.MasterProductID,
+	}
+	quotaClient, err := s.quotaClientRepo.FindByClientProduct(reqFind)
+	if err != nil {
+		return err
+	}
+	typeAddition := "addition"
+	reqQuotaAddition := model.QuotaClientAddition{
+		QuotaClientID: quotaClient.ID,
+		Quantity:      req.Quantity,
+		LatestQuota:   quotaClient.Quantity,
+		Type:          typeAddition,
+		CreatedBy:     req.CreatedBy,
+	}
+
+	err = s.quotaClientAdditionRepo.Create(&reqQuotaAddition)
 	if err != nil {
 		return err
 	}

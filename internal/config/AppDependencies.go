@@ -135,7 +135,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	clientHasSubscriptionPlanSvc := service.NewClientHasSubscriptionPlanService(clientHasSubscriptionPlanRepo, quotaClientRepo, subscriptionPlanRepo, quotaClientSvc)
 
 	quotaClientAdditionSvc := service.NewQuotaClientAdditionService(db, quotaClientAdditionRepo, quotaClientRepo)
-	clientSvc := service.NewClientService(clientRepo, userRepo, quotaClientRepo, quotaClientAdditionRepo, quotaClientSvc)
+	clientSvc := service.NewClientService(clientRepo, userRepo, quotaClientRepo, quotaClientAdditionRepo)
 	clientPsreSvc := service.NewClientPsreService(clientPsreRepo, clientRepo)
 	clientCompanySvc := service.NewClientCompanyService(clientCompanyRepo, quotaClientSvc)
 	clientUserSvc := service.NewClientUserService(clientUserRepo)
