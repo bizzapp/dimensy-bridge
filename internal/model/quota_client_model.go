@@ -3,12 +3,16 @@ package model
 import "time"
 
 type QuotaClient struct {
-	ID              int64 `gorm:"primaryKey;autoIncrement" json:"id"`
-	MasterProductID int64 `gorm:"not null;index" json:"master_product_id"`
-	Quantity        int64 `json:"quantity"`
-	CurrentQuota    int64 `json:"current_quota"`
-	ClientID        int64 `gorm:"not null;index" json:"client_id"`
-	IsUnlimited     bool  `gorm:"default:false" json:"is_unlimited"`
+	ID                    int64 `gorm:"primaryKey;autoIncrement" json:"id"`
+	MasterProductID       int64 `gorm:"not null;index" json:"master_product_id"`
+	Quantity              int64 `json:"quantity"`
+	CurrentQuota          int64 `json:"current_quota"`
+	ClientID              int64 `gorm:"not null;index" json:"client_id"`
+	IsUnlimited           bool  `gorm:"default:false" json:"is_unlimited"`
+	MaxSingleUpload       *int  `json:"max_single_upload,omitempty"`
+	MaxBulkUploadLimitPcs *int  `json:"max_bulk_upload_limit_pcs,omitempty"`
+	MaxBulkUploadLimitAll *int  `json:"max_bulk_upload_limit_all,omitempty"`
+	MaxBulkUploadCount    *int  `json:"max_bulk_upload_count,omitempty"`
 
 	// Relasi
 	MasterProduct MasterProduct `gorm:"foreignKey:MasterProductID" json:"master_product"`

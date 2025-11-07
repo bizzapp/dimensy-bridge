@@ -16,3 +16,11 @@ func SeedMasterProducts(db *gorm.DB) error {
 	}
 	return nil
 }
+
+func SeedUsers(db *gorm.DB) error {
+	return seeder.SeedUsers(db)
+}
+
+func SeedSubscriptionPlans(db *gorm.DB) error {
+	return seeder.SeedSubscriptionPlans(db)
+}

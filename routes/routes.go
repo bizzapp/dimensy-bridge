@@ -80,6 +80,15 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		clients.POST("/add-quota", deps.ClientHdl.AddQuota)
 		clients.POST("/approve-add-quota", deps.ClientHdl.ApproveAddQuota)
 	}
+	clientSubs := api.Group("/client-subscriptions")
+	{
+		clientSubs.Use(middleware.JWTAuthMiddleware())
+		clientSubs.GET("/", deps.ClientHasSubscriptionHdl.GetAll)
+		clientSubs.GET("/:id", deps.ClientHasSubscriptionHdl.GetByID)
+		clientSubs.POST("/", deps.ClientHasSubscriptionHdl.Create)
+		clientSubs.POST("/:id/process", deps.ClientHasSubscriptionHdl.Process)
+		clientSubs.DELETE("/:id", deps.ClientHasSubscriptionHdl.Delete)
+	}
 
 	products := api.Group("/products")
 	{

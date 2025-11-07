@@ -23,6 +23,14 @@ type AppDependencies struct {
 	UserSvc  service.UserService
 	UserHdl  *handler.UserHandler
 
+	SubscriptionPlanRepo repository.SubscriptionPlanRepository
+	SubscriptionPlanSvc  service.SubscriptionPlanService
+	SubscriptionPlanHdl  *handler.SubscriptionPlanHandler
+
+	ClientHasSubscriptionRepo repository.ClientHasSubscriptionPlanRepository
+	ClientHasSubscriptionSvc  service.ClientHasSubscriptionPlanService
+	ClientHasSubscriptionHdl  *handler.ClientHasSubscriptionPlanHandler
+
 	// Client Module
 	ClientRepo repository.ClientRepository
 	ClientSvc  service.ClientService
@@ -117,11 +125,15 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	clientRequestLogRepo := repository.NewClientRequestLogRepository(db)
 	certificateRepo := repository.NewCertificateRepository(db)
 	clientDocumentRepo := repository.NewClientDocumentRepository(db)
+	clientHasSubscriptionPlanRepo := repository.NewClientHasSubscriptionPlanRepository(db)
+	subscriptionPlanRepo := repository.NewSubscriptionPlanRepository(db)
 
 	// === CORE SERVICES ===
 	authSvc := service.NewAuthService(authRepo)
 	userSvc := service.NewUserService(userRepo)
 	quotaClientSvc := service.NewQuotaClientService(db, quotaClientRepo, quotaClientReductionRepo)
+	clientHasSubscriptionPlanSvc := service.NewClientHasSubscriptionPlanService(clientHasSubscriptionPlanRepo, quotaClientRepo, subscriptionPlanRepo)
+
 	quotaClientAdditionSvc := service.NewQuotaClientAdditionService(db, quotaClientAdditionRepo, quotaClientRepo)
 	clientSvc := service.NewClientService(clientRepo, userRepo, quotaClientRepo, quotaClientAdditionRepo)
 	clientPsreSvc := service.NewClientPsreService(clientPsreRepo, clientRepo)
@@ -151,6 +163,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	quotaClientHdl := handler.NewQuotaClientHandler(quotaClientSvc)
 	quotaClientAdditionHdl := handler.NewQuotaClientAdditionHandler(quotaClientAdditionSvc)
 	certificateHdl := handler.NewCertificateHandler(certificateSvc)
+	clientHasSubscriptionPlanHdl := handler.NewClientHasSubscriptionPlanHandler(clientHasSubscriptionPlanSvc)
 
 	// === PSRE HANDLERS ===
 	psreClientHdl := psre_handler.NewPsreClientHandler(psreClientSvc)
@@ -202,6 +215,8 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 		ClientCompanyRepo: clientCompanyRepo,
 		ClientCompanySvc:  clientCompanySvc,
 		ClientCompanyHdl:  clientCompanyHdl,
+
+		ClientHasSubscriptionHdl: clientHasSubscriptionPlanHdl,
 
 		PsreClientHdl:        psreClientHdl,
 		PsreCompanyHdl:       psreCompanyHdl,
