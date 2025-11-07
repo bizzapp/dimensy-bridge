@@ -1,6 +1,10 @@
 package model
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type ClientDocumentProcessDetail struct {
 	ID                      int64   `gorm:"primaryKey;autoIncrement" json:"id"`
@@ -18,7 +22,7 @@ type ClientDocumentProcessDetail struct {
 
 	Client *Client `gorm:"foreignKey:ClientID;constraint:OnDelete:CASCADE;" json:"client,omitempty"`
 
-	CreatedAt *time.Time `json:"created_at,omitempty"`
-	UpdatedAt *time.Time `json:"updated_at,omitempty"`
-	DeletedAt *time.Time `gorm:"index" json:"deleted_at,omitempty"`
+	CreatedAt *time.Time     `json:"created_at,omitempty"`
+	UpdatedAt *time.Time     `json:"updated_at,omitempty"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
 }

@@ -10,7 +10,7 @@ type PsreDocumentSingleFileRequest struct {
 // PsreDocumentBulkFileRequest untuk upload multiple documents
 
 type PsreDocumentBulkFileRequest struct {
-	CallbackUrl string                     `json:"callbackUrl" binding:"required,url"`
+	CallbackURL string                     `json:"callbackUrl" binding:"required,url"`
 	Documents   []PsreDocumentBulkFileItem `json:"documents" binding:"required,min=1,dive"`
 }
 

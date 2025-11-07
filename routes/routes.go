@@ -24,6 +24,11 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		})
 	})
 
+	// ==== tambahkan ini ====
+	webhook := deps.WebhookHdl // pastikan sudah diinject di AppDependencies
+	r.POST("/api/v1/webhook-notification-psre", webhook.HandlePSRENotification)
+	// =======================
+
 	clientOriginsRaw := strings.Split(os.Getenv("CLIENT_ORIGIN"), ",")
 	clientOrigins := make([]string, len(clientOriginsRaw))
 	for i, origin := range clientOriginsRaw {

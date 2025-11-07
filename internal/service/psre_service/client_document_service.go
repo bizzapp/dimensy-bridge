@@ -10,6 +10,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -26,9 +28,10 @@ type ClientDocumentService interface {
 }
 
 type clientDocumentService struct {
-	db                 *gorm.DB
-	clientPsreSvc      service.ClientPsreService
-	clientDocumentRepo repository.ClientDocumentRepository
+	db                        *gorm.DB
+	clientPsreSvc             service.ClientPsreService
+	clientDocumentRepo        repository.ClientDocumentRepository
+	clientDocumentProcessRepo repository.ClientDocumentProcessRepository
 	// Add necessary dependencies here
 }
 
@@ -60,6 +63,7 @@ func (s *clientDocumentService) UploadSingle(token, externalID string, dto dto.P
 
 		totalParticipants := 1
 		typeDocument := "SINGLE"
+		callbackURL := os.Getenv("APP_URL_WEBHOOK_NOTIFICATION")
 		clientDocument := &model.ClientDocument{
 			ClientID:          client.ID,
 			FileName:          dto.FileName,
@@ -67,10 +71,14 @@ func (s *clientDocumentService) UploadSingle(token, externalID string, dto dto.P
 			Status:            model.DOCUMENT_STATUS_PENDING,
 			TotalParticipants: &totalParticipants,
 			FileSizeKB:        &fileSize,
+			CallbackURL:       &callbackURL,
+			ClientCallbackURL: &dto.CallbackURL,
 		}
 		if err := tx.Create(&clientDocument).Error; err != nil {
 			return fmt.Errorf("failed create client document: %w", err)
 		}
+
+		dto.CallbackURL = callbackURL
 		data, st, err := utils.PsreRequest("POST", "/document/upload", dto, token, nil)
 		respBody, status = data, st
 		if err != nil {
@@ -140,6 +148,7 @@ func (s *clientDocumentService) UploadBulk(token, externalID string, dto dto.Psr
 
 		// Simpan dokumen yang berhasil dibuat
 		var createdDocs []model.ClientDocument
+		callbackURL := os.Getenv("APP_URL_WEBHOOK_NOTIFICATION")
 
 		for _, document := range dto.Documents {
 			// Hitung ukuran file dari base64
@@ -155,6 +164,8 @@ func (s *clientDocumentService) UploadBulk(token, externalID string, dto dto.Psr
 				Status:            model.DOCUMENT_STATUS_PENDING,
 				TotalParticipants: &totalParticipants,
 				FileSizeKB:        &fileSize,
+				CallbackURL:       &callbackURL,
+				ClientCallbackURL: &dto.CallbackURL,
 			}
 
 			if err := tx.Create(&clientDocument).Error; err != nil {
@@ -164,6 +175,7 @@ func (s *clientDocumentService) UploadBulk(token, externalID string, dto dto.Psr
 			createdDocs = append(createdDocs, clientDocument)
 		}
 
+		dto.CallbackURL = callbackURL
 		// Call PSRE API
 		data, st, err := utils.PsreRequest("POST", "/document/upload-bulk", dto, token, nil)
 		respBody, status = data, st
@@ -222,12 +234,16 @@ func (s *clientDocumentService) RequestSign(token, externalID string, dto dto.Ps
 		status   int
 	)
 	txErr := s.db.Transaction(func(tx *gorm.DB) error {
+		// Calculate expire time based on current time + DocumentProcessExpiredMinutes
+		expireTime := time.Now().Add(time.Duration(model.DocumentProcessExpiredHour) * time.Hour)
+
 		clientDocumentProcess := &model.ClientDocumentProcess{
 			ClientID:          client.ID,
 			ExternalID:        dto.DocumentOrGroupID,
 			ExternalUserID:    dto.UserID,
 			ExternalCompanyID: dto.CompanyID,
 			Status:            model.ClientDocumentProcessStatusWaiting,
+			ExpireTime:        &expireTime,
 		}
 		if err := tx.Create(&clientDocumentProcess).Error; err != nil {
 			return fmt.Errorf("failed create client document process: %w", err)
@@ -279,11 +295,44 @@ func (s *clientDocumentService) RequestSign(token, externalID string, dto dto.Ps
 }
 
 func (s *clientDocumentService) ProcessSign(token, externalID string, dto dto.PsreDocumentProcessSignRequest) ([]byte, int, error) {
-	data, status, err := utils.PsreRequest("POST", "/document/proccess-sign", dto, token, nil)
+	_, err := s.clientPsreSvc.GetByExternalID(externalID)
 	if err != nil {
-		return data, status, fmt.Errorf("failed call psre api: %w", err)
+		return nil, http.StatusBadRequest, fmt.Errorf("failed get client psre: %w", err)
 	}
-	return data, status, nil
+
+	var (
+		respBody []byte
+		status   int
+	)
+
+	txErr := s.db.Transaction(func(tx *gorm.DB) error {
+		data, st, err := utils.PsreRequest("POST", "/document/proccess-sign", dto, token, nil)
+		respBody, status = data, st
+		if err != nil {
+			return fmt.Errorf("failed call psre api: %w", err)
+		}
+
+		if status >= 400 {
+			return fmt.Errorf("psre api error: %s", string(data))
+		}
+
+		if err := tx.Model(&model.ClientDocumentProcess{}).
+			Where("external_id = ?", dto.DocumentOrGroupID).
+			Update("is_process", true).Error; err != nil {
+
+			return fmt.Errorf("failed update group_external_id: %w", err)
+		}
+		return nil
+	})
+	if txErr != nil {
+		if respBody != nil {
+			return respBody, status, txErr
+		}
+		errJSON, _ := json.Marshal(map[string]any{"code": 400, "message": txErr.Error()})
+		return errJSON, http.StatusBadRequest, txErr
+	}
+
+	return respBody, status, nil
 }
 
 func (s *clientDocumentService) RequestStamp(token, externalID string, dto dto.PsreDocumentStampRequest) ([]byte, int, error) {

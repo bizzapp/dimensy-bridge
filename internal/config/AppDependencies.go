@@ -97,6 +97,9 @@ type AppDependencies struct {
 	// PSRE Backend Module
 	PsreBackendHdl *psre_handler.PsreBackendHandler
 	PsreBackendSvc psre_service.BackendService
+
+	WebhookHdl *handler.WebhookHandler // 👈 tambahkan ini
+
 }
 
 func NewAppDependencies(db *gorm.DB) *AppDependencies {
