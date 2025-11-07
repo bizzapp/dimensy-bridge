@@ -71,7 +71,7 @@ func (s *quotaClientService) UseQuota(req dto.UseQuotaClientRequest) (*model.Quo
 	// Create a quota reduction record
 	reduction := model.QuotaClientReduction{
 		QuotaClientID: quota.ID,
-		Quantity:      int(req.Quantity),
+		Quantity:      req.Quantity,
 		LatestQuota:   quota.CurrentQuota,
 		Type:          "usage",
 		UsedBy:        req.UsedBy,

@@ -5,8 +5,8 @@ import "time"
 type QuotaClientAddition struct {
 	ID            int64  `gorm:"primaryKey;autoIncrement" json:"id"`
 	QuotaClientID int64  `gorm:"not null;index" json:"quota_client_id"`
-	Quantity      int    `json:"quantity"`
-	LatestQuota   int    `json:"latest_quota"`
+	Quantity      int64  `json:"quantity"`
+	LatestQuota   int64  `json:"latest_quota"`
 	Type          string `gorm:"size:50" json:"type"`
 	CreatedBy     int64  `json:"created_by"`
 	ProcessBy     *int64 `json:"process_by,omitempty"`

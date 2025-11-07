@@ -5,8 +5,8 @@ import "time"
 type QuotaClient struct {
 	ID              int64 `gorm:"primaryKey;autoIncrement" json:"id"`
 	MasterProductID int64 `gorm:"not null;index" json:"master_product_id"`
-	Quantity        int   `json:"quantity"`
-	CurrentQuota    int   `json:"current_quota"`
+	Quantity        int64 `json:"quantity"`
+	CurrentQuota    int64 `json:"current_quota"`
 	ClientID        int64 `gorm:"not null;index" json:"client_id"`
 	IsUnlimited     bool  `gorm:"default:false" json:"is_unlimited"`
 

@@ -1,10 +1,10 @@
 package dto
 
 type AddQuotaClientRequest struct {
-	MasterProductID int64   `json:"master_product_id" binding:"required"`
-	ClientID        int64   `json:"client_id" binding:"required"`
-	CreatedBy       int64   `json:"created_by" binding:"required"`
-	Quantity        float64 `json:"quantity" binding:"required,gt=0"`
+	MasterProductID int64 `json:"master_product_id" binding:"required"`
+	ClientID        int64 `json:"client_id" binding:"required"`
+	CreatedBy       int64 `json:"created_by" binding:"required"`
+	Quantity        int64 `json:"quantity" binding:"required,gt=0"`
 }
 
 type ApproveAddQuotaClientRequest struct {
@@ -15,7 +15,7 @@ type ApproveAddQuotaClientRequest struct {
 type UseQuotaClientRequest struct {
 	MasterProductID int64  `json:"master_product_id" binding:"required"`
 	ClientID        int64  `json:"client_id" binding:"required"`
-	Quantity        int    `json:"quantity" binding:"required,gt=0"`
+	Quantity        int64  `json:"quantity" binding:"required,gt=0"`
 	UsedBy          *int64 `json:"used_by" binding:"omitempty"`
 }
 
