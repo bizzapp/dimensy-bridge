@@ -112,7 +112,6 @@ func (s *quotaClientService) AddQuota(tx *gorm.DB, req dto.AddQuotaClientRequest
 			}
 
 			if req.Quantity > 0 {
-				// Create initial quota addition record
 				addition := model.QuotaClientAddition{
 					QuotaClientID: quota.ID,
 					Quantity:      req.Quantity,
