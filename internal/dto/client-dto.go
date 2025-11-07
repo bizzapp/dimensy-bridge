@@ -1,15 +1,16 @@
 package dto
 
 type AddQuotaClientRequest struct {
-	MasterProductID       int64 `json:"master_product_id" binding:"required"`
-	ClientID              int64 `json:"client_id" binding:"required"`
-	CreatedBy             int64 `json:"created_by" binding:"required"`
-	Quantity              int64 `json:"quantity" binding:"required"`
-	IsUnlimited           bool  `json:"is_unlimited"`
-	MaxSingleUpload       *int  `json:"max_single_upload,omitempty"`
-	MaxBulkUploadLimitPcs *int  `json:"max_bulk_upload_limit_pcs,omitempty"`
-	MaxBulkUploadLimitAll *int  `json:"max_bulk_upload_limit_all,omitempty"`
-	MaxBulkUploadCount    *int  `json:"max_bulk_upload_count,omitempty"`
+	MasterProductID       int64   `json:"master_product_id" binding:"required"`
+	ClientID              int64   `json:"client_id" binding:"required"`
+	CreatedBy             int64   `json:"created_by" binding:"required"`
+	Quantity              int64   `json:"quantity" binding:"required"`
+	IsUnlimited           bool    `json:"is_unlimited"`
+	TypeAddition          *string `json:"type_addition,omitempty"`
+	MaxSingleUpload       *int    `json:"max_single_upload,omitempty"`
+	MaxBulkUploadLimitPcs *int    `json:"max_bulk_upload_limit_pcs,omitempty"`
+	MaxBulkUploadLimitAll *int    `json:"max_bulk_upload_limit_all,omitempty"`
+	MaxBulkUploadCount    *int    `json:"max_bulk_upload_count,omitempty"`
 }
 
 type AddQuotaClientWithApproveRequest struct {
@@ -31,10 +32,11 @@ type ApproveAddQuotaClientRequest struct {
 }
 
 type UseQuotaClientRequest struct {
-	MasterProductID int64  `json:"master_product_id" binding:"required"`
-	ClientID        int64  `json:"client_id" binding:"required"`
-	Quantity        int64  `json:"quantity" binding:"required"`
-	UsedBy          *int64 `json:"used_by" binding:"omitempty"`
+	MasterProductID int64   `json:"master_product_id" binding:"required"`
+	ClientID        int64   `json:"client_id" binding:"required"`
+	Quantity        int64   `json:"quantity" binding:"required"`
+	UsedBy          *int64  `json:"used_by" binding:"omitempty"`
+	TypeReduction   *string `json:"type_reduction" binding:"omitempty"` // e.g., "signature", "stamp", etc.
 }
 
 type FindQuotaClientByClientProductRequest struct {

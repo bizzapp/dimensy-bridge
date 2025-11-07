@@ -80,7 +80,7 @@ func (s *clientService) Login(body []byte) ([]byte, error) {
 
 	respBody, status, err := utils.PsreRequest("POST", "/client/login", req, "", nil)
 	if err != nil {
-		return nil, fmt.Errorf("login failed: %v (status: %d)", err, status)
+		return respBody, fmt.Errorf("login failed: %v (status: %d)", err, status)
 	}
 
 	// Simpan log

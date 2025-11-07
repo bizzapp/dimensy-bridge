@@ -23,7 +23,8 @@ func (h *PsreClientHandler) Login(c *gin.Context) {
 
 	resp, err := h.psreClientSvc.Login(body)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "error": err.Error()})
+		// c.JSON(http.StatusUnauthorized, gin.H{"success": false, "error": err.Error()})
+		c.Data(http.StatusUnauthorized, "application/json", resp)
 		return
 	}
 

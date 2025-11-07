@@ -47,6 +47,9 @@ func (s *clientService) AddQuota(req dto.AddQuotaClientRequest) error {
 		return err
 	}
 	typeAddition := "addition"
+	if req.TypeAddition != nil {
+		typeAddition = *req.TypeAddition
+	}
 	reqQuotaAddition := model.QuotaClientAddition{
 		QuotaClientID: quotaClient.ID,
 		Quantity:      req.Quantity,

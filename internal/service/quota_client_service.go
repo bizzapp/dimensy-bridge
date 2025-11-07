@@ -71,12 +71,17 @@ func (s *quotaClientService) UseQuota(req dto.UseQuotaClientRequest) (*model.Quo
 		return nil, fmt.Errorf("failed to update quota: %w", err)
 	}
 
+	typeReduction := "usage"
+	if req.TypeReduction != nil {
+		typeReduction = *req.TypeReduction
+	}
+
 	// Create a quota reduction record
 	reduction := model.QuotaClientReduction{
 		QuotaClientID: quota.ID,
 		Quantity:      req.Quantity,
 		LatestQuota:   quota.CurrentQuota,
-		Type:          "usage",
+		Type:          typeReduction,
 		UsedBy:        req.UsedBy,
 	}
 	if err := s.quotaClientReduction.Create(&reduction); err != nil {
