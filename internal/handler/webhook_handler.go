@@ -3,6 +3,7 @@ package handler
 import (
 	"dimensy-bridge/internal/dto"
 	"dimensy-bridge/internal/service"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -30,6 +31,7 @@ func (h *WebhookHandler) HandlePSRENotification(c *gin.Context) {
 	}
 	err := h.webhookSvc.SendDocumentNotification(req)
 	if err != nil {
+		fmt.Println(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",
 			"message": "failed to process webhook",
