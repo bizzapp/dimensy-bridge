@@ -16,6 +16,7 @@ type ClientUserRepository interface {
 	UpdateActiveStatus(externalID string, active bool) error
 	UpdateVerifyPhoneStatus(externalID string, verify bool) error
 	UpdateVerifyKYCStatus(externalID string, verify bool) error
+	FindByExternalID(externalID string) (*model.ClientUser, error)
 }
 
 type clientUserRepository struct {
@@ -24,6 +25,11 @@ type clientUserRepository struct {
 
 func NewClientUserRepository(db *gorm.DB) ClientUserRepository {
 	return &clientUserRepository{db}
+}
+func (r *clientUserRepository) FindByExternalID(externalID string) (*model.ClientUser, error) {
+	var user model.ClientUser
+	err := r.db.Preload("Client").Preload("ClientCompany").Where("external_id = ?", externalID).First(&user).Error
+	return &user, err
 }
 
 func (r *clientUserRepository) FindAll() ([]model.ClientUser, error) {

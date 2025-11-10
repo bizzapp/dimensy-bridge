@@ -2,6 +2,7 @@ package repository
 
 import (
 	"dimensy-bridge/internal/model"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -13,6 +14,11 @@ type ClientKYCHistoryRepository interface {
 	FindAll() ([]model.ClientKYCHistory, error)
 	Delete(id int64) error
 	FindByClientUserID(clientUserID int64) ([]model.ClientKYCHistory, error)
+	FindByExternalUserID(externalUserID string) (*model.ClientKYCHistory, error)
+	FindByExternalUserIDAndSignature(externalUserID string, signature string) (*model.ClientKYCHistory, error)
+	UpdateIsRejectStatus(signatureID string, isReject bool) error
+	UpdateIsVerifyStatus(signatureID string, isVerify bool) error
+	GetBySignatureID(signatureID string) (*model.ClientKYCHistory, error)
 }
 
 type clientKYCHistoryRepository struct {
@@ -21,6 +27,13 @@ type clientKYCHistoryRepository struct {
 
 func NewClientKYCHistoryRepository(db *gorm.DB) ClientKYCHistoryRepository {
 	return &clientKYCHistoryRepository{db: db}
+}
+func (r *clientKYCHistoryRepository) GetBySignatureID(signatureID string) (*model.ClientKYCHistory, error) {
+	var result model.ClientKYCHistory
+	if err := r.db.Where("signature = ?", signatureID).First(&result).Error; err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
 
 func (r *clientKYCHistoryRepository) Create(data *model.ClientKYCHistory) error {
@@ -57,4 +70,40 @@ func (r *clientKYCHistoryRepository) FindByClientUserID(clientUserID int64) ([]m
 		return nil, err
 	}
 	return results, nil
+}
+
+func (r *clientKYCHistoryRepository) FindByExternalUserID(externalUserID string) (*model.ClientKYCHistory, error) {
+	var result model.ClientKYCHistory
+	if err := r.db.Where("external_user_id = ?", externalUserID).First(&result).Error; err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (r *clientKYCHistoryRepository) FindByExternalUserIDAndSignature(externalUserID string, signature string) (*model.ClientKYCHistory, error) {
+	var result model.ClientKYCHistory
+	if err := r.db.Where("external_user_id = ? AND signature = ?", externalUserID, signature).First(&result).Error; err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (r *clientKYCHistoryRepository) UpdateIsRejectStatus(signatureID string, isReject bool) error {
+	return r.db.Model(&model.ClientKYCHistory{}).
+		Where("signature = ?", signatureID).
+		Where("reject_time IS NULL").
+		Updates(map[string]interface{}{
+			"is_reject":   isReject,
+			"reject_time": time.Now(),
+		}).Error
+}
+
+func (r *clientKYCHistoryRepository) UpdateIsVerifyStatus(signatureID string, isVerify bool) error {
+	return r.db.Model(&model.ClientKYCHistory{}).
+		Where("signature = ?", signatureID).
+		Where("verify_time IS NULL").
+		Updates(map[string]interface{}{
+			"is_verify":   isVerify,
+			"verify_time": time.Now(),
+		}).Error
 }

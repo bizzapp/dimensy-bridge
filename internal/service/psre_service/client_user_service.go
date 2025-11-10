@@ -29,11 +29,14 @@ type ClientUserService interface {
 }
 
 type clientUserService struct {
-	db               *gorm.DB
-	clientPsreSvc    service.ClientPsreService
-	clientCompanySvc service.ClientCompanyService
-	clientUserSvc    service.ClientUserService
-	clientUserRepo   repository.ClientUserRepository
+	db                   *gorm.DB
+	clientSvc            service.ClientService
+	clientPsreSvc        service.ClientPsreService
+	clientCompanySvc     service.ClientCompanyService
+	clientUserSvc        service.ClientUserService
+	clientUserRepo       repository.ClientUserRepository
+	clientKYCHistorySvc  service.ClientKYCHistoryService
+	clientKYCHistoryRepo repository.ClientKYCHistoryRepository
 }
 
 func NewClientUserService(
@@ -42,13 +45,19 @@ func NewClientUserService(
 	clientCompanySvc service.ClientCompanyService,
 	clientUserSvc service.ClientUserService,
 	clientUserRepo repository.ClientUserRepository,
+	clientKYCHistorySvc service.ClientKYCHistoryService,
+	clientSvc service.ClientService,
+	clientKYCHistoryRepo repository.ClientKYCHistoryRepository,
 ) ClientUserService {
 	return &clientUserService{
-		db:               db,
-		clientPsreSvc:    clientPsreSvc,
-		clientCompanySvc: clientCompanySvc,
-		clientUserSvc:    clientUserSvc,
-		clientUserRepo:   clientUserRepo,
+		db:                   db,
+		clientPsreSvc:        clientPsreSvc,
+		clientCompanySvc:     clientCompanySvc,
+		clientUserSvc:        clientUserSvc,
+		clientUserRepo:       clientUserRepo,
+		clientKYCHistorySvc:  clientKYCHistorySvc,
+		clientSvc:            clientSvc,
+		clientKYCHistoryRepo: clientKYCHistoryRepo,
 	}
 }
 
@@ -205,6 +214,17 @@ func (s *clientUserService) ActivateUser(token, externalID string, req *dto.Clie
 }
 
 func (s *clientUserService) RequestKYC(token, externalID string, req *dto.ClientUserKYCRequest) ([]byte, int, error) {
+
+	client, err := s.clientSvc.GetClientByExternalId(externalID)
+	if err != nil {
+		// return fmt.Errorf("unauthorized client: %w", err)
+		return nil, http.StatusBadRequest, fmt.Errorf("unauthorized client: %w", err)
+	}
+	clientUser, err := s.clientUserSvc.GetByExternalID(req.UserID)
+	if err != nil {
+		return nil, http.StatusBadRequest, fmt.Errorf("unauthorized client user: %w", err)
+	}
+
 	data, status, err := utils.PsreRequest("POST", "/user/request-kyc", req, token, nil)
 	if err != nil {
 		return data, status, fmt.Errorf("failed call psre api: %w", err)
@@ -212,6 +232,32 @@ func (s *clientUserService) RequestKYC(token, externalID string, req *dto.Client
 
 	if status >= 400 {
 		return data, status, fmt.Errorf("psre request kyc failed: %s", string(data))
+	}
+
+	var resp struct {
+		Code int `json:"code"`
+		Data struct {
+			SignatureID string `json:"signatureId"`
+			URL         string `json:"url"`
+		}
+	}
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return data, status, fmt.Errorf("failed to parse psre response: %w", err)
+	}
+	if resp.Code == 0 {
+		kycHistory := model.ClientKYCHistory{
+			ExternalUserID: req.UserID,
+			Signature:      resp.Data.SignatureID,
+			IsVerify:       false,
+			ClientID:       client.ID,
+			ClientUserID:   clientUser.ID,
+		}
+
+		// Use CreateOrUpdate to handle existing records
+		_, err := s.clientKYCHistorySvc.CreateOrUpdate(&kycHistory)
+		if err != nil {
+			return data, status, fmt.Errorf("failed to save kyc history: %w", err)
+		}
 	}
 
 	return data, status, nil
@@ -271,14 +317,7 @@ func (s *clientUserService) PhoneActivation(token, externalID string, req *dto.C
 }
 
 func (s *clientUserService) VerifyKYC(token, externalID string, req *dto.ClientUserVerifyKYCRequest) ([]byte, int, error) {
-	data, status, err := utils.PsreRequest("POST", "/user/verify-kyc", req, token, nil)
-	if err != nil {
-		return data, status, fmt.Errorf("failed call psre api: %w", err)
-	}
-
-	if status >= 400 {
-		return data, status, fmt.Errorf("psre phone activation failed: %s", string(data))
-	}
+	data, status, _ := utils.PsreRequest("POST", "/user/verify-kyc", req, token, nil)
 
 	var resp struct {
 		Code    int    `json:"code"`
@@ -287,9 +326,25 @@ func (s *clientUserService) VerifyKYC(token, externalID string, req *dto.ClientU
 	if err := json.Unmarshal(data, &resp); err != nil {
 		return data, status, fmt.Errorf("failed to parse psre response: %w", err)
 	}
+
+	// Is Verify
 	if resp.Code == 0 {
-		if err := s.clientUserRepo.UpdateVerifyKYCStatus(externalID, true); err != nil {
+		clientKycUser, err := s.clientKYCHistoryRepo.GetBySignatureID(req.SignatureID)
+		if err != nil {
+			return data, status, fmt.Errorf("failed to get client kyc history: %w", err)
+		}
+
+		if err := s.clientUserRepo.UpdateVerifyKYCStatus(clientKycUser.ExternalUserID, true); err != nil {
 			return data, status, fmt.Errorf("failed to update user verify phone status: %w", err)
+		}
+		if err := s.clientKYCHistoryRepo.UpdateIsVerifyStatus(req.SignatureID, true); err != nil {
+			return data, status, fmt.Errorf("failed to update kyc history is_verify status: %w", err)
+		}
+	}
+	// Is Reject
+	if resp.Code == 90 {
+		if err := s.clientKYCHistoryRepo.UpdateIsRejectStatus(req.SignatureID, true); err != nil {
+			return data, status, fmt.Errorf("failed to update kyc history is_reject status: %w", err)
 		}
 	}
 

@@ -14,6 +14,7 @@ type ClientUserService interface {
 	Create(user *model.ClientUser) (*model.ClientUser, error)
 	Update(user *model.ClientUser) error
 	Delete(id uint) error
+	GetByExternalID(externalID string) (*model.ClientUser, error)
 }
 
 type clientUserService struct {
@@ -26,6 +27,10 @@ func NewClientUserService(repo repository.ClientUserRepository) ClientUserServic
 
 func (s *clientUserService) GetAll() ([]model.ClientUser, error) {
 	return s.repo.FindAll()
+}
+
+func (s *clientUserService) GetByExternalID(externalID string) (*model.ClientUser, error) {
+	return s.repo.FindByExternalID(externalID)
 }
 
 func (s *clientUserService) GetByID(id uint) (*model.ClientUser, error) {
