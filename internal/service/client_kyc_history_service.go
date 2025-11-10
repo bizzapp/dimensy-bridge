@@ -84,6 +84,7 @@ func (s *clientKYCHistoryService) CreateOrUpdate(data *model.ClientKYCHistory) (
 	existing.VerifyTime = data.VerifyTime
 	existing.ClientUserID = data.ClientUserID
 	existing.Signature = data.Signature
+	existing.Count = existing.Count + 1
 
 	// Update other fields if provided
 	if data.ClientID != 0 {

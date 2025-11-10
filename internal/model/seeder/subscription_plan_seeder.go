@@ -83,6 +83,10 @@ func SeedSubscriptionPlans(db *gorm.DB) error {
 					MaxBulkUploadLimitAll: intPtr(5),
 					MaxBulkUploadCount:    intPtr(5),
 				},
+				{
+					MasterProductID: ID_PRODUCT_KYC,
+					Quantity:        10000,
+				},
 			},
 		},
 		{
@@ -154,6 +158,10 @@ func SeedSubscriptionPlans(db *gorm.DB) error {
 					MaxBulkUploadLimitPcs: intPtr(10),
 					MaxBulkUploadLimitAll: intPtr(50),
 					MaxBulkUploadCount:    intPtr(50),
+				},
+				{
+					MasterProductID: ID_PRODUCT_KYC,
+					Quantity:        20000,
 				},
 			},
 		},

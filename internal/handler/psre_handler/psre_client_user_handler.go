@@ -210,6 +210,7 @@ func (h *PsreClientUserHandler) RequestKYC(c *gin.Context) {
 
 	respBody, status, err := h.psreClientUserSvc.RequestKYC(token, externalID, &req)
 	if err != nil {
+		// fmt.Println(string(respBody), "respBody")
 		c.Data(status, "application/json", respBody)
 		return
 	}

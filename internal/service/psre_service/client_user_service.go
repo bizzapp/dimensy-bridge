@@ -217,7 +217,6 @@ func (s *clientUserService) RequestKYC(token, externalID string, req *dto.Client
 
 	client, err := s.clientSvc.GetClientByExternalId(externalID)
 	if err != nil {
-		// return fmt.Errorf("unauthorized client: %w", err)
 		return nil, http.StatusBadRequest, fmt.Errorf("unauthorized client: %w", err)
 	}
 	clientUser, err := s.clientUserSvc.GetByExternalID(req.UserID)
@@ -317,6 +316,20 @@ func (s *clientUserService) PhoneActivation(token, externalID string, req *dto.C
 }
 
 func (s *clientUserService) VerifyKYC(token, externalID string, req *dto.ClientUserVerifyKYCRequest) ([]byte, int, error) {
+
+	client, err := s.clientSvc.GetClientByExternalId(externalID)
+	if err != nil {
+		return nil, http.StatusBadRequest, fmt.Errorf("unauthorized client: %w", err)
+	}
+	_, err = utils.NewQuotaUtils().UseQuota(s.db, dto.UseQuotaClientRequest{
+		MasterProductID: seeder.ID_PRODUCT_KYC,
+		ClientID:        client.ID,
+		Quantity:        int64(1),
+	})
+	if err != nil {
+		respError, _ := json.Marshal(map[string]any{"code": 400, "message": fmt.Sprintf("failed to use quota: %v", err)})
+		return respError, http.StatusBadRequest, fmt.Errorf("failed to use quota: %w", err)
+	}
 	data, status, _ := utils.PsreRequest("POST", "/user/verify-kyc", req, token, nil)
 
 	var resp struct {

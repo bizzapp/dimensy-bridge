@@ -11,6 +11,7 @@ type ClientKYCHistory struct {
 	IsVerify       bool       `gorm:"default:false" json:"is_verify"`
 	IsReject       bool       `gorm:"default:false" json:"is_reject"`
 	RejectTime     *time.Time `json:"reject_time"`
+	Count          int        `gorm:"default:0" json:"count"`
 	VerifyTime     *time.Time `json:"verify_time,omitempty"`
 	CreatedAt      *time.Time `json:"created_at,omitempty"`
 	UpdatedAt      *time.Time `json:"updated_at,omitempty"`
