@@ -82,12 +82,13 @@ func (s *clientCompanyService) CreateClientCompany(
 			return fmt.Errorf("unauthorized client: %w", err)
 		}
 
+		quantity := 1
 		reqUseQuota := dto.UseQuotaClientRequest{
 			MasterProductID: seeder.ID_PRODUCT_COMPANY,
 			ClientID:        client.ID,
-			Quantity:        1,
+			Quantity:        int64(quantity),
 		}
-		useQuota, err := s.quotaClientSvc.UseQuota(reqUseQuota)
+		_, err = s.quotaClientSvc.UseQuota(reqUseQuota)
 		if err != nil {
 			dataResp := map[string]interface{}{
 				"error": err.Error(),
@@ -97,7 +98,7 @@ func (s *clientCompanyService) CreateClientCompany(
 
 			return fmt.Errorf("failed to use quota: %w", err)
 		}
-		fmt.Println("Use Quota Success:", useQuota)
+		// fmt.Println("Use Quota Success:", useQuota)
 
 		clientCompany := &model.ClientCompany{
 			ClientID: client.ID,

@@ -4,6 +4,7 @@ import (
 	"dimensy-bridge/internal/dto"
 	"dimensy-bridge/internal/model"
 	"dimensy-bridge/internal/repository"
+	"dimensy-bridge/pkg/utils"
 	"fmt"
 	"time"
 
@@ -24,6 +25,7 @@ type clientHasSubscriptionPlanService struct {
 	quotaClientRepo  repository.QuotaClientRepository
 	subscriptionRepo repository.SubscriptionPlanRepository
 	quotaClientSvc   QuotaClientService
+	quotaUtils       *utils.QuotaUtils
 }
 
 func NewClientHasSubscriptionPlanService(
@@ -37,6 +39,7 @@ func NewClientHasSubscriptionPlanService(
 		quotaClientRepo:  quotaRepo,
 		subscriptionRepo: subRepo,
 		quotaClientSvc:   quotaClientSvc,
+		quotaUtils:       utils.NewQuotaUtils(),
 	}
 }
 
@@ -90,7 +93,7 @@ func (s *clientHasSubscriptionPlanService) Process(id int64, processedBy int64) 
 				}
 			}
 
-			// Create or update quota untuk client dengan addition record
+			// Create or update quota untuk client dengan addition record menggunakan utils
 			req := dto.AddQuotaClientWithApproveRequest{
 				ClientID:              sub.ClientID,
 				MasterProductID:       master.ID,
@@ -103,10 +106,7 @@ func (s *clientHasSubscriptionPlanService) Process(id int64, processedBy int64) 
 				MaxBulkUploadLimitAll: detail.MaxBulkUploadLimitAll,
 				MaxBulkUploadCount:    detail.MaxBulkUploadCount,
 			}
-			_, err = s.quotaClientSvc.AddQuotaWithApprove(
-				tx,
-				req,
-			)
+			_, err = s.quotaUtils.CreateOrUpdateQuota(tx, req)
 			if err != nil {
 				return fmt.Errorf("failed to create or update quota: %w", err)
 			}

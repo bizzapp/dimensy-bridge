@@ -4,7 +4,7 @@ import (
 	"dimensy-bridge/internal/dto"
 	"dimensy-bridge/internal/model"
 	"dimensy-bridge/internal/repository"
-	"fmt"
+	"dimensy-bridge/pkg/utils"
 
 	"gorm.io/gorm"
 )
@@ -24,6 +24,7 @@ type quotaClientService struct {
 	quotaClientRepo         repository.QuotaClientRepository
 	quotaClientReduction    repository.QuotaClientReductionRepository
 	quotaClientAdditionRepo repository.QuotaClientAdditionRepository
+	quotaUtils              *utils.QuotaUtils
 }
 
 func NewQuotaClientService(db *gorm.DB, quotaClientRepo repository.QuotaClientRepository, quotaClientReduction repository.QuotaClientReductionRepository, quotaClientAdditionRepo repository.QuotaClientAdditionRepository) QuotaClientService {
@@ -32,6 +33,7 @@ func NewQuotaClientService(db *gorm.DB, quotaClientRepo repository.QuotaClientRe
 		quotaClientRepo:         quotaClientRepo,
 		quotaClientReduction:    quotaClientReduction,
 		quotaClientAdditionRepo: quotaClientAdditionRepo,
+		quotaUtils:              utils.NewQuotaUtils(),
 	}
 }
 
@@ -57,113 +59,25 @@ func (s *quotaClientService) DeleteQuota(id int64) error {
 }
 
 func (s *quotaClientService) UseQuota(req dto.UseQuotaClientRequest) (*model.QuotaClient, error) {
-	var quota model.QuotaClient
-	if err := s.db.First(&quota, req.ClientID).Error; err != nil {
-		return nil, fmt.Errorf("quota not found: %w", err)
-	}
+	var result *model.QuotaClient
 
-	if quota.CurrentQuota < req.Quantity {
-		return nil, fmt.Errorf("insufficient quota")
-	}
-
-	quota.CurrentQuota -= req.Quantity
-	if err := s.db.Save(&quota).Error; err != nil {
-		return nil, fmt.Errorf("failed to update quota: %w", err)
-	}
-
-	typeReduction := "usage"
-	if req.TypeReduction != nil {
-		typeReduction = *req.TypeReduction
-	}
-
-	// Create a quota reduction record
-	reduction := model.QuotaClientReduction{
-		QuotaClientID: quota.ID,
-		Quantity:      req.Quantity,
-		LatestQuota:   quota.CurrentQuota,
-		Type:          typeReduction,
-		UsedBy:        req.UsedBy,
-	}
-	if err := s.quotaClientReduction.Create(&reduction); err != nil {
-		return nil, fmt.Errorf("failed to create quota reduction record: %w", err)
-	}
-	return &quota, nil
-}
-
-// CreateOrUpdateQuota creates new quota or updates existing quota based on clientID and masterProductID
-func (s *quotaClientService) AddQuotaWithApprove(tx *gorm.DB, req dto.AddQuotaClientWithApproveRequest) (*model.QuotaClient, error) {
-	var quota model.QuotaClient
-
-	// Try to find existing quota
-	err := tx.Where("client_id = ? AND master_product_id = ?", req.ClientID, req.MasterProductID).First(&quota).Error
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		quota, err := s.quotaUtils.UseQuota(tx, req)
+		if err != nil {
+			return err
+		}
+		result = quota
+		return nil
+	})
 
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			// Create new quota if not exists
-			quota = model.QuotaClient{
-				MasterProductID:       req.MasterProductID,
-				Quantity:              req.Quantity,
-				CurrentQuota:          req.Quantity,
-				ClientID:              req.ClientID,
-				IsUnlimited:           req.IsUnlimited,
-				MaxSingleUpload:       req.MaxSingleUpload,
-				MaxBulkUploadLimitPcs: req.MaxBulkUploadLimitPcs,
-				MaxBulkUploadLimitAll: req.MaxBulkUploadLimitAll,
-				MaxBulkUploadCount:    req.MaxBulkUploadCount,
-			}
-
-			if err := tx.Create(&quota).Error; err != nil {
-				return nil, fmt.Errorf("failed to create quota: %w", err)
-			}
-
-			if req.Quantity > 0 {
-				addition := model.QuotaClientAddition{
-					QuotaClientID: quota.ID,
-					Quantity:      req.Quantity,
-					LatestQuota:   quota.CurrentQuota,
-					Type:          "initial",
-					CreatedBy:     req.CreatedBy,
-					IsProcess:     true,
-				}
-
-				if err := tx.Create(&addition).Error; err != nil {
-					return nil, fmt.Errorf("failed to create initial quota addition record: %w", err)
-				}
-			}
-		} else {
-			return nil, fmt.Errorf("failed to query quota: %w", err)
-		}
-	} else {
-		// Update existing quota - add to current values
-		quota.Quantity += req.Quantity
-		quota.CurrentQuota += req.Quantity
-		quota.IsUnlimited = req.IsUnlimited // Update unlimited status
-		quota.MaxSingleUpload = req.MaxSingleUpload
-		quota.MaxBulkUploadLimitPcs = req.MaxBulkUploadLimitPcs
-		quota.MaxBulkUploadLimitAll = req.MaxBulkUploadLimitAll
-		quota.MaxBulkUploadCount = req.MaxBulkUploadCount
-
-		if err := tx.Save(&quota).Error; err != nil {
-			return nil, fmt.Errorf("failed to update quota: %w", err)
-		}
-
-		// Create quota addition record for the update
-		if req.Quantity > 0 {
-			addition := model.QuotaClientAddition{
-				QuotaClientID: quota.ID,
-				Quantity:      req.Quantity,
-				LatestQuota:   quota.CurrentQuota,
-				Type:          "addition",
-				CreatedBy:     req.CreatedBy,
-				ProcessBy:     req.ProcessBy,
-				IsProcess:     true,
-			}
-
-			if err := tx.Create(&addition).Error; err != nil {
-				return nil, fmt.Errorf("failed to create quota addition record: %w", err)
-			}
-		}
+		return nil, err
 	}
 
-	return &quota, nil
+	return result, nil
+}
+
+// AddQuotaWithApprove creates or updates quota using quota utils
+func (s *quotaClientService) AddQuotaWithApprove(tx *gorm.DB, req dto.AddQuotaClientWithApproveRequest) (*model.QuotaClient, error) {
+	return s.quotaUtils.CreateOrUpdateQuota(tx, req)
 }

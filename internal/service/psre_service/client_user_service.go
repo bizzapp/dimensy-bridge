@@ -3,6 +3,7 @@ package psreservice
 import (
 	"dimensy-bridge/internal/dto"
 	"dimensy-bridge/internal/model"
+	"dimensy-bridge/internal/model/seeder"
 	"dimensy-bridge/internal/repository"
 	"dimensy-bridge/internal/service"
 	"dimensy-bridge/pkg/utils"
@@ -118,6 +119,16 @@ func (s *clientUserService) RegisterUser(token, externalID string, req *dto.Clie
 
 		if err := tx.Create(&user).Error; err != nil {
 			return fmt.Errorf("failed create user: %w", err)
+		}
+		// utils.NewQuotaUtils().UseQuota(tx,)
+		quantity := int64(1)
+		_, err := utils.NewQuotaUtils().UseQuota(tx, dto.UseQuotaClientRequest{
+			MasterProductID: seeder.ID_PRODUCT_USER_PERSONAL,
+			ClientID:        client.ID,
+			Quantity:        quantity,
+		})
+		if err != nil {
+			return fmt.Errorf("failed use quota: %w", err)
 		}
 
 		// 🔹 Call PSrE Register
@@ -251,7 +262,7 @@ func (s *clientUserService) PhoneActivation(token, externalID string, req *dto.C
 		return data, status, fmt.Errorf("failed to parse psre response: %w", err)
 	}
 	if resp.Code == 0 {
-		if err := s.clientUserRepo.UpdateVerifyPhoneStatus(externalID, true); err != nil {
+		if err := s.clientUserRepo.UpdateVerifyPhoneStatus(req.UserID, true); err != nil {
 			return data, status, fmt.Errorf("failed to update user verify phone status: %w", err)
 		}
 	}

@@ -17,6 +17,7 @@ const (
 	ID_PRODUCT_USER_PERSONAL_COMPANY       int64 = 12
 	ID_PRODUCT_UPLOAD_SINGLE_DOCUMENT      int64 = 13
 	ID_PRODUCT_UPLOAD_BULK_DOCUMENT        int64 = 14
+	ID_PRODUCT_KYC                         int64 = 15
 )
 
 // SeedMasterProducts returns initial data for master_products table.
@@ -176,6 +177,17 @@ func SeedMasterProducts() []model.MasterProduct {
 			Sort:         int(ID_PRODUCT_UPLOAD_BULK_DOCUMENT),
 			Icon:         strPtr("https://example.com/icon-customstamp.png"),
 			Notes:        strPtr("Company"),
+		},
+		{
+			ID:           ID_PRODUCT_KYC,
+			Name:         "KYC",
+			Code:         "KYC",
+			Quantity:     100000,
+			CurrentStock: 100000,
+			IsUnlimited:  false,
+			Sort:         int(ID_PRODUCT_KYC),
+			Icon:         strPtr("https://example.com/icon-kyc.png"),
+			Notes:        strPtr("Know Your Customer"),
 		},
 	}
 }
