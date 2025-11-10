@@ -12,27 +12,33 @@ func AuthJWE() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 
-		// 🔹 Cek header format: Bearer <token>
 		if authHeader == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"code":    http.StatusUnauthorized,
-				"message": "Invalid token",
+				"message": "Missing Authorization header",
 			})
 			c.Abort()
 			return
 		}
 
-		parts := strings.SplitN(authHeader, " ", 2)
-		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+		var token string
+
+		// 🔹 Jika pakai format "Bearer <token>"
+		if strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
+			token = strings.TrimSpace(authHeader[7:])
+		} else {
+			// 🔹 Jika langsung token saja
+			token = strings.TrimSpace(authHeader)
+		}
+
+		if token == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"code":    http.StatusUnauthorized,
-				"message": "Invalid token",
+				"message": "Empty token",
 			})
 			c.Abort()
 			return
 		}
-
-		token := parts[1]
 
 		// 🔹 Verifikasi token JWE
 		data, err := utils.VerifyJWE(token)
