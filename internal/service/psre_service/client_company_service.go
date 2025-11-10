@@ -61,7 +61,7 @@ func (s *clientCompanyService) InviteClientCompany(token string, body interface{
 }
 
 func (s *clientCompanyService) AcceptInvitationClientUser(token string, body dto.PsreAcceptInvitationClientUserRequest) ([]byte, int, error) {
-	return utils.PsreRequest("POST", "/users/accept-invitation", body, token, nil)
+	return utils.PsreRequest("POST", "/client/users/accept-invitation", body, token, nil)
 }
 
 // Create company both in local DB and PSrE
