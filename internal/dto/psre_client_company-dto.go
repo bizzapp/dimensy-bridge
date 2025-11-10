@@ -21,3 +21,7 @@ type PsreInviteClientCompanyRequest struct {
 	CompanyID string `json:"companyId" validate:"required"`
 	URL       string `json:"url" validate:"required,url"`
 }
+
+type PsreAcceptInvitationClientUserRequest struct {
+	Token string `json:"token" binding:"required"`
+}

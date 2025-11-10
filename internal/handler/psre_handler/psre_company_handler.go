@@ -117,3 +117,20 @@ func (h *PsreCompanyHandler) CreateClientCompany(c *gin.Context) {
 	}
 	c.Data(status, "application/json", respBody)
 }
+
+func (h *PsreCompanyHandler) AcceptInvitationClientUser(c *gin.Context) {
+
+	var req dto.PsreAcceptInvitationClientUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.JSON(c, http.StatusBadRequest, "Invalid request body", nil, nil)
+		return
+	}
+
+	token := c.Request.Header.Get("Authorization")
+	respBody, status, err := h.psreClientCompanySvc.AcceptInvitationClientUser(token, req)
+	if err != nil {
+		c.Data(status, "application/json", respBody)
+		return
+	}
+	c.Data(status, "application/json", respBody)
+}

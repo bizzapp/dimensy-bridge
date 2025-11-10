@@ -21,6 +21,7 @@ type ClientCompanyService interface {
 	GetCompany(token string, params map[string]string) ([]byte, int, error)
 	DetailClientCompany(token string, id string) ([]byte, int, error)
 	InviteClientCompany(token string, body interface{}) ([]byte, int, error)
+	AcceptInvitationClientUser(token string, body dto.PsreAcceptInvitationClientUserRequest) ([]byte, int, error)
 }
 
 type clientCompanyService struct {
@@ -57,6 +58,10 @@ func (s *clientCompanyService) DetailClientCompany(token string, id string) ([]b
 // Invite company via PSrE
 func (s *clientCompanyService) InviteClientCompany(token string, body interface{}) ([]byte, int, error) {
 	return utils.PsreRequest("POST", "/client/company/invite", body, token, nil)
+}
+
+func (s *clientCompanyService) AcceptInvitationClientUser(token string, body dto.PsreAcceptInvitationClientUserRequest) ([]byte, int, error) {
+	return utils.PsreRequest("POST", "/users/accept-invitation", body, token, nil)
 }
 
 // Create company both in local DB and PSrE
