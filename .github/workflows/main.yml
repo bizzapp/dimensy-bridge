@@ -1,0 +1,42 @@
+name: Deploy Go To Production
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    env:
+      SWAG_VERSION: v1.16.3 # jaga versi CLI = versi lib di go.mod
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🧰 Install swag CLI (if missing)
+        run: |
+          # pastikan go ada
+          go version
+
+      - name: 📦 Deploy to Server
+        run: |
+          cd /var/www/dimensy-bridge
+          git config --global --add safe.directory /var/www/dimensy-bridge
+
+          sudo git stash || true
+          sudo git fetch
+          sudo git checkout main
+          sudo git pull origin main
+
+          # build binaries
+          sudo GOOS=linux GOARCH=amd64 go build -buildvcs=false -o dimensy-bridge ./cmd/server
+          sudo GOOS=linux GOARCH=amd64 go build -buildvcs=false -o migrate ./cmd/migrate
+
+          sudo chmod +x dimensy-bridge
+          sudo chmod +x migrate
+
+          sudo ./migrate
+
+          sudo systemctl restart dimensy-bridge
+          sudo systemctl status dimensy-bridge --no-pager -l
