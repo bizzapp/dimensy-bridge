@@ -43,7 +43,7 @@ func NewClientDocumentService(db *gorm.DB, clientPsreSvc service.ClientPsreServi
 	}
 }
 
-func (s *clientDocumentService) UploadSingle(token, externalID string, dto dto.PsreDocumentSingleFileRequest) ([]byte, int, error) {
+func (s *clientDocumentService) UploadSingle(token, externalID string, req dto.PsreDocumentSingleFileRequest) ([]byte, int, error) {
 	client, err := s.clientPsreSvc.GetByExternalID(externalID)
 	if err != nil {
 		return nil, http.StatusBadRequest, fmt.Errorf("failed get client psre: %w", err)
@@ -56,7 +56,7 @@ func (s *clientDocumentService) UploadSingle(token, externalID string, dto dto.P
 
 	txErr := s.db.Transaction(func(tx *gorm.DB) error {
 		// Calculate file size from base64 document
-		fileSize, err := utils.CalculateBase64FileSize(dto.Document)
+		fileSize, err := utils.CalculateBase64FileSize(req.Document)
 		if err != nil {
 			return fmt.Errorf("failed to calculate file size: %w", err)
 		}
@@ -64,22 +64,28 @@ func (s *clientDocumentService) UploadSingle(token, externalID string, dto dto.P
 		totalParticipants := 1
 		typeDocument := "SINGLE"
 		callbackURL := os.Getenv("APP_URL_WEBHOOK_NOTIFICATION")
+		// fmt.Println(dto.CallbackURL)
 		clientDocument := &model.ClientDocument{
 			ClientID:          client.ID,
-			FileName:          dto.FileName,
+			FileName:          req.FileName,
 			Type:              typeDocument,
 			Status:            model.DOCUMENT_STATUS_PENDING,
 			TotalParticipants: &totalParticipants,
 			FileSizeKB:        &fileSize,
 			CallbackURL:       &callbackURL,
-			ClientCallbackURL: &dto.CallbackURL,
+			ClientCallbackURL: &req.CallbackURL,
 		}
 		if err := tx.Create(&clientDocument).Error; err != nil {
 			return fmt.Errorf("failed create client document: %w", err)
 		}
 
-		dto.CallbackURL = callbackURL
-		data, st, err := utils.PsreRequest("POST", "/document/upload", dto, token, nil)
+		// dto.CallbackURL = callbackURL
+		dtoSingleFile := dto.PsreDocumentSingleFileRequest{
+			FileName:    req.FileName,
+			Document:    req.Document,
+			CallbackURL: callbackURL,
+		}
+		data, st, err := utils.PsreRequest("POST", "/document/upload", dtoSingleFile, token, nil)
 		respBody, status = data, st
 		if err != nil {
 			return fmt.Errorf("failed call psre api: %w", err)

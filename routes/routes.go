@@ -16,6 +16,16 @@ import (
 func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 	r := gin.Default()
 
+	// Index route - Hello World
+	r.GET("/", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"message":     "Hello World",
+			"service":     "Dimensy Bridge API",
+			"version":     "v1.0",
+			"description": "Welcome to Dimensy Bridge - Document Management & Digital Signature API",
+		})
+	})
+
 	// Health check endpoint for Docker health checks
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -24,9 +34,7 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		})
 	})
 
-	// ==== tambahkan ini ====
-	webhook := deps.WebhookHdl // pastikan sudah diinject di AppDependencies
-	r.POST("/api/v1/webhook-notification-psre", webhook.HandlePSRENotification)
+	r.POST("/api/v1/webhook-notification-document", deps.WebhookHdl.HandlePSRENotification)
 	// =======================
 
 	clientOriginsRaw := strings.Split(os.Getenv("CLIENT_ORIGIN"), ",")

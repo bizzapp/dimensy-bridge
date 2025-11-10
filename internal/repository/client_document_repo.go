@@ -12,6 +12,7 @@ type ClientDocumentRepository interface {
 	Delete(id int64) error
 	FindByID(id int64) (*model.ClientDocument, error)
 	FindAll() ([]model.ClientDocument, error)
+	FindByExternalID(externalID string) (*model.ClientDocument, error)
 }
 
 type clientDocumentRepository struct {
@@ -20,6 +21,13 @@ type clientDocumentRepository struct {
 
 func NewClientDocumentRepository(db *gorm.DB) ClientDocumentRepository {
 	return &clientDocumentRepository{db: db}
+}
+func (r *clientDocumentRepository) FindByExternalID(externalID string) (*model.ClientDocument, error) {
+	var doc model.ClientDocument
+	if err := r.db.Where("external_id = ?", externalID).First(&doc).Error; err != nil {
+		return nil, err
+	}
+	return &doc, nil
 }
 
 func (r *clientDocumentRepository) Create(doc *model.ClientDocument) error {

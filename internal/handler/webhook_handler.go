@@ -1,28 +1,42 @@
 package handler
 
 import (
+	"dimensy-bridge/internal/dto"
+	"dimensy-bridge/internal/service"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-type WebhookHandler struct{}
+type WebhookHandler struct {
+	webhookSvc service.WebhookService
+}
 
-func NewWebhookHandler() *WebhookHandler {
-	return &WebhookHandler{}
+func NewWebhookHandler(webhookSvc service.WebhookService) *WebhookHandler {
+	return &WebhookHandler{
+		webhookSvc: webhookSvc,
+	}
 }
 
 // HandlePSRENotification menerima webhook dari PSRE
 func (h *WebhookHandler) HandlePSRENotification(c *gin.Context) {
-	var payload map[string]interface{}
-	if err := c.ShouldBindJSON(&payload); err != nil {
+	var req dto.WebhookDocumentNotificationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid JSON payload",
+			"status":  "error",
+			"message": "invalid request payload",
 		})
 		return
 	}
-	// TODO: proses payload sesuai kebutuhan
-	// contoh: simpan ke DB, kirim event, logging, dll.
+	err := h.webhookSvc.SendDocumentNotification(req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "failed to process webhook",
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "success",
 		"message": "webhook received",

@@ -112,6 +112,7 @@ type AppDependencies struct {
 	PsreBackendSvc psre_service.BackendService
 
 	WebhookHdl *handler.WebhookHandler // 👈 tambahkan ini
+	WebhookSvc service.WebhookService  // 👈 tambahkan ini
 
 }
 
@@ -149,6 +150,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	certificateSvc := service.NewCertificateService(certificateRepo)
 	clientKYCHistorySvc := service.NewClientKYCHistoryService(clientKYCHistoryRepo)
 	psreSvc := service.NewPsreService(clientRequestLogRepo, userRepo, clientCompanyRepo)
+	webhookSvc := service.NewWebhookService(db, clientDocumentRepo, clientRequestLogRepo)
 
 	// === PSRE SERVICES ===
 	psreClientSvc := psre_service.NewClientService(clientRequestLogRepo, userRepo, clientRepo, clientPsreRepo)
@@ -180,6 +182,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	psreClientDocumentHdl := psre_handler.NewPsreClientDocumentHandler(psreClientDocumentSvc)
 	psreDashboardHdl := psre_handler.NewPsreDashboardHandler(psreDashboardSvc)
 	psreBackendHdl := psre_handler.NewPsreBackendHandler(psreBackendSvc)
+	webhookHdl := handler.NewWebhookHandler(webhookSvc)
 	return &AppDependencies{
 		DB:       db,
 		AuthRepo: authRepo,
@@ -243,5 +246,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 		PsreDashboardSvc:      psreDashboardSvc,
 		PsreBackendHdl:        psreBackendHdl,
 		PsreBackendSvc:        psreBackendSvc,
+		WebhookHdl:            webhookHdl,
+		WebhookSvc:            webhookSvc,
 	}
 }
