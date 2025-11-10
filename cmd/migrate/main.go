@@ -39,6 +39,7 @@ func main() {
 		&model.ClientDocumentProcessDetail{},
 		&model.ClientDocumentResendOtp{},
 		&model.ClientHasSubscriptionPlan{},
+		&model.ClientKYCHistory{},
 	}
 
 	refreshMode := len(os.Args) > 1 && os.Args[1] == "refresh"
