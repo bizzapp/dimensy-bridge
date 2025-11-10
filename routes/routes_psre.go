@@ -50,9 +50,9 @@ func SetupPsreRoutes(api *gin.RouterGroup, deps *config.AppDependencies, rl *mid
 		client.Use(middleware.AuthJWE())
 		client.POST("/company/create", deps.PsreCompanyHdl.CreateClientCompany)
 		client.POST("/company/invite", deps.PsreCompanyHdl.InviteClientCompany)
-
 		client.GET("/company", deps.PsreCompanyHdl.GetClientCompany)
 		client.GET("/company/detail/:id", deps.PsreCompanyHdl.DetailClientCompany)
+
 		client.POST("/users/accept-invitation", deps.PsreCompanyHdl.AcceptInvitationClientUser)
 		client.GET("/documents", deps.PsreClientHdl.Documents)
 		client.GET("/documents/:id", deps.PsreClientHdl.DocumentDetail)
