@@ -11,7 +11,6 @@ func SetupPsreRoutes(api *gin.RouterGroup, deps *config.AppDependencies, rl *mid
 	psre := api.Group("/psre")
 	{
 		psre.Use(rl.Middleware()) // pasang rate limiter di group ini
-		psre.POST("/login", deps.PsreClientHdl.Login)
 
 		company := psre.Group("/company")
 		company.Use(middleware.AuthJWE())
@@ -50,6 +49,7 @@ func SetupPsreRoutes(api *gin.RouterGroup, deps *config.AppDependencies, rl *mid
 		document.GET("/preview/:id", deps.PsreClientDocumentHdl.PreviewDocument)
 
 		client := psre.Group("/client")
+		client.POST("/login", deps.PsreClientHdl.Login)
 		client.Use(middleware.AuthJWE())
 		client.GET("/documents", deps.PsreClientHdl.Documents)
 		client.GET("/documents/:id", deps.PsreClientHdl.DocumentDetail)
