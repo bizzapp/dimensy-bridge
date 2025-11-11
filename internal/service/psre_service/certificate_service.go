@@ -82,7 +82,14 @@ func (s *certificateService) Issue(token, externalID string, req *dto.Certificat
 		}
 
 		// CreateOrUpdate certificate berdasarkan clientID, userID, dan companyID
-		if err := s.createOrUpdateCertificate(client.ID, userID, companyID, req, "PROCESSED"); err != nil {
+		dataResp := dto.CertificateActiveResponseData{
+			Status:       "PROCESSED",
+			SerialNumber: "",
+		}
+		if err := json.Unmarshal(data, &dataResp); err != nil {
+			return data, status, fmt.Errorf("failed to parse psre response data: %w", err)
+		}
+		if err := s.createOrUpdateCertificate(client.ID, userID, companyID, req, dataResp); err != nil {
 			return data, status, fmt.Errorf("failed to create or update certificate: %w", err)
 		}
 	}
@@ -106,11 +113,7 @@ func (s *certificateService) Active(token, externalID string, req *dto.Certifica
 		return data, status, fmt.Errorf("psre certificate activation failed: %s", string(data))
 	}
 
-	// Parse response to check if activation was successful
-	var resp struct {
-		Code    int    `json:"code"`
-		Message string `json:"message"`
-	}
+	var resp dto.CertificateActiveResponse
 	if err := json.Unmarshal(data, &resp); err != nil {
 		return data, status, fmt.Errorf("failed to parse psre response: %w", err)
 	}
@@ -146,7 +149,7 @@ func (s *certificateService) Active(token, externalID string, req *dto.Certifica
 		}
 
 		// CreateOrUpdate certificate berdasarkan clientID, userID, dan companyID
-		if err := s.createOrUpdateCertificate(client.ID, userID, companyID, issueReq, "ACTIVE"); err != nil {
+		if err := s.createOrUpdateCertificate(client.ID, userID, companyID, issueReq, resp.Data); err != nil {
 			return data, status, fmt.Errorf("failed to create or update certificate: %w", err)
 		}
 	}
@@ -180,7 +183,7 @@ func (s *certificateService) Revoke(token, externalID string, req *dto.Certifica
 }
 
 // createOrUpdateCertificate implements create or update logic based on clientID, userID, and companyID combination
-func (s *certificateService) createOrUpdateCertificate(clientID int64, userID *int64, companyID *int64, req *dto.CertificateIssueActiveRequest, status string) error {
+func (s *certificateService) createOrUpdateCertificate(clientID int64, userID *int64, companyID *int64, req *dto.CertificateIssueActiveRequest, dataResp dto.CertificateActiveResponseData) error {
 	// Try to find existing certificate
 	existingCert, err := s.certificateRepo.FindByClientUserAndCompany(clientID, userID, companyID)
 
@@ -190,7 +193,7 @@ func (s *certificateService) createOrUpdateCertificate(clientID int64, userID *i
 
 		cert := &model.Certificate{
 			ClientID: clientID,
-			Status:   status,
+			Status:   dataResp.Status,
 		}
 
 		// Set optional IDs
@@ -202,6 +205,7 @@ func (s *certificateService) createOrUpdateCertificate(clientID int64, userID *i
 			cert.CompanyID = companyID
 			cert.ExternalCompanyID = req.CompanyID
 		}
+		cert.SerialNumber = &dataResp.SerialNumber
 
 		return s.certificateRepo.Create(cert)
 	}
@@ -209,7 +213,8 @@ func (s *certificateService) createOrUpdateCertificate(clientID int64, userID *i
 	// Certificate exists, update it
 	fmt.Printf("[Certificate] Updating existing certificate ID=%d for clientID=%d, userID=%v, companyID=%v\n", existingCert.ID, clientID, userID, companyID)
 
-	existingCert.Status = status
+	existingCert.Status = dataResp.Status
+	existingCert.SerialNumber = &dataResp.SerialNumber
 
 	// Update external IDs if provided
 	if req.UserID != nil {
