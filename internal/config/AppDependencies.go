@@ -114,6 +114,8 @@ type AppDependencies struct {
 	WebhookHdl *handler.WebhookHandler // 👈 tambahkan ini
 	WebhookSvc service.WebhookService  // 👈 tambahkan ini
 
+	ClientCompanyInviteRepo repository.ClientCompanyInviteRepository
+	ClientCompanyInviteSvc  service.ClientCompanyInviteService
 }
 
 func NewAppDependencies(db *gorm.DB) *AppDependencies {
@@ -134,12 +136,14 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	clientHasSubscriptionPlanRepo := repository.NewClientHasSubscriptionPlanRepository(db)
 	subscriptionPlanRepo := repository.NewSubscriptionPlanRepository(db)
 	clientKYCHistoryRepo := repository.NewClientKYCHistoryRepository(db)
+	clientCompanyInviteRepo := repository.NewClientCompanyInviteRepository(db)
 
 	// === CORE SERVICES ===
 	authSvc := service.NewAuthService(authRepo)
 	userSvc := service.NewUserService(userRepo)
 	quotaClientSvc := service.NewQuotaClientService(db, quotaClientRepo, quotaClientReductionRepo, quotaClientAdditionRepo)
 	clientHasSubscriptionPlanSvc := service.NewClientHasSubscriptionPlanService(clientHasSubscriptionPlanRepo, quotaClientRepo, subscriptionPlanRepo, quotaClientSvc)
+	clientCompanyInviteSvc := service.NewClientCompanyInviteService(clientCompanyInviteRepo)
 
 	quotaClientAdditionSvc := service.NewQuotaClientAdditionService(db, quotaClientAdditionRepo, quotaClientRepo)
 	clientSvc := service.NewClientService(clientRepo, userRepo, quotaClientRepo, quotaClientAdditionRepo)
@@ -154,7 +158,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 
 	// === PSRE SERVICES ===
 	psreClientSvc := psre_service.NewClientService(clientRequestLogRepo, userRepo, clientRepo, clientPsreRepo)
-	psreClientCompanySvc := psre_service.NewClientCompanyService(db, clientSvc, clientCompanyRepo, quotaClientSvc)
+	psreClientCompanySvc := psre_service.NewClientCompanyService(db, clientSvc, clientCompanyRepo, quotaClientSvc, clientCompanyInviteSvc, clientCompanyInviteRepo, clientUserRepo)
 	psreClientUserSvc := psre_service.NewClientUserService(db, clientPsreSvc, clientCompanySvc, clientUserSvc, clientUserRepo, clientKYCHistorySvc, clientSvc, clientKYCHistoryRepo)
 	psreCertificateSvc := psre_service.NewCertificateService(certificateRepo, clientSvc, userSvc, clientCompanySvc)
 	psreClientDocumentSvc := psre_service.NewClientDocumentService(db, clientPsreSvc, clientDocumentRepo)

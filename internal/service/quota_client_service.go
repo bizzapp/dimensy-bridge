@@ -58,26 +58,6 @@ func (s *quotaClientService) DeleteQuota(id int64) error {
 	return s.quotaClientRepo.Delete(id)
 }
 
-// func (s *quotaClientService) UseQuota(req dto.UseQuotaClientRequest) (*model.QuotaClient, error) {
-// 	var result *model.QuotaClient
-
-// 	err := s.db.Transaction(func(tx *gorm.DB) error {
-// 		quota, err := s.quotaUtils.UseQuota(tx, req)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		result = quota
-// 		return nil
-// 	})
-
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return result, nil
-// }
-
-// AddQuotaWithApprove creates or updates quota using quota utils
 func (s *quotaClientService) AddQuotaWithApprove(tx *gorm.DB, req dto.AddQuotaClientWithApproveRequest) (*model.QuotaClient, error) {
 	return s.quotaUtils.CreateOrUpdateQuota(tx, req)
 }

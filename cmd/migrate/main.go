@@ -40,6 +40,7 @@ func main() {
 		&model.ClientDocumentResendOtp{},
 		&model.ClientHasSubscriptionPlan{},
 		&model.ClientKYCHistory{},
+		&model.ClientCompanyInvite{},
 	}
 
 	refreshMode := len(os.Args) > 1 && os.Args[1] == "refresh"

@@ -20,15 +20,18 @@ type ClientCompanyService interface {
 	CreateClientCompany(ctx context.Context, authData interface{}, token string, req dto.PsreCreateClientCompanyRequest) ([]byte, int, error)
 	GetCompany(token string, params map[string]string) ([]byte, int, error)
 	DetailClientCompany(token string, id string) ([]byte, int, error)
-	InviteClientCompany(token string, body interface{}) ([]byte, int, error)
+	InviteClientCompany(authData interface{}, token string, body dto.PsreInviteClientCompanyRequest) ([]byte, int, error)
 	AcceptInvitationClientUser(token string, body dto.PsreAcceptInvitationClientUserRequest) ([]byte, int, error)
 }
 
 type clientCompanyService struct {
-	db                *gorm.DB
-	clientSvc         service.ClientService
-	clientCompanyRepo repository.ClientCompanyRepository
-	quotaClientSvc    service.QuotaClientService
+	db                      *gorm.DB
+	clientSvc               service.ClientService
+	clientCompanyRepo       repository.ClientCompanyRepository
+	quotaClientSvc          service.QuotaClientService
+	clientCompanyInviteSvc  service.ClientCompanyInviteService
+	clientCompanyInviteRepo repository.ClientCompanyInviteRepository
+	clientUserRepo          repository.ClientUserRepository
 }
 
 func NewClientCompanyService(
@@ -36,12 +39,18 @@ func NewClientCompanyService(
 	clientSvc service.ClientService,
 	clientCompanyRepo repository.ClientCompanyRepository,
 	quotaClientSvc service.QuotaClientService,
+	clientCompanyInviteSvc service.ClientCompanyInviteService,
+	clientCompanyInviteRepo repository.ClientCompanyInviteRepository,
+	clientUserRepo repository.ClientUserRepository,
 ) ClientCompanyService {
 	return &clientCompanyService{
-		db:                db,
-		clientSvc:         clientSvc,
-		clientCompanyRepo: clientCompanyRepo,
-		quotaClientSvc:    quotaClientSvc,
+		db:                      db,
+		clientSvc:               clientSvc,
+		clientCompanyRepo:       clientCompanyRepo,
+		quotaClientSvc:          quotaClientSvc,
+		clientCompanyInviteSvc:  clientCompanyInviteSvc,
+		clientCompanyInviteRepo: clientCompanyInviteRepo,
+		clientUserRepo:          clientUserRepo,
 	}
 }
 
@@ -56,12 +65,98 @@ func (s *clientCompanyService) DetailClientCompany(token string, id string) ([]b
 }
 
 // Invite company via PSrE
-func (s *clientCompanyService) InviteClientCompany(token string, body interface{}) ([]byte, int, error) {
-	return utils.PsreRequest("POST", "/client/company/invite", body, token, nil)
+func (s *clientCompanyService) InviteClientCompany(authData interface{}, token string, body dto.PsreInviteClientCompanyRequest) ([]byte, int, error) {
+	var (
+		respBody []byte
+		status   int
+	)
+	txErr := s.db.Transaction(func(tx *gorm.DB) error {
+		externalID, err := utils.ExtractExternalID(authData)
+		if err != nil {
+			return fmt.Errorf("unauthorized: %w", err)
+		}
+
+		client, err := s.clientSvc.GetClientByExternalId(externalID)
+		if err != nil {
+			message := fmt.Sprintf("Unauthorized: %v", err)
+			respBody = utils.ResponseError(message, 400)
+			return fmt.Errorf("unauthorized client: %w", err)
+		}
+
+		quantity := 1
+		_, err = utils.NewQuotaUtils().UseQuota(tx, dto.UseQuotaClientRequest{
+			MasterProductID: seeder.ID_PRODUCT_USER_PERSONAL_COMPANY,
+			ClientID:        client.ID,
+			Quantity:        int64(quantity),
+		})
+		if err != nil {
+			message := fmt.Sprintf("Failed to use quota: %v", err)
+			respBody = utils.ResponseError(message, 400)
+			return fmt.Errorf("failed to use quota: %w", err)
+		}
+		findClientCompanyInvite, err := s.clientCompanyInviteRepo.FindByExternal(body.UserID, body.CompanyID)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			message := fmt.Sprintf("Failed to check existing invitation: %v", err)
+			respBody = utils.ResponseError(message, 400)
+			return fmt.Errorf("failed to check existing invitation: %w", err)
+		}
+		if findClientCompanyInvite != nil {
+			message := "Invitation already sent to this user for the specified company"
+			respBody = utils.ResponseError(message, 400)
+			return fmt.Errorf("invitation already exists")
+		}
+		clientUser, err := s.clientUserRepo.FindByExternalID(body.UserID)
+		if err != nil {
+			message := fmt.Sprintf("Failed to find client user: %v", err)
+			respBody = utils.ResponseError(message, 400)
+			return fmt.Errorf("failed to find client user: %w", err)
+		}
+		clientCompany, err := s.clientCompanyRepo.FindByExternalID(body.CompanyID)
+		if err != nil {
+			message := fmt.Sprintf("Failed to find client company: %v", err)
+			respBody = utils.ResponseError(message, 400)
+			return fmt.Errorf("failed to find client company: %w", err)
+		}
+		newInvite := &model.ClientCompanyInvite{
+
+			ClientID:          client.ID,
+			ExternalUserID:    body.UserID,
+			ExternalCompanyID: body.CompanyID,
+			ClientUserID:      clientUser.ID,
+			ClientCompanyID:   clientCompany.ID,
+		}
+		if err := s.clientCompanyInviteRepo.CreateTx(tx, newInvite); err != nil {
+			message := fmt.Sprintf("Failed to create invitation record: %v", err)
+			respBody = utils.ResponseError(message, 400)
+			return fmt.Errorf("failed to create invitation record: %w", err)
+		}
+
+		data, psreStatus, err := utils.PsreRequest("POST", "/client/company/invite", body, token, nil)
+		respBody, status = data, psreStatus
+
+		if err != nil {
+			// ini trigger rollback
+			return fmt.Errorf("PSrE request failed: %w", err)
+		}
+		if psreStatus >= 400 {
+			// ini juga trigger rollback
+			return fmt.Errorf("PSrE returned HTTP %d: %s", psreStatus, string(data))
+		}
+		return nil
+	})
+	if txErr != nil {
+		if respBody != nil {
+			return respBody, status, txErr
+		}
+		return nil, http.StatusBadRequest, txErr
+	}
+
+	return respBody, status, nil
 }
 
 func (s *clientCompanyService) AcceptInvitationClientUser(token string, body dto.PsreAcceptInvitationClientUserRequest) ([]byte, int, error) {
 	return utils.PsreRequest("POST", "/client/users/accept-invitation", body, token, nil)
+
 }
 
 // Create company both in local DB and PSrE

@@ -73,9 +73,9 @@ func (h *PsreCompanyHandler) DetailClientCompany(c *gin.Context) {
 
 	token := c.Request.Header.Get("Authorization")
 
-	respBody, _, err := h.psreClientCompanySvc.DetailClientCompany(token, id)
+	respBody, status, err := h.psreClientCompanySvc.DetailClientCompany(token, id)
 	if err != nil {
-		response.JSON(c, http.StatusInternalServerError, err.Error(), nil, nil)
+		c.Data(status, "application/json", respBody)
 		return
 	}
 
@@ -90,8 +90,9 @@ func (h *PsreCompanyHandler) InviteClientCompany(c *gin.Context) {
 		return
 	}
 
+	authData, _ := c.Get("authData")
 	token := c.Request.Header.Get("Authorization")
-	respBody, status, err := h.psreClientCompanySvc.InviteClientCompany(token, req)
+	respBody, status, err := h.psreClientCompanySvc.InviteClientCompany(authData, token, req)
 	if err != nil {
 		c.JSON(status, json.RawMessage(respBody))
 		return
@@ -125,7 +126,6 @@ func (h *PsreCompanyHandler) AcceptInvitationClientUser(c *gin.Context) {
 		response.JSON(c, http.StatusBadRequest, "Invalid request body", nil, nil)
 		return
 	}
-
 	token := c.Request.Header.Get("Authorization")
 	respBody, status, err := h.psreClientCompanySvc.AcceptInvitationClientUser(token, req)
 	if err != nil {
