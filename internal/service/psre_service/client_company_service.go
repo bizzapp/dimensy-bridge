@@ -80,12 +80,14 @@ func (s *clientCompanyService) InviteClientCompany(authData interface{}, token s
 		if err != nil {
 			message := fmt.Sprintf("Unauthorized: %v", err)
 			respBody = utils.ResponseError(message, 400)
+			status = 400
 			return fmt.Errorf("unauthorized client: %w", err)
 		}
 		findClientCompanyInvite, err := s.clientCompanyInviteRepo.FindByExternal(client.ID, body.UserID, body.CompanyID)
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			message := fmt.Sprintf("Failed to check existing invitation: %v", err)
 			respBody = utils.ResponseError(message, 400)
+			status = 400
 			return fmt.Errorf("failed to check existing invitation: %w", err)
 		}
 
@@ -93,6 +95,7 @@ func (s *clientCompanyService) InviteClientCompany(authData interface{}, token s
 		if findClientCompanyInvite != nil && findClientCompanyInvite.IsVerify {
 			message := "User already member of this company"
 			respBody = utils.ResponseError(message, 400)
+			status = 400
 			return fmt.Errorf("invitation already exists")
 		}
 
@@ -107,6 +110,7 @@ func (s *clientCompanyService) InviteClientCompany(authData interface{}, token s
 			if err != nil {
 				message := fmt.Sprintf("Failed to use quota: %v", err)
 				respBody = utils.ResponseError(message, 400)
+				status = 400
 				return fmt.Errorf("failed to use quota: %w", err)
 			}
 
@@ -114,12 +118,15 @@ func (s *clientCompanyService) InviteClientCompany(authData interface{}, token s
 			if err != nil {
 				message := fmt.Sprintf("Failed to find client user: %v", err)
 				respBody = utils.ResponseError(message, 400)
+				status = 400
+				// fmt.Println("kesini")
 				return fmt.Errorf("failed to find client user: %w", err)
 			}
 			clientCompany, err := s.clientCompanyRepo.FindByExternalID(body.CompanyID)
 			if err != nil {
 				message := fmt.Sprintf("Failed to find client company: %v", err)
 				respBody = utils.ResponseError(message, 400)
+				status = 400
 				return fmt.Errorf("failed to find client company: %w", err)
 			}
 			newInvite := &model.ClientCompanyInvite{
@@ -133,6 +140,7 @@ func (s *clientCompanyService) InviteClientCompany(authData interface{}, token s
 			if err := s.clientCompanyInviteRepo.CreateTx(tx, newInvite); err != nil {
 				message := fmt.Sprintf("Failed to create invitation record: %v", err)
 				respBody = utils.ResponseError(message, 400)
+				status = 400
 				return fmt.Errorf("failed to create invitation record: %w", err)
 			}
 		}
