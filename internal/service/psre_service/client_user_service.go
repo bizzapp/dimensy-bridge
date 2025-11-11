@@ -215,52 +215,105 @@ func (s *clientUserService) ActivateUser(token, externalID string, req *dto.Clie
 }
 
 func (s *clientUserService) RequestKYC(token, externalID string, req *dto.ClientUserKYCRequest) ([]byte, int, error) {
+	var (
+		respBody []byte
+		status   int
+	)
 
-	client, err := s.clientSvc.GetClientByExternalId(externalID)
-	if err != nil {
-		return nil, http.StatusBadRequest, fmt.Errorf("unauthorized client: %w", err)
-	}
-	clientUser, err := s.clientUserSvc.GetByExternalID(req.UserID)
-	if err != nil {
-		return nil, http.StatusBadRequest, fmt.Errorf("unauthorized client user: %w", err)
-	}
-
-	data, status, err := utils.PsreRequest("POST", "/user/request-kyc", req, token, nil)
-	if err != nil {
-		return data, status, fmt.Errorf("failed call psre api: %w", err)
-	}
-
-	if status >= 400 {
-		return data, status, fmt.Errorf("psre request kyc failed: %s", string(data))
-	}
-
-	var resp struct {
-		Code int `json:"code"`
-		Data struct {
-			SignatureID string `json:"signatureId"`
-			URL         string `json:"url"`
-		}
-	}
-	if err := json.Unmarshal(data, &resp); err != nil {
-		return data, status, fmt.Errorf("failed to parse psre response: %w", err)
-	}
-	if resp.Code == 0 {
-		kycHistory := model.ClientKYCHistory{
-			ExternalUserID: req.UserID,
-			Signature:      resp.Data.SignatureID,
-			IsVerify:       false,
-			ClientID:       client.ID,
-			ClientUserID:   clientUser.ID,
-		}
-
-		// Use CreateOrUpdate to handle existing records
-		_, err := s.clientKYCHistorySvc.CreateOrUpdate(&kycHistory)
+	txErr := s.db.Transaction(func(tx *gorm.DB) error {
+		// Get client info
+		client, err := s.clientSvc.GetClientByExternalId(externalID)
 		if err != nil {
-			return data, status, fmt.Errorf("failed to save kyc history: %w", err)
+			message := fmt.Sprintf("Unauthorized: %v", err)
+			respBody = utils.ResponseError(message, 400)
+			status = 400
+			return fmt.Errorf("unauthorized client: %w", err)
 		}
+
+		// Get client user info
+		clientUser, err := s.clientUserSvc.GetByExternalID(req.UserID)
+		if err != nil {
+			message := fmt.Sprintf("Unauthorized client user: %v", err)
+			respBody = utils.ResponseError(message, 400)
+			status = 400
+			return fmt.Errorf("unauthorized client user: %w", err)
+		}
+
+		// Call PSrE API
+		data, psreStatus, err := utils.PsreRequest("POST", "/user/request-kyc", req, token, nil)
+		respBody, status = data, psreStatus
+
+		if err != nil {
+			return fmt.Errorf("failed call psre api: %w", err)
+		}
+
+		if psreStatus >= 400 {
+			return fmt.Errorf("psre request kyc failed: %s", string(data))
+		}
+
+		var resp struct {
+			Code int `json:"code"`
+			Data struct {
+				SignatureID string `json:"signatureId"`
+				URL         string `json:"url"`
+			}
+		}
+		if err := json.Unmarshal(data, &resp); err != nil {
+			return fmt.Errorf("failed to parse psre response: %w", err)
+		}
+
+		if resp.Code == 0 {
+			kycHistory := model.ClientKYCHistory{
+				ExternalUserID: req.UserID,
+				Signature:      resp.Data.SignatureID,
+				IsVerify:       false,
+				ClientID:       client.ID,
+				ClientUserID:   clientUser.ID,
+			}
+
+			// Check if KYC history already exists
+			_, err := s.clientKYCHistoryRepo.GetBySignatureID(resp.Data.SignatureID)
+			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				return fmt.Errorf("failed to get client kyc history: %w", err)
+			}
+
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				// Create new KYC history record
+				if err := s.clientKYCHistoryRepo.CreateTx(tx, &kycHistory); err != nil {
+					return fmt.Errorf("failed to save kyc history: %w", err)
+				}
+
+				// Use quota for KYC request
+				quantity := int64(1)
+				_, err = utils.NewQuotaUtils().UseQuota(tx, dto.UseQuotaClientRequest{
+					MasterProductID: seeder.ID_PRODUCT_KYC,
+					ClientID:        client.ID,
+					Quantity:        quantity,
+				})
+				if err != nil {
+					status = http.StatusBadRequest
+					respBody = utils.ResponseError(err.Error(), status)
+					return fmt.Errorf("failed use quota: %w", err)
+				}
+			} else {
+				// Update existing KYC history record
+				if err := s.clientKYCHistoryRepo.UpdateTx(tx, &kycHistory); err != nil {
+					return fmt.Errorf("failed to update kyc history: %w", err)
+				}
+			}
+		}
+
+		return nil
+	})
+
+	if txErr != nil {
+		if respBody != nil {
+			return respBody, status, txErr
+		}
+		return nil, http.StatusBadRequest, txErr
 	}
 
-	return data, status, nil
+	return respBody, status, nil
 }
 
 // 🔹 RESEND ACTIVATION
@@ -317,22 +370,7 @@ func (s *clientUserService) PhoneActivation(token, externalID string, req *dto.C
 }
 
 func (s *clientUserService) VerifyKYC(token, externalID string, req *dto.ClientUserVerifyKYCRequest) ([]byte, int, error) {
-
-	client, err := s.clientSvc.GetClientByExternalId(externalID)
-	if err != nil {
-		return nil, http.StatusBadRequest, fmt.Errorf("unauthorized client: %w", err)
-	}
-	_, err = utils.NewQuotaUtils().UseQuota(s.db, dto.UseQuotaClientRequest{
-		MasterProductID: seeder.ID_PRODUCT_KYC,
-		ClientID:        client.ID,
-		Quantity:        int64(1),
-	})
-	if err != nil {
-		respError, _ := json.Marshal(map[string]any{"code": 400, "message": fmt.Sprintf("failed to use quota: %v", err)})
-		return respError, http.StatusBadRequest, fmt.Errorf("failed to use quota: %w", err)
-	}
 	data, status, _ := utils.PsreRequest("POST", "/user/verify-kyc", req, token, nil)
-
 	var resp struct {
 		Code    int    `json:"code"`
 		Message string `json:"message"`

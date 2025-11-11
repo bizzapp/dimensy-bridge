@@ -14,6 +14,7 @@ type ClientKYCHistoryService interface {
 	GetByClientUserID(clientUserID int64) ([]model.ClientKYCHistory, error)
 	Delete(id int64) error
 	CreateOrUpdate(data *model.ClientKYCHistory) (*model.ClientKYCHistory, error)
+	Update(data *model.ClientKYCHistory) (*model.ClientKYCHistory, error)
 }
 
 type clientKYCHistoryService struct {
@@ -30,7 +31,12 @@ func (s *clientKYCHistoryService) Create(data *model.ClientKYCHistory) (*model.C
 	}
 	return data, nil
 }
-
+func (s *clientKYCHistoryService) Update(data *model.ClientKYCHistory) (*model.ClientKYCHistory, error) {
+	if err := s.repo.Update(data); err != nil {
+		return nil, err
+	}
+	return data, nil
+}
 func (s *clientKYCHistoryService) VerifyKYC(id int64) (*model.ClientKYCHistory, error) {
 	data, err := s.repo.FindByID(id)
 	if err != nil {

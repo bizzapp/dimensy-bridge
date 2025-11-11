@@ -9,6 +9,8 @@ import (
 
 type ClientKYCHistoryRepository interface {
 	Create(data *model.ClientKYCHistory) error
+	CreateTx(tx *gorm.DB, c *model.ClientKYCHistory) error
+	UpdateTx(tx *gorm.DB, c *model.ClientKYCHistory) error
 	Update(data *model.ClientKYCHistory) error
 	FindByID(id int64) (*model.ClientKYCHistory, error)
 	FindAll() ([]model.ClientKYCHistory, error)
@@ -27,6 +29,13 @@ type clientKYCHistoryRepository struct {
 
 func NewClientKYCHistoryRepository(db *gorm.DB) ClientKYCHistoryRepository {
 	return &clientKYCHistoryRepository{db: db}
+}
+func (r *clientKYCHistoryRepository) CreateTx(tx *gorm.DB, c *model.ClientKYCHistory) error {
+	return tx.Create(c).Error
+}
+
+func (r *clientKYCHistoryRepository) UpdateTx(tx *gorm.DB, c *model.ClientKYCHistory) error {
+	return tx.Save(c).Error
 }
 func (r *clientKYCHistoryRepository) GetBySignatureID(signatureID string) (*model.ClientKYCHistory, error) {
 	var result model.ClientKYCHistory
