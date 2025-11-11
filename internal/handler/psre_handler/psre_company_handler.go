@@ -127,7 +127,8 @@ func (h *PsreCompanyHandler) AcceptInvitationClientUser(c *gin.Context) {
 		return
 	}
 	token := c.Request.Header.Get("Authorization")
-	respBody, status, err := h.psreClientCompanySvc.AcceptInvitationClientUser(token, req)
+	authData, _ := c.Get("authData")
+	respBody, status, err := h.psreClientCompanySvc.AcceptInvitationClientUser(authData, token, req)
 	if err != nil {
 		c.Data(status, "application/json", respBody)
 		return

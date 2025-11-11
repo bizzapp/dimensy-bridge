@@ -8,7 +8,7 @@ import (
 
 type ClientCompanyInviteService interface {
 	CreateInvite(req *model.ClientCompanyInvite) (*model.ClientCompanyInvite, error)
-	GetInviteByExternal(userID, companyID string) (*model.ClientCompanyInvite, error)
+	GetInviteByExternal(clientID int64, userID, companyID string) (*model.ClientCompanyInvite, error)
 	VerifyInvite(id int64) error
 }
 
@@ -21,7 +21,7 @@ func NewClientCompanyInviteService(repo repository.ClientCompanyInviteRepository
 }
 
 func (s *clientCompanyInviteService) CreateInvite(req *model.ClientCompanyInvite) (*model.ClientCompanyInvite, error) {
-	existing, _ := s.repo.FindByExternal(req.ExternalUserID, req.ExternalCompanyID)
+	existing, _ := s.repo.FindByExternal(req.ClientID, req.ExternalUserID, req.ExternalCompanyID)
 	if existing != nil {
 		return nil, errors.New("invite already exists")
 	}
@@ -32,8 +32,8 @@ func (s *clientCompanyInviteService) CreateInvite(req *model.ClientCompanyInvite
 	return req, nil
 }
 
-func (s *clientCompanyInviteService) GetInviteByExternal(userID, companyID string) (*model.ClientCompanyInvite, error) {
-	return s.repo.FindByExternal(userID, companyID)
+func (s *clientCompanyInviteService) GetInviteByExternal(clientID int64, userID, companyID string) (*model.ClientCompanyInvite, error) {
+	return s.repo.FindByExternal(clientID, userID, companyID)
 }
 
 func (s *clientCompanyInviteService) VerifyInvite(id int64) error {

@@ -10,7 +10,7 @@ import (
 type ClientCompanyInviteRepository interface {
 	Create(invite *model.ClientCompanyInvite) error
 	FindByID(id int64) (*model.ClientCompanyInvite, error)
-	FindByExternal(userID, companyID string) (*model.ClientCompanyInvite, error)
+	FindByExternal(clientID int64, userID, companyID string) (*model.ClientCompanyInvite, error)
 	VerifyInvite(id int64) error
 
 	CreateTx(tx *gorm.DB, c *model.ClientCompanyInvite) error
@@ -39,9 +39,9 @@ func (r *clientCompanyInviteRepository) FindByID(id int64) (*model.ClientCompany
 	return &invite, nil
 }
 
-func (r *clientCompanyInviteRepository) FindByExternal(userID, companyID string) (*model.ClientCompanyInvite, error) {
+func (r *clientCompanyInviteRepository) FindByExternal(clientID int64, userID, companyID string) (*model.ClientCompanyInvite, error) {
 	var invite model.ClientCompanyInvite
-	err := r.db.Where("external_user_id = ? AND external_company_id = ?", userID, companyID).First(&invite).Error
+	err := r.db.Where("client_id = ? AND external_user_id = ? AND external_company_id = ?", clientID, userID, companyID).First(&invite).Error
 	if err != nil {
 		return nil, err
 	}

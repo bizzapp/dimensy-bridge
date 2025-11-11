@@ -16,6 +16,17 @@ type PsreRegisterCompanyResponse struct {
 	CompanyID string `json:"companyId"`
 }
 
+type PsreAcceptInvitationResponse struct {
+	Code    int                              `json:"code"`
+	Message string                           `json:"message"`
+	Data    PsreAcceptInvitationResponseData `json:"data"`
+}
+
+type PsreAcceptInvitationResponseData struct {
+	UserID    string `json:"userId"`
+	CompanyID string `json:"companyId"`
+}
+
 type PsreInviteClientCompanyRequest struct {
 	UserID    string `json:"userId" validate:"required"`
 	CompanyID string `json:"companyId" validate:"required"`
