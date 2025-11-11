@@ -11,6 +11,7 @@ type CertificateRepository interface {
 	FindByID(id uint64) (*model.Certificate, error)
 	FindBySerialNumber(serial string) (*model.Certificate, error)
 	FindAllByClientID(clientID uint64) ([]model.Certificate, error)
+	FindByClientUserAndCompany(clientID int64, userID *int64, companyID *int64) (*model.Certificate, error)
 	Update(cert *model.Certificate) error
 	Delete(id uint64) error
 }
@@ -49,6 +50,31 @@ func (r *certificateRepository) FindAllByClientID(clientID uint64) ([]model.Cert
 	var certs []model.Certificate
 	err := r.db.Where("client_id = ?", clientID).Find(&certs).Error
 	return certs, err
+}
+
+func (r *certificateRepository) FindByClientUserAndCompany(clientID int64, userID *int64, companyID *int64) (*model.Certificate, error) {
+	var cert model.Certificate
+	query := r.db.Where("client_id = ?", clientID)
+
+	// Add userID condition - handle both nil and value cases
+	if userID != nil {
+		query = query.Where("clien_user_id = ?", *userID)
+	} else {
+		query = query.Where("clien_user_id IS NULL")
+	}
+
+	// Add companyID condition - handle both nil and value cases
+	if companyID != nil {
+		query = query.Where("company_id = ?", *companyID)
+	} else {
+		query = query.Where("company_id IS NULL")
+	}
+
+	err := query.First(&cert).Error
+	if err != nil {
+		return nil, err
+	}
+	return &cert, nil
 }
 
 func (r *certificateRepository) Update(cert *model.Certificate) error {

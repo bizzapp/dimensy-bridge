@@ -235,7 +235,7 @@ func (s *clientCompanyService) CreateClientCompany(
 
 		quantity := 1
 		_, err = utils.NewQuotaUtils().UseQuota(tx, dto.UseQuotaClientRequest{
-			MasterProductID: seeder.ID_PRODUCT_USER_PERSONAL,
+			MasterProductID: seeder.ID_PRODUCT_COMPANY,
 			ClientID:        client.ID,
 			Quantity:        int64(quantity),
 		})

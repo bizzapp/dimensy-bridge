@@ -5,7 +5,7 @@ import "time"
 type Certificate struct {
 	ID                int64      `gorm:"primaryKey;autoIncrement" json:"id"`
 	ClientID          int64      `gorm:"not null;index" json:"client_id"`
-	UserID            *int64     `gorm:"index" json:"user_id"`
+	ClienUserID       *int64     `gorm:"index" json:"client_user_id"`
 	CompanyID         *int64     `gorm:"index" json:"company_id"`
 	ExternalUserID    *string    `gorm:"size:255" json:"external_user_id"`
 	ExternalCompanyID *string    `gorm:"size:255" json:"external_company_id"`
@@ -16,7 +16,7 @@ type Certificate struct {
 	CreatedAt         time.Time  `json:"created_at"`
 	UpdatedAt         time.Time  `json:"updated_at"`
 
-	Client  Client         `gorm:"foreignKey:ClientID" json:"client"`
-	User    *User          `gorm:"foreignKey:UserID" json:"user,omitempty"`
-	Company *ClientCompany `gorm:"foreignKey:CompanyID" json:"company,omitempty"`
+	Client     Client         `gorm:"foreignKey:ClientID" json:"client"`
+	ClientUser *ClientUser    `gorm:"foreignKey:ClienUserID" json:"client_user,omitempty"`
+	Company    *ClientCompany `gorm:"foreignKey:CompanyID" json:"company,omitempty"`
 }
