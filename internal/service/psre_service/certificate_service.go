@@ -25,16 +25,23 @@ type certificateService struct {
 	clientCompanySvc service.ClientCompanyService
 }
 
-func NewCertificateService(certificateRepo repository.CertificateRepository, clientSvc service.ClientService) CertificateService {
-	return &certificateService{certificateRepo: certificateRepo, clientSvc: clientSvc}
+func NewCertificateService(certificateRepo repository.CertificateRepository, clientSvc service.ClientService, userSvc service.UserService, clientCompanySvc service.ClientCompanyService) CertificateService {
+	return &certificateService{
+		certificateRepo:  certificateRepo,
+		clientSvc:        clientSvc,
+		userSvc:          userSvc,
+		clientCompanySvc: clientCompanySvc,
+	}
 }
 
 func (s *certificateService) Issue(token, externalID string, req *dto.CertificateIssueRequest) ([]byte, int, error) {
 
 	client, err := s.clientSvc.GetClientByExternalId(externalID)
 	if err != nil {
+		fmt.Printf("[Certificate Issue] Failed to get client: %v\n", err)
 		return nil, http.StatusBadRequest, err
 	}
+	fmt.Printf("[Certificate Issue] Found client: ID=%d\n", client.ID)
 
 	data, status, err := utils.PsreRequest("POST", "/certificate/issue", req, token, nil)
 	if err != nil {
@@ -55,7 +62,7 @@ func (s *certificateService) Issue(token, externalID string, req *dto.Certificat
 	if resp.Code == 0 {
 		// Get user if external ID provided
 		var user *model.User
-		if req.UserID != nil {
+		if req.UserID != nil && *req.UserID != "" {
 			u, err := s.userSvc.GetUserByExternalID(*req.UserID)
 			if err != nil {
 				return data, status, fmt.Errorf("failed to get user by external id: %w", err)
@@ -65,7 +72,7 @@ func (s *certificateService) Issue(token, externalID string, req *dto.Certificat
 
 		// Get company if external ID provided
 		var company *model.ClientCompany
-		if req.CompanyID != nil {
+		if req.CompanyID != nil && *req.CompanyID != "" {
 			c, err := s.clientCompanySvc.GetByExternalID(*req.CompanyID)
 			if err != nil {
 				return data, status, fmt.Errorf("failed to get company by external id: %w", err)
