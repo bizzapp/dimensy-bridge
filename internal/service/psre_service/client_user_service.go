@@ -108,12 +108,12 @@ func (s *clientUserService) RegisterUser(token, externalID string, req *dto.Clie
 
 	txErr := s.db.Transaction(func(tx *gorm.DB) error {
 		user := model.ClientUser{
-			NIK:       req.NIK,
-			Name:      req.FullName,
-			Birthdate: req.BirthDate.Time,
-			Email:     req.Email,
-			Phone:     req.Phone,
-			IsWNI:     req.IsWNI,
+			NIK:       &req.NIK,
+			Name:      &req.FullName,
+			Birthdate: &req.BirthDate.Time,
+			Email:     &req.Email,
+			Phone:     &req.Phone,
+			IsWNI:     &req.IsWNI,
 			ClientID:  client.ID,
 		}
 

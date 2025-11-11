@@ -1,9 +1,9 @@
 package psrehandler
 
 import (
+	"dimensy-bridge/internal/dto"
 	psreService "dimensy-bridge/internal/service/psre_service"
 	"dimensy-bridge/pkg/utils"
-	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -19,11 +19,15 @@ func NewPsreClientHandler(psreClientSvc psreService.ClientService) *PsreClientHa
 
 func (h *PsreClientHandler) Login(c *gin.Context) {
 
-	body, _ := io.ReadAll(c.Request.Body)
+	// body, _ := io.ReadAll(c.Request.Body)
+	var body dto.LoginRequest
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request", "details": err.Error()})
+		return
+	}
 
 	resp, err := h.psreClientSvc.Login(body)
 	if err != nil {
-		// c.JSON(http.StatusUnauthorized, gin.H{"success": false, "error": err.Error()})
 		c.Data(http.StatusUnauthorized, "application/json", resp)
 		return
 	}

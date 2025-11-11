@@ -1,6 +1,7 @@
 package psreservice
 
 import (
+	"dimensy-bridge/internal/dto"
 	"dimensy-bridge/internal/model"
 	"dimensy-bridge/internal/repository"
 	"dimensy-bridge/pkg/utils"
@@ -12,7 +13,7 @@ import (
 )
 
 type ClientService interface {
-	Login(body []byte) ([]byte, error)
+	Login(req dto.LoginRequest) ([]byte, error)
 	Register(clientID int64) (*model.ClientPsre, error)
 	FillExternalId(clientID int64) (*model.ClientPsre, error)
 	Profile(clientID int64) (*model.ClientPsre, error)
@@ -63,18 +64,13 @@ func (s *clientService) GetDocumentDetail(token, externalID, id string) ([]byte,
 	}
 	return data, status, nil
 }
-func (s *clientService) Login(body []byte) ([]byte, error) {
-	var req struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-	if err := json.Unmarshal(body, &req); err != nil {
-		return nil, errors.New("invalid request body")
-	}
+func (s *clientService) Login(req dto.LoginRequest) ([]byte, error) {
 
 	user, err := s.userRepo.FindByEmail(req.Email)
 	if err != nil {
-		return nil, errors.New("email tidak terdaftar")
+		message := "invalid email or password"
+		resp := utils.ResponseError(message, 401)
+		return resp, errors.New(message)
 	}
 	clientID := user.Client.ID
 
@@ -86,7 +82,7 @@ func (s *clientService) Login(body []byte) ([]byte, error) {
 	// Simpan log
 	s.logRepo.Create(&model.ClientRequestLog{
 		ClientID: &clientID,
-		Body:     string(body),
+		Body:     string(req.Email),
 		Response: string(respBody),
 		URL:      os.Getenv("PSRE_BACKEND_URL") + "/client/login",
 		Type:     "login",

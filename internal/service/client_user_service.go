@@ -67,22 +67,22 @@ func (s *clientUserService) Delete(id uint) error {
 // validateClientUser melakukan validasi data ClientUser
 func (s *clientUserService) validateClientUser(user *model.ClientUser) error {
 	// Validasi NIK
-	if strings.TrimSpace(user.NIK) == "" {
+	if strings.TrimSpace(*user.NIK) == "" {
 		return errors.New("NIK is required")
 	}
 
 	// Validasi Name
-	if strings.TrimSpace(user.Name) == "" {
+	if strings.TrimSpace(*user.Name) == "" {
 		return errors.New("name is required")
 	}
 
 	// Validasi Email
-	if strings.TrimSpace(user.Email) == "" {
+	if strings.TrimSpace(*user.Email) == "" {
 		return errors.New("email is required")
 	}
 
 	// Validasi Phone
-	if strings.TrimSpace(user.Phone) == "" {
+	if strings.TrimSpace(*user.Phone) == "" {
 		return errors.New("phone is required")
 	}
 
