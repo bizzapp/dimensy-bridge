@@ -13,7 +13,7 @@ type UserRepository interface {
 	Update(user *model.User) error
 	Delete(id int64) error
 	FindByEmail(email string) (*model.User, error)
-	FindByExternalID(externalID string) (*model.User, error)
+	// FindByExternalID(externalID string) (*model.User, error)
 }
 
 type userRepository struct {
@@ -74,12 +74,4 @@ func (r *userRepository) Update(user *model.User) error {
 
 func (r *userRepository) Delete(id int64) error {
 	return r.db.Delete(&model.User{}, id).Error
-}
-
-func (r *userRepository) FindByExternalID(externalID string) (*model.User, error) {
-	var user model.User
-	if err := r.db.Where("external_id = ?", externalID).First(&user).Error; err != nil {
-		return nil, err
-	}
-	return &user, nil
 }

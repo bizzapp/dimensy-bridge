@@ -11,7 +11,6 @@ type UserService interface {
 	CreateUser(user *model.User) error
 	UpdateUser(user *model.User) error
 	DeleteUser(id int64) error
-	GetUserByExternalID(externalID string) (*model.User, error)
 }
 
 type userService struct {
@@ -41,8 +40,4 @@ func (s *userService) UpdateUser(user *model.User) error {
 
 func (s *userService) DeleteUser(id int64) error {
 	return s.repo.Delete(id)
-}
-
-func (s *userService) GetUserByExternalID(externalID string) (*model.User, error) {
-	return s.repo.FindByExternalID(externalID)
 }

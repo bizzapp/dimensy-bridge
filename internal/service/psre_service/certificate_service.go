@@ -23,14 +23,16 @@ type certificateService struct {
 	clientSvc        service.ClientService
 	userSvc          service.UserService
 	clientCompanySvc service.ClientCompanyService
+	clientUserSvc    service.ClientUserService
 }
 
-func NewCertificateService(certificateRepo repository.CertificateRepository, clientSvc service.ClientService, userSvc service.UserService, clientCompanySvc service.ClientCompanyService) CertificateService {
+func NewCertificateService(certificateRepo repository.CertificateRepository, clientSvc service.ClientService, userSvc service.UserService, clientCompanySvc service.ClientCompanyService, clientUserSvc service.ClientUserService) CertificateService {
 	return &certificateService{
 		certificateRepo:  certificateRepo,
 		clientSvc:        clientSvc,
 		userSvc:          userSvc,
 		clientCompanySvc: clientCompanySvc,
+		clientUserSvc:    clientUserSvc,
 	}
 }
 
@@ -56,10 +58,10 @@ func (s *certificateService) Issue(token, externalID string, req *dto.Certificat
 	}
 	if resp.Code == 0 {
 		// Get user if external ID provided
-		var user *model.User
+		var user *model.ClientUser
 		var userID *int64
 		if req.UserID != nil && *req.UserID != "" {
-			u, err := s.userSvc.GetUserByExternalID(*req.UserID)
+			u, err := s.clientUserSvc.GetByExternalID(*req.UserID)
 			if err != nil {
 				return data, status, fmt.Errorf("failed to get user by external id: %w", err)
 			}
@@ -117,7 +119,7 @@ func (s *certificateService) Active(token, externalID string, req *dto.Certifica
 		// Get user if external ID provided
 		var userID *int64
 		if req.UserID != nil && *req.UserID != "" {
-			u, err := s.userSvc.GetUserByExternalID(*req.UserID)
+			u, err := s.clientUserSvc.GetByExternalID(*req.UserID)
 			if err != nil {
 				return data, status, fmt.Errorf("failed to get user by external id: %w", err)
 			}
