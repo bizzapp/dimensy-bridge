@@ -1,8 +1,8 @@
 package dto
 
 type CertificateIssueRequest struct {
-	UserID    string `json:"userId" binding:"omitempty"`
-	CompanyID string `json:"companyId" binding:"omitempty"`
+	UserID    *string `json:"userId" binding:"omitempty"`
+	CompanyID *string `json:"companyId" binding:"omitempty"`
 }
 
 type CertificateActiveRequest struct {

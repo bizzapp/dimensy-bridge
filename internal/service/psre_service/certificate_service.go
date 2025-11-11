@@ -55,8 +55,8 @@ func (s *certificateService) Issue(token, externalID string, req *dto.Certificat
 	if resp.Code == 0 {
 		// Get user if external ID provided
 		var user *model.User
-		if req.UserID != "" {
-			u, err := s.userSvc.GetUserByExternalID(req.UserID)
+		if req.UserID != nil {
+			u, err := s.userSvc.GetUserByExternalID(*req.UserID)
 			if err != nil {
 				return data, status, fmt.Errorf("failed to get user by external id: %w", err)
 			}
@@ -65,8 +65,8 @@ func (s *certificateService) Issue(token, externalID string, req *dto.Certificat
 
 		// Get company if external ID provided
 		var company *model.ClientCompany
-		if req.CompanyID != "" {
-			c, err := s.clientCompanySvc.GetByExternalID(req.CompanyID)
+		if req.CompanyID != nil {
+			c, err := s.clientCompanySvc.GetByExternalID(*req.CompanyID)
 			if err != nil {
 				return data, status, fmt.Errorf("failed to get company by external id: %w", err)
 			}
@@ -82,11 +82,11 @@ func (s *certificateService) Issue(token, externalID string, req *dto.Certificat
 		// Only assign optional IDs when available
 		if user != nil {
 			cert.UserID = &user.ID
-			cert.ExternalUserID = &req.UserID
+			cert.ExternalUserID = req.UserID
 		}
 		if company != nil {
 			cert.CompanyID = &company.ID
-			cert.ExternalCompanyID = &req.CompanyID
+			cert.ExternalCompanyID = req.CompanyID
 		}
 
 		// Simpan ke database
