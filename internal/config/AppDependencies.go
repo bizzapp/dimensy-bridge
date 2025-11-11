@@ -160,7 +160,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	psreClientSvc := psre_service.NewClientService(clientRequestLogRepo, userRepo, clientRepo, clientPsreRepo)
 	psreClientCompanySvc := psre_service.NewClientCompanyService(db, clientSvc, clientCompanyRepo, quotaClientSvc, clientCompanyInviteSvc, clientCompanyInviteRepo, clientUserRepo)
 	psreClientUserSvc := psre_service.NewClientUserService(db, clientPsreSvc, clientCompanySvc, clientUserSvc, clientUserRepo, clientKYCHistorySvc, clientSvc, clientKYCHistoryRepo)
-	psreCertificateSvc := psre_service.NewCertificateService(certificateRepo, clientSvc, userSvc, clientCompanySvc, clientUserSvc)
+	psreCertificateSvc := psre_service.NewCertificateService(db, certificateRepo, clientSvc, userSvc, clientCompanySvc, clientUserSvc)
 	psreClientDocumentSvc := psre_service.NewClientDocumentService(db, clientPsreSvc, clientDocumentRepo)
 	psreDashboardSvc := psre_service.NewDashboardService()
 	psreBackendSvc := psre_service.NewBackendService()
