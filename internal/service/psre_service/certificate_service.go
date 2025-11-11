@@ -41,7 +41,6 @@ func (s *certificateService) Issue(token, externalID string, req *dto.Certificat
 		fmt.Printf("[Certificate Issue] Failed to get client: %v\n", err)
 		return nil, http.StatusBadRequest, err
 	}
-	fmt.Printf("[Certificate Issue] Found client: ID=%d\n", client.ID)
 
 	data, status, err := utils.PsreRequest("POST", "/certificate/issue", req, token, nil)
 	if err != nil {
