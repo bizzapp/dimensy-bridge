@@ -88,13 +88,16 @@ func (s *clientCompanyService) InviteClientCompany(authData interface{}, token s
 			respBody = utils.ResponseError(message, 400)
 			return fmt.Errorf("failed to check existing invitation: %w", err)
 		}
-		if findClientCompanyInvite.IsVerify {
+
+		// Check if invitation exists and is already verified
+		if findClientCompanyInvite != nil && findClientCompanyInvite.IsVerify {
 			message := "User already member of this company"
 			respBody = utils.ResponseError(message, 400)
 			return fmt.Errorf("invitation already exists")
 		}
+
 		// Use quota only if no existing invitation
-		if findClientCompanyInvite.ID == 0 {
+		if findClientCompanyInvite == nil {
 			quantity := 1
 			_, err = utils.NewQuotaUtils().UseQuota(tx, dto.UseQuotaClientRequest{
 				MasterProductID: seeder.ID_PRODUCT_USER_PERSONAL_COMPANY,
@@ -191,6 +194,9 @@ func (s *clientCompanyService) AcceptInvitationClientUser(authData interface{}, 
 			clientCompanyInvite, err := s.clientCompanyInviteRepo.FindByExternal(client.ID, resp.Data.UserID, resp.Data.CompanyID)
 			if err != nil {
 				return fmt.Errorf("failed to find invitation record: %w", err)
+			}
+			if clientCompanyInvite == nil {
+				return fmt.Errorf("invitation record not found")
 			}
 			if err := s.clientCompanyInviteRepo.VerifyInvite(clientCompanyInvite.ID); err != nil {
 				return fmt.Errorf("failed to verify invitation record: %w", err)
