@@ -15,7 +15,7 @@ type QuotaClientService interface {
 	CreateQuota(quota *model.QuotaClient) error
 	UpdateQuota(quota *model.QuotaClient) error
 	DeleteQuota(id int64) error
-	UseQuota(dto.UseQuotaClientRequest) (*model.QuotaClient, error)
+	// UseQuota(dto.UseQuotaClientRequest) (*model.QuotaClient, error)
 	AddQuotaWithApprove(tx *gorm.DB, req dto.AddQuotaClientWithApproveRequest) (*model.QuotaClient, error)
 }
 
@@ -58,24 +58,24 @@ func (s *quotaClientService) DeleteQuota(id int64) error {
 	return s.quotaClientRepo.Delete(id)
 }
 
-func (s *quotaClientService) UseQuota(req dto.UseQuotaClientRequest) (*model.QuotaClient, error) {
-	var result *model.QuotaClient
+// func (s *quotaClientService) UseQuota(req dto.UseQuotaClientRequest) (*model.QuotaClient, error) {
+// 	var result *model.QuotaClient
 
-	err := s.db.Transaction(func(tx *gorm.DB) error {
-		quota, err := s.quotaUtils.UseQuota(tx, req)
-		if err != nil {
-			return err
-		}
-		result = quota
-		return nil
-	})
+// 	err := s.db.Transaction(func(tx *gorm.DB) error {
+// 		quota, err := s.quotaUtils.UseQuota(tx, req)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		result = quota
+// 		return nil
+// 	})
 
-	if err != nil {
-		return nil, err
-	}
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return result, nil
-}
+// 	return result, nil
+// }
 
 // AddQuotaWithApprove creates or updates quota using quota utils
 func (s *quotaClientService) AddQuotaWithApprove(tx *gorm.DB, req dto.AddQuotaClientWithApproveRequest) (*model.QuotaClient, error) {

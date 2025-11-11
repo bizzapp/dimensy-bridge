@@ -88,12 +88,11 @@ func (s *clientCompanyService) CreateClientCompany(
 		}
 
 		quantity := 1
-		reqUseQuota := dto.UseQuotaClientRequest{
-			MasterProductID: seeder.ID_PRODUCT_COMPANY,
+		_, err = utils.NewQuotaUtils().UseQuota(tx, dto.UseQuotaClientRequest{
+			MasterProductID: seeder.ID_PRODUCT_USER_PERSONAL,
 			ClientID:        client.ID,
 			Quantity:        int64(quantity),
-		}
-		_, err = s.quotaClientSvc.UseQuota(reqUseQuota)
+		})
 		if err != nil {
 			dataResp := map[string]interface{}{
 				"error": err.Error(),
