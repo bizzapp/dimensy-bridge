@@ -26,6 +26,7 @@ type ClientUserService interface {
 	PhoneActivation(token, externalID string, req *dto.ClientUserPhoneActivationRequest) ([]byte, int, error)
 	RequestKYC(token, externalID string, req *dto.ClientUserKYCRequest) ([]byte, int, error)
 	VerifyKYC(token, externalID string, req *dto.ClientUserVerifyKYCRequest) ([]byte, int, error)
+	SyncUsers(token, externalID string) ([]byte, int, error)
 }
 
 type clientUserService struct {
@@ -362,4 +363,143 @@ func (s *clientUserService) VerifyKYC(token, externalID string, req *dto.ClientU
 	}
 
 	return data, status, nil
+}
+
+// SyncUsers syncs user data from PSrE to local database
+func (s *clientUserService) SyncUsers(token, externalID string) ([]byte, int, error) {
+	var (
+		respBody []byte
+		status   int
+	)
+
+	txErr := s.db.Transaction(func(tx *gorm.DB) error {
+		// Get client info
+		client, err := s.clientSvc.GetClientByExternalId(externalID)
+		if err != nil {
+			message := fmt.Sprintf("Unauthorized: %v", err)
+			respBody = utils.ResponseError(message, 400)
+			status = 400
+			return fmt.Errorf("unauthorized client: %w", err)
+		}
+
+		// Get users from PSrE API
+		data, psreStatus, err := utils.PsreRequest("GET", "/user", nil, token, map[string]string{
+			"limit": "1000", // Get all users, adjust if needed
+		})
+
+		if err != nil {
+			message := fmt.Sprintf("Failed to fetch users from PSrE: %v", err)
+			respBody = utils.ResponseError(message, 500)
+			status = 500
+			return fmt.Errorf("PSrE request failed: %w", err)
+		}
+
+		if psreStatus >= 400 {
+			respBody = data
+			status = psreStatus
+			return fmt.Errorf("PSrE returned HTTP %d: %s", psreStatus, string(data))
+		}
+
+		// Parse response from PSrE
+		var psreResponse dto.PsreClientUserSyncResponse
+		if err := json.Unmarshal(data, &psreResponse); err != nil {
+			message := fmt.Sprintf("Failed to parse PSrE response: %v", err)
+			respBody = utils.ResponseError(message, 500)
+			status = 500
+			return fmt.Errorf("failed to parse PSrE response: %w", err)
+		}
+
+		if psreResponse.Code != 0 {
+			message := fmt.Sprintf("PSrE API error: %s", psreResponse.Message)
+			respBody = utils.ResponseError(message, 400)
+			status = 400
+			return fmt.Errorf("PSrE API error: %s", psreResponse.Message)
+		}
+
+		// Process each user from PSrE
+		syncedUsers := 0
+		createdUsers := 0
+		updatedUsers := 0
+
+		for _, userData := range psreResponse.Data {
+			// Parse birthdate
+			birthdate, err := utils.ParseBirthDate(userData.BirthDate)
+			if err != nil {
+				fmt.Printf("Warning: Failed to parse birthdate for user %s: %v\n", userData.ID, err)
+				continue
+			}
+
+			// Create ClientUser model
+			clientUser := &model.ClientUser{
+				ClientID:        client.ID,
+				ClientCompanyID: nil, // Will be updated based on userCompany data if needed
+				ExternalID:      &userData.ID,
+				NIK:             &userData.NIK,
+				Name:            &userData.FullName,
+				Birthdate:       birthdate,
+				Email:           &userData.Email,
+				Phone:           &userData.Phone,
+				IsWNI:           nil,   // Not provided in response, keep as nil
+				IsActive:        true,  // Assume active if returned by API
+				IsVerifyPhone:   false, // Default value
+				IsVerifyKYC:     false, // Default value
+				ParentID:        nil,
+			}
+
+			// Check if user already exists
+			existingUser, err := s.clientUserRepo.FindByExternalID(userData.ID)
+			isNewUser := err == gorm.ErrRecordNotFound
+
+			if isNewUser {
+				// Create new user
+				if err := s.clientUserRepo.Create(clientUser); err != nil {
+					fmt.Printf("Warning: Failed to create user %s: %v\n", userData.ID, err)
+					continue
+				}
+				createdUsers++
+			} else if err == nil {
+				// Update existing user
+				clientUser.ID = existingUser.ID
+				clientUser.CreatedAt = existingUser.CreatedAt // Keep original creation time
+
+				if err := s.clientUserRepo.Update(clientUser); err != nil {
+					fmt.Printf("Warning: Failed to update user %s: %v\n", userData.ID, err)
+					continue
+				}
+				updatedUsers++
+			} else {
+				// Other error
+				fmt.Printf("Warning: Error checking user %s: %v\n", userData.ID, err)
+				continue
+			}
+
+			syncedUsers++
+		}
+
+		// Create success response
+		successMessage := fmt.Sprintf("Successfully synced %d users (created: %d, updated: %d)",
+			syncedUsers, createdUsers, updatedUsers)
+
+		respBody, _ = json.Marshal(map[string]interface{}{
+			"code":    0,
+			"message": successMessage,
+			"data": map[string]interface{}{
+				"total_synced": syncedUsers,
+				"created":      createdUsers,
+				"updated":      updatedUsers,
+			},
+		})
+		status = 200
+
+		return nil
+	})
+
+	if txErr != nil {
+		if respBody != nil {
+			return respBody, status, txErr
+		}
+		return nil, http.StatusBadRequest, txErr
+	}
+
+	return respBody, status, nil
 }

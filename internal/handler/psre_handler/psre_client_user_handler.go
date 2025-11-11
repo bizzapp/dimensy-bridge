@@ -148,6 +148,23 @@ func (h *PsreClientUserHandler) List(c *gin.Context) {
 	}
 	c.Data(status, "application/json", data)
 }
+func (h *PsreClientUserHandler) Sync(c *gin.Context) {
+	authData, _ := c.Get("authData")
+	token := c.Request.Header.Get("Authorization")
+
+	externalID, err := utils.ExtractExternalID(authData)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	respBody, status, err := h.psreClientUserSvc.SyncUsers(token, externalID)
+	if err != nil {
+		c.Data(status, "application/json", respBody)
+		return
+	}
+	c.Data(status, "application/json", respBody)
+}
 func (h *PsreClientUserHandler) Detail(c *gin.Context) {
 	token := c.GetHeader("Authorization")
 	authData, _ := c.Get("authData")

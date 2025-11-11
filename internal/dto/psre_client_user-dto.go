@@ -74,3 +74,27 @@ func (d *CustomDate) UnmarshalJSON(b []byte) error {
 func (d CustomDate) MarshalJSON() ([]byte, error) {
 	return json.Marshal(d.Format(dateLayout))
 }
+
+// Response DTOs for Sync functionality
+type PsreClientUserSyncResponse struct {
+	Code    int                  `json:"code"`
+	Message string               `json:"message"`
+	Data    []PsreClientUserData `json:"data"`
+}
+
+type PsreClientUserData struct {
+	ID          string                `json:"id"`
+	DigitalID   string                `json:"digitalID"`
+	NIK         string                `json:"nik"`
+	FullName    string                `json:"fullName"`
+	BirthDate   string                `json:"birthDate"`
+	Email       string                `json:"email"`
+	Phone       string                `json:"phone"`
+	CreatedAt   string                `json:"createdAt"`
+	UserCompany []PsreUserCompanyData `json:"userCompany"`
+}
+
+type PsreUserCompanyData struct {
+	CompanyID string `json:"companyId"`
+	// Add other company fields if needed
+}

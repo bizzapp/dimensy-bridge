@@ -18,6 +18,7 @@ func SetupPsreRoutes(api *gin.RouterGroup, deps *config.AppDependencies, rl *mid
 		user := psre.Group("/user")
 		user.Use(middleware.AuthJWE())
 		user.GET("/", deps.PsreClientUserHdl.List)
+		user.GET("/sync", deps.PsreClientUserHdl.Sync)
 		user.GET("/:id", deps.PsreClientUserHdl.Detail)
 		user.POST("/register", deps.PsreClientUserHdl.Register)
 		user.POST("/activate", deps.PsreClientUserHdl.Activate)
