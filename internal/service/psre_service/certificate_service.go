@@ -12,8 +12,8 @@ import (
 )
 
 type CertificateService interface {
-	Issue(token, externalID string, req *dto.CertificateIssueRequest) ([]byte, int, error)
-	Active(token, externalID string, req *dto.CertificateActiveRequest) ([]byte, int, error)
+	Issue(token, externalID string, req *dto.CertificateIssueActiveRequest) ([]byte, int, error)
+	Active(token, externalID string, req *dto.CertificateIssueActiveRequest) ([]byte, int, error)
 	RevokeRequest(token, externalID string, req *dto.CertificateRevokeRequest) ([]byte, int, error)
 	Revoke(token, externalID string, req *dto.CertificateRevokeValidateRequest) ([]byte, int, error)
 }
@@ -34,7 +34,7 @@ func NewCertificateService(certificateRepo repository.CertificateRepository, cli
 	}
 }
 
-func (s *certificateService) Issue(token, externalID string, req *dto.CertificateIssueRequest) ([]byte, int, error) {
+func (s *certificateService) Issue(token, externalID string, req *dto.CertificateIssueActiveRequest) ([]byte, int, error) {
 
 	client, err := s.clientSvc.GetClientByExternalId(externalID)
 	if err != nil {
@@ -44,7 +44,7 @@ func (s *certificateService) Issue(token, externalID string, req *dto.Certificat
 
 	data, status, err := utils.PsreRequest("POST", "/certificate/issue", req, token, nil)
 	if err != nil {
-		return data, status, fmt.Errorf("failed call psre api: %w", err)
+		s.Active(token, externalID, req)
 	}
 
 	var resp struct {
@@ -88,7 +88,7 @@ func (s *certificateService) Issue(token, externalID string, req *dto.Certificat
 	return data, status, nil
 }
 
-func (s *certificateService) Active(token, externalID string, req *dto.CertificateActiveRequest) ([]byte, int, error) {
+func (s *certificateService) Active(token, externalID string, req *dto.CertificateIssueActiveRequest) ([]byte, int, error) {
 	client, err := s.clientSvc.GetClientByExternalId(externalID)
 	if err != nil {
 		fmt.Printf("[Certificate Active] Failed to get client: %v\n", err)
@@ -116,8 +116,8 @@ func (s *certificateService) Active(token, externalID string, req *dto.Certifica
 	if resp.Code == 0 {
 		// Get user if external ID provided
 		var userID *int64
-		if req.UserID != "" {
-			u, err := s.userSvc.GetUserByExternalID(req.UserID)
+		if req.UserID != nil && *req.UserID != "" {
+			u, err := s.userSvc.GetUserByExternalID(*req.UserID)
 			if err != nil {
 				return data, status, fmt.Errorf("failed to get user by external id: %w", err)
 			}
@@ -126,21 +126,21 @@ func (s *certificateService) Active(token, externalID string, req *dto.Certifica
 
 		// Get company if external ID provided
 		var companyID *int64
-		if req.CompanyID != "" {
-			c, err := s.clientCompanySvc.GetByExternalID(req.CompanyID)
+		if req.CompanyID != nil && *req.CompanyID != "" {
+			c, err := s.clientCompanySvc.GetByExternalID(*req.CompanyID)
 			if err != nil {
 				return data, status, fmt.Errorf("failed to get company by external id: %w", err)
 			}
 			companyID = &c.ID
 		}
 
-		// Convert DTO to CertificateIssueRequest format for createOrUpdate
-		issueReq := &dto.CertificateIssueRequest{}
-		if req.UserID != "" {
-			issueReq.UserID = &req.UserID
+		// Convert DTO to CertificateIssueActiveRequest format for createOrUpdate
+		issueReq := &dto.CertificateIssueActiveRequest{}
+		if req.UserID != nil && *req.UserID != "" {
+			issueReq.UserID = req.UserID
 		}
-		if req.CompanyID != "" {
-			issueReq.CompanyID = &req.CompanyID
+		if req.CompanyID != nil && *req.CompanyID != "" {
+			issueReq.CompanyID = req.CompanyID
 		}
 
 		// CreateOrUpdate certificate berdasarkan clientID, userID, dan companyID
@@ -178,7 +178,7 @@ func (s *certificateService) Revoke(token, externalID string, req *dto.Certifica
 }
 
 // createOrUpdateCertificate implements create or update logic based on clientID, userID, and companyID combination
-func (s *certificateService) createOrUpdateCertificate(clientID int64, userID *int64, companyID *int64, req *dto.CertificateIssueRequest, status string) error {
+func (s *certificateService) createOrUpdateCertificate(clientID int64, userID *int64, companyID *int64, req *dto.CertificateIssueActiveRequest, status string) error {
 	// Try to find existing certificate
 	existingCert, err := s.certificateRepo.FindByClientUserAndCompany(clientID, userID, companyID)
 

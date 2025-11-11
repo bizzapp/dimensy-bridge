@@ -2,25 +2,20 @@ package dto
 
 import "time"
 
-type CertificateIssueRequest struct {
+type CertificateIssueActiveRequest struct {
 	UserID    *string `json:"userId" binding:"omitempty"`
 	CompanyID *string `json:"companyId" binding:"omitempty"`
 }
 
-type CertificateActiveRequest struct {
-	UserID    string `json:"userId" binding:"omitempty"`
-	CompanyID string `json:"companyId" binding:"omitempty"`
-}
-
 type CertificateRevokeRequest struct {
-	UserID    string `json:"userId" binding:"omitempty"`
-	CompanyID string `json:"companyId" binding:"omitempty"`
+	UserID    *string `json:"userId" binding:"omitempty"`
+	CompanyID *string `json:"companyId" binding:"omitempty"`
 }
 
 type CertificateRevokeValidateRequest struct {
-	UserID    string `json:"userId" binding:"omitempty"`
-	CompanyID string `json:"companyId" binding:"omitempty"`
-	OTP       string `json:"otp" binding:"required"`
+	UserID    *string `json:"userId" binding:"omitempty"`
+	CompanyID *string `json:"companyId" binding:"omitempty"`
+	OTP       string  `json:"otp" binding:"required"`
 }
 type CertificateActiveResponse struct {
 	Code    int                           `json:"code"`

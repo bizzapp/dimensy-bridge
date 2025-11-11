@@ -29,7 +29,7 @@ func (h *PsreCertificateHandler) Issue(c *gin.Context) {
 		return
 	}
 
-	var req dto.CertificateIssueRequest
+	var req dto.CertificateIssueActiveRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
@@ -52,7 +52,7 @@ func (h *PsreCertificateHandler) Active(c *gin.Context) {
 		return
 	}
 
-	var req dto.CertificateActiveRequest
+	var req dto.CertificateIssueActiveRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
