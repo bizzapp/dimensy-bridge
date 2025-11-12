@@ -42,7 +42,7 @@ func SetupPsreRoutes(api *gin.RouterGroup, deps *config.AppDependencies, rl *mid
 		document.POST("/request-sign", deps.PsreClientDocumentHdl.RequestSign)
 		document.POST("/proccess-sign", deps.PsreClientDocumentHdl.ProcessSign)
 		document.POST("/request-stamp", deps.PsreClientDocumentHdl.RequestStamp)
-		document.POST("/process-stamp", deps.PsreClientDocumentHdl.ProcessStamp)
+		document.POST("/proccess-stamp", deps.PsreClientDocumentHdl.ProcessStamp)
 		document.POST("/request-otp-sign", deps.PsreClientDocumentHdl.RequestOtpSign)
 		document.GET("/preview/:id", deps.PsreClientDocumentHdl.PreviewDocument)
 

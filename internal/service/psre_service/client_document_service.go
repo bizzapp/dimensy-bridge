@@ -434,25 +434,6 @@ func (s *clientDocumentService) RequestSign(token, externalID string, req dto.Ps
 		}
 
 		for _, position := range req.Positions {
-			masterProductID := seeder.ID_PRODUCT_SIGN
-			if position.StampType == model.StampTypeMeterai {
-				masterProductID = seeder.ID_PRODUCT_METERAI
-			}
-			quantity := 1
-			_, err = utils.NewQuotaUtils().UseQuota(tx, dto.UseQuotaClientRequest{
-				MasterProductID: masterProductID,
-				ClientID:        client.ID,
-				Quantity:        int64(quantity),
-			})
-			if err != nil {
-				message := fmt.Sprintf("Failed to use quota: %v", err)
-				respBody = utils.ResponseError(message, 400)
-				status = 400
-				return fmt.Errorf("failed to use quota: %w", err)
-			}
-		}
-
-		for _, position := range req.Positions {
 
 			fileSize, err := utils.CalculateBase64FileSize(position.Image)
 			if err != nil {
@@ -509,8 +490,8 @@ func (s *clientDocumentService) RequestSign(token, externalID string, req dto.Ps
 	return respBody, status, nil
 }
 
-func (s *clientDocumentService) ProcessSign(token, externalID string, dto dto.PsreDocumentProcessSignRequest) ([]byte, int, error) {
-	_, err := s.clientPsreSvc.GetByExternalID(externalID)
+func (s *clientDocumentService) ProcessSign(token, externalID string, req dto.PsreDocumentProcessSignRequest) ([]byte, int, error) {
+	client, err := s.clientPsreSvc.GetByExternalID(externalID)
 	if err != nil {
 		return nil, http.StatusBadRequest, fmt.Errorf("failed get client psre: %w", err)
 	}
@@ -521,7 +502,37 @@ func (s *clientDocumentService) ProcessSign(token, externalID string, dto dto.Ps
 	)
 
 	txErr := s.db.Transaction(func(tx *gorm.DB) error {
-		data, st, err := utils.PsreRequest("POST", "/document/proccess-sign", dto, token, nil)
+		// Get client document process details to calculate quota usage
+		var clientDocumentProcessDetails []model.ClientDocumentProcessDetail
+		if err := tx.Joins("JOIN client_document_processes cdp ON cdp.id = client_document_process_details.client_document_process_id").
+			Joins("JOIN client_documents cd ON cd.id = cdp.client_document_id").
+			Where("cd.external_id = ?", req.DocumentOrGroupID).
+			Or("cd.group_external_id = ?", req.DocumentOrGroupID).
+			Find(&clientDocumentProcessDetails).Error; err != nil {
+			return fmt.Errorf("failed to get client document process details: %w", err)
+		}
+
+		// Use quota based on client_document_process_details
+		for _, detail := range clientDocumentProcessDetails {
+			masterProductID := seeder.ID_PRODUCT_SIGN
+			if detail.Type == model.StampTypeMeterai {
+				masterProductID = seeder.ID_PRODUCT_METERAI
+			}
+			quantity := 1
+			_, err = utils.NewQuotaUtils().UseQuota(tx, dto.UseQuotaClientRequest{
+				MasterProductID: masterProductID,
+				ClientID:        client.ID,
+				Quantity:        int64(quantity),
+			})
+			if err != nil {
+				message := fmt.Sprintf("Failed to use quota: %v", err)
+				respBody = utils.ResponseError(message, 400)
+				status = 400
+				return fmt.Errorf("failed to use quota: %w", err)
+			}
+		}
+
+		data, st, err := utils.PsreRequest("POST", "/document/proccess-sign", req, token, nil)
 		respBody, status = data, st
 		if err != nil {
 			return fmt.Errorf("failed call psre api: %w", err)
@@ -532,10 +543,10 @@ func (s *clientDocumentService) ProcessSign(token, externalID string, dto dto.Ps
 		}
 
 		if err := tx.Model(&model.ClientDocumentProcess{}).
-			Where("external_id = ?", dto.DocumentOrGroupID).
+			Where("external_id = ?", req.DocumentOrGroupID).
 			Update("is_process", true).Error; err != nil {
 
-			return fmt.Errorf("failed update group_external_id: %w", err)
+			return fmt.Errorf("failed update is_process: %w", err)
 		}
 		return nil
 	})
@@ -605,23 +616,6 @@ func (s *clientDocumentService) RequestStamp(token, externalID string, req dto.P
 			return fmt.Errorf("failed create client document process: %w", err)
 		}
 
-		for range req.Positions {
-			masterProductID := seeder.ID_PRODUCT_STAMP
-			quantity := int64(1)
-
-			_, err := utils.NewQuotaUtils().UseQuota(tx, dto.UseQuotaClientRequest{
-				MasterProductID: masterProductID,
-				ClientID:        client.ID,
-				Quantity:        quantity,
-			})
-			if err != nil {
-				message := fmt.Sprintf("Failed to use quota: %v", err)
-				respBody = utils.ResponseError(message, 400)
-				status = 400
-				return fmt.Errorf("failed to use quota: %w", err)
-			}
-		}
-
 		for _, position := range req.Positions {
 
 			fileSize, err := utils.CalculateBase64FileSize(position.Image)
@@ -666,9 +660,9 @@ func (s *clientDocumentService) RequestStamp(token, externalID string, req dto.P
 	return respBody, status, nil
 }
 
-func (s *clientDocumentService) ProcessStamp(token, externalID string, dto dto.PsreDocumentProcessStampRequest) ([]byte, int, error) {
+func (s *clientDocumentService) ProcessStamp(token, externalID string, req dto.PsreDocumentProcessStampRequest) ([]byte, int, error) {
 
-	_, err := s.clientPsreSvc.GetByExternalID(externalID)
+	client, err := s.clientPsreSvc.GetByExternalID(externalID)
 	if err != nil {
 		return nil, http.StatusBadRequest, fmt.Errorf("failed get client psre: %w", err)
 	}
@@ -679,7 +673,34 @@ func (s *clientDocumentService) ProcessStamp(token, externalID string, dto dto.P
 	)
 
 	txErr := s.db.Transaction(func(tx *gorm.DB) error {
-		data, st, err := utils.PsreRequest("POST", "/document/proccess-stamp", dto, token, nil)
+		// Get client document process details to calculate quota usage
+		var clientDocumentProcessDetails []model.ClientDocumentProcessDetail
+		if err := tx.Joins("JOIN client_document_processes cdp ON cdp.id = client_document_process_details.client_document_process_id").
+			Joins("JOIN client_documents cd ON cd.id = cdp.client_document_id").
+			Where("cd.external_id = ?", req.DocumentOrGroupID).
+			Or("cd.group_external_id = ?", req.DocumentOrGroupID).
+			Find(&clientDocumentProcessDetails).Error; err != nil {
+			return fmt.Errorf("failed to get client document process details: %w", err)
+		}
+
+		// Use quota based on client_document_process_details for stamp
+		for range clientDocumentProcessDetails {
+			masterProductID := seeder.ID_PRODUCT_STAMP
+			quantity := 1
+			_, err = utils.NewQuotaUtils().UseQuota(tx, dto.UseQuotaClientRequest{
+				MasterProductID: masterProductID,
+				ClientID:        client.ID,
+				Quantity:        int64(quantity),
+			})
+			if err != nil {
+				message := fmt.Sprintf("Failed to use quota: %v", err)
+				respBody = utils.ResponseError(message, 400)
+				status = 400
+				return fmt.Errorf("failed to use quota: %w", err)
+			}
+		}
+
+		data, st, err := utils.PsreRequest("POST", "/document/proccess-stamp", req, token, nil)
 		respBody, status = data, st
 		if err != nil {
 			return fmt.Errorf("failed call psre api: %w", err)
@@ -690,10 +711,10 @@ func (s *clientDocumentService) ProcessStamp(token, externalID string, dto dto.P
 		}
 
 		if err := tx.Model(&model.ClientDocumentProcess{}).
-			Where("external_id = ?", dto.DocumentOrGroupID).
+			Where("external_id = ?", req.DocumentOrGroupID).
 			Update("is_process", true).Error; err != nil {
 
-			return fmt.Errorf("failed update external_id: %w", err)
+			return fmt.Errorf("failed update is_process: %w", err)
 		}
 		return nil
 	})
