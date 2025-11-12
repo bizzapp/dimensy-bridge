@@ -116,6 +116,8 @@ type AppDependencies struct {
 
 	ClientCompanyInviteRepo repository.ClientCompanyInviteRepository
 	ClientCompanyInviteSvc  service.ClientCompanyInviteService
+
+	ClientDocumentProcessRepo repository.ClientDocumentProcessRepository
 }
 
 func NewAppDependencies(db *gorm.DB) *AppDependencies {
@@ -137,6 +139,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	subscriptionPlanRepo := repository.NewSubscriptionPlanRepository(db)
 	clientKYCHistoryRepo := repository.NewClientKYCHistoryRepository(db)
 	clientCompanyInviteRepo := repository.NewClientCompanyInviteRepository(db)
+	clientDocumentProcessRepo := repository.NewClientDocumentProcessRepository(db)
 
 	// === CORE SERVICES ===
 	authSvc := service.NewAuthService(authRepo)
@@ -161,7 +164,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	psreClientCompanySvc := psre_service.NewClientCompanyService(db, clientSvc, clientCompanyRepo, quotaClientSvc, clientCompanyInviteSvc, clientCompanyInviteRepo, clientUserRepo)
 	psreClientUserSvc := psre_service.NewClientUserService(db, clientPsreSvc, clientCompanySvc, clientUserSvc, clientUserRepo, clientKYCHistorySvc, clientSvc, clientKYCHistoryRepo)
 	psreCertificateSvc := psre_service.NewCertificateService(db, certificateRepo, clientSvc, userSvc, clientCompanySvc, clientUserSvc)
-	psreClientDocumentSvc := psre_service.NewClientDocumentService(db, clientPsreSvc, clientDocumentRepo)
+	psreClientDocumentSvc := psre_service.NewClientDocumentService(db, clientPsreSvc, clientDocumentRepo, clientDocumentProcessRepo)
 	psreDashboardSvc := psre_service.NewDashboardService()
 	psreBackendSvc := psre_service.NewBackendService()
 

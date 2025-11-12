@@ -59,7 +59,7 @@ type PsreDocumentProcessSignRequest struct {
 type PsreDocumentStampRequest struct {
 	DocumentOrGroupID string                      `json:"documentOrGroupId" binding:"required"`
 	CompanyID         string                      `json:"companyId" binding:"required"`
-	UserID            string                      `json:"userId,omitempty"`
+	UserID            string                      `json:"userId" binding:"required"`
 	Positions         []PsreDocumentStampPosition `json:"positions" binding:"required,dive"`
 }
 

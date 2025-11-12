@@ -25,7 +25,8 @@ func (h *PsreClientDocumentHandler) Upload(c *gin.Context) {
 
 	externalID, err := utils.ExtractExternalID(authData)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, err.Error())
+		message := utils.ResponseError(err.Error(), http.StatusUnauthorized)
+		c.Data(http.StatusUnauthorized, "application/json", message)
 		return
 	}
 	var req dto.PsreDocumentSingleFileRequest
@@ -33,9 +34,7 @@ func (h *PsreClientDocumentHandler) Upload(c *gin.Context) {
 		message := utils.ResponseError(err.Error(), http.StatusBadRequest)
 		c.Data(http.StatusBadRequest, "application/json", message)
 		return
-
 	}
-
 	respBody, status, err := h.clientDocumentSvc.UploadSingle(token, externalID, req)
 	if err != nil {
 		c.Data(status, "application/json", respBody)
@@ -50,13 +49,15 @@ func (h *PsreClientDocumentHandler) UploadBulk(c *gin.Context) {
 
 	externalID, err := utils.ExtractExternalID(authData)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, err.Error())
+		message := utils.ResponseError(err.Error(), http.StatusUnauthorized)
+		c.Data(http.StatusUnauthorized, "application/json", message)
 		return
 	}
 
 	var req dto.PsreDocumentBulkFileRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
+		message := utils.ResponseError(err.Error(), http.StatusBadRequest)
+		c.Data(http.StatusBadRequest, "application/json", message)
 		return
 	}
 	respBody, status, err := h.clientDocumentSvc.UploadBulk(token, externalID, req)
@@ -78,7 +79,8 @@ func (h *PsreClientDocumentHandler) RequestSign(c *gin.Context) {
 
 	var req dto.PsreDocumentSignRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
+		message := utils.ResponseError(err.Error(), http.StatusBadRequest)
+		c.Data(http.StatusBadRequest, "application/json", message)
 		return
 	}
 
@@ -95,13 +97,15 @@ func (h *PsreClientDocumentHandler) ProcessSign(c *gin.Context) {
 
 	externalID, err := utils.ExtractExternalID(authData)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, err.Error())
+		message := utils.ResponseError(err.Error(), http.StatusUnauthorized)
+		c.Data(http.StatusUnauthorized, "application/json", message)
 		return
 	}
 
 	var req dto.PsreDocumentProcessSignRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
+		message := utils.ResponseError(err.Error(), http.StatusBadRequest)
+		c.Data(http.StatusBadRequest, "application/json", message)
 		return
 	}
 	respBody, status, err := h.clientDocumentSvc.ProcessSign(token, externalID, req)
@@ -117,13 +121,15 @@ func (h *PsreClientDocumentHandler) RequestStamp(c *gin.Context) {
 
 	externalID, err := utils.ExtractExternalID(authData)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, err.Error())
+		message := utils.ResponseError(err.Error(), http.StatusBadRequest)
+		c.Data(http.StatusBadRequest, "application/json", message)
 		return
 	}
 
 	var req dto.PsreDocumentStampRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
+		message := utils.ResponseError(err.Error(), http.StatusBadRequest)
+		c.Data(http.StatusBadRequest, "application/json", message)
 		return
 	}
 	respBody, status, err := h.clientDocumentSvc.RequestStamp(token, externalID, req)
@@ -140,13 +146,16 @@ func (h *PsreClientDocumentHandler) ProcessStamp(c *gin.Context) {
 
 	externalID, err := utils.ExtractExternalID(authData)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, err.Error())
+		message := utils.ResponseError(err.Error(), http.StatusUnauthorized)
+		c.Data(http.StatusUnauthorized, "application/json", message)
 		return
 	}
 
 	var req dto.PsreDocumentProcessStampRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
+		// c.JSON(http.StatusBadRequest, err.Error())
+		message := utils.ResponseError(err.Error(), http.StatusBadRequest)
+		c.Data(http.StatusBadRequest, "application/json", message)
 		return
 	}
 
@@ -163,13 +172,15 @@ func (h *PsreClientDocumentHandler) RequestOtpSign(c *gin.Context) {
 
 	externalID, err := utils.ExtractExternalID(authData)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, err.Error())
+		message := utils.ResponseError(err.Error(), http.StatusUnauthorized)
+		c.Data(http.StatusUnauthorized, "application/json", message)
 		return
 	}
 
 	var req dto.PsreDocumentOtpSignRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
+		message := utils.ResponseError(err.Error(), http.StatusBadRequest)
+		c.Data(http.StatusBadRequest, "application/json", message)
 		return
 	}
 
@@ -186,7 +197,8 @@ func (h *PsreClientDocumentHandler) PreviewDocument(c *gin.Context) {
 
 	externalID, err := utils.ExtractExternalID(authData)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, err.Error())
+		message := utils.ResponseError(err.Error(), http.StatusUnauthorized)
+		c.Data(http.StatusUnauthorized, "application/json", message)
 		return
 	}
 

@@ -14,6 +14,9 @@ const (
 	TypeSignMeterai = "SIGN_METERAI"
 	TypeStamp       = "STAMP"
 
+	StampTypeMeterai = "EMETERAI"
+	StampTypeSign    = "SIGN"
+
 	DocumentProcessExpiredHour int = 24
 )
 
@@ -22,7 +25,7 @@ type ClientDocumentProcess struct {
 	ClientDocumentID   int64      `gorm:"not null;index" json:"client_document_id"`
 	ClientID           int64      `gorm:"not null;index" json:"client_id"`
 	Type               string     `gorm:"size:50;not null;default:'SIGN_METERAI'" json:"type"`
-	ExternalID         string     `gorm:"size:255;not null;uniqueIndex" json:"external_id"`
+	ExternalID         string     `gorm:"size:255;not null" json:"external_id"`
 	ExternalUserID     *string    `gorm:"size:255" json:"external_user_id,omitempty"`
 	ClientUserID       *int64     `gorm:"index" json:"client_user_id,omitempty"`
 	ExternalCompanyID  *string    `gorm:"size:255" json:"external_company_id,omitempty"`

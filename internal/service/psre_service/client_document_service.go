@@ -29,18 +29,19 @@ type ClientDocumentService interface {
 }
 
 type clientDocumentService struct {
-	db                 *gorm.DB
-	clientPsreSvc      service.ClientPsreService
-	clientDocumentRepo repository.ClientDocumentRepository
-	// clientDocumentProcessRepo repository.ClientDocumentProcessRepository
+	db                        *gorm.DB
+	clientPsreSvc             service.ClientPsreService
+	clientDocumentRepo        repository.ClientDocumentRepository
+	clientDocumentProcessRepo repository.ClientDocumentProcessRepository
 	// Add necessary dependencies here
 }
 
-func NewClientDocumentService(db *gorm.DB, clientPsreSvc service.ClientPsreService, clientDocumentRepo repository.ClientDocumentRepository) ClientDocumentService {
+func NewClientDocumentService(db *gorm.DB, clientPsreSvc service.ClientPsreService, clientDocumentRepo repository.ClientDocumentRepository, clientDocumentProcessRepo repository.ClientDocumentProcessRepository) ClientDocumentService {
 	return &clientDocumentService{
-		db:                 db,
-		clientPsreSvc:      clientPsreSvc,
-		clientDocumentRepo: clientDocumentRepo,
+		db:                        db,
+		clientPsreSvc:             clientPsreSvc,
+		clientDocumentRepo:        clientDocumentRepo,
+		clientDocumentProcessRepo: clientDocumentProcessRepo,
 	}
 }
 
@@ -373,7 +374,7 @@ func (s *clientDocumentService) UploadBulk(token, externalID string, req dto.Psr
 	return respBody, status, nil
 }
 
-func (s *clientDocumentService) RequestSign(token, externalID string, dto dto.PsreDocumentSignRequest) ([]byte, int, error) {
+func (s *clientDocumentService) RequestSign(token, externalID string, req dto.PsreDocumentSignRequest) ([]byte, int, error) {
 	client, err := s.clientPsreSvc.GetByExternalID(externalID)
 	if err != nil {
 		return nil, http.StatusBadRequest, fmt.Errorf("failed get client psre: %w", err)
@@ -386,7 +387,7 @@ func (s *clientDocumentService) RequestSign(token, externalID string, dto dto.Ps
 		// Calculate expire time based on current time + DocumentProcessExpiredMinutes
 		expireTime := time.Now().Add(time.Duration(model.DocumentProcessExpiredHour) * time.Hour)
 
-		clientDocument, err := s.clientDocumentRepo.FindByExternalID(dto.DocumentOrGroupID)
+		clientDocument, err := s.clientDocumentRepo.FindByExternalID(req.DocumentOrGroupID)
 		if err != nil {
 			status = 400
 			message := fmt.Sprintf("Failed to find client document by external id: %v", err)
@@ -394,12 +395,33 @@ func (s *clientDocumentService) RequestSign(token, externalID string, dto dto.Ps
 			return fmt.Errorf("failed to find client document by external id: %w", err)
 		}
 
+		clientDocuentProcess, err := s.clientDocumentProcessRepo.FindByExternalIDAndExternalUserID(req.DocumentOrGroupID, req.UserID)
+		if err == nil && clientDocuentProcess != nil {
+			status = 400
+			message := "This user already requested to this document. create new document or using other user"
+			respBody = utils.ResponseError(message, status)
+			return fmt.Errorf("client document process already exists")
+		}
+
+		quantity := 1
+		_, err = utils.NewQuotaUtils().UseQuota(tx, dto.UseQuotaClientRequest{
+			MasterProductID: seeder.ID_PRODUCT_OTP,
+			ClientID:        client.ID,
+			Quantity:        int64(quantity),
+		})
+		if err != nil {
+			message := fmt.Sprintf("Failed to use quota: %v", err)
+			respBody = utils.ResponseError(message, 400)
+			status = 400
+			return fmt.Errorf("failed to use quota: %w", err)
+		}
+
 		clientDocumentProcess := &model.ClientDocumentProcess{
 			ClientID:          client.ID,
 			ClientDocumentID:  clientDocument.ID,
-			ExternalID:        dto.DocumentOrGroupID,
-			ExternalUserID:    dto.UserID,
-			ExternalCompanyID: dto.CompanyID,
+			ExternalID:        req.DocumentOrGroupID,
+			ExternalUserID:    req.UserID,
+			ExternalCompanyID: req.CompanyID,
 			Status:            model.ClientDocumentProcessStatusWaiting,
 			ExpireTime:        &expireTime,
 			Type:              model.TypeSignMeterai,
@@ -410,7 +432,27 @@ func (s *clientDocumentService) RequestSign(token, externalID string, dto dto.Ps
 			respBody = utils.ResponseError(message, status)
 			return fmt.Errorf("failed create client document process: %w", err)
 		}
-		for _, position := range dto.Positions {
+
+		for _, position := range req.Positions {
+			masterProductID := seeder.ID_PRODUCT_SIGN
+			if position.StampType == model.StampTypeMeterai {
+				masterProductID = seeder.ID_PRODUCT_METERAI
+			}
+			quantity := 1
+			_, err = utils.NewQuotaUtils().UseQuota(tx, dto.UseQuotaClientRequest{
+				MasterProductID: masterProductID,
+				ClientID:        client.ID,
+				Quantity:        int64(quantity),
+			})
+			if err != nil {
+				message := fmt.Sprintf("Failed to use quota: %v", err)
+				respBody = utils.ResponseError(message, 400)
+				status = 400
+				return fmt.Errorf("failed to use quota: %w", err)
+			}
+		}
+
+		for _, position := range req.Positions {
 
 			fileSize, err := utils.CalculateBase64FileSize(position.Image)
 			if err != nil {
@@ -440,7 +482,7 @@ func (s *clientDocumentService) RequestSign(token, externalID string, dto dto.Ps
 				return fmt.Errorf("failed create client document process detail: %w", err)
 			}
 		}
-		data, st, err := utils.PsreRequest("POST", "/document/request-sign", dto, token, nil)
+		data, st, err := utils.PsreRequest("POST", "/document/request-sign", req, token, nil)
 		respBody, status = data, st
 		if err != nil {
 			status = 400
@@ -508,7 +550,7 @@ func (s *clientDocumentService) ProcessSign(token, externalID string, dto dto.Ps
 	return respBody, status, nil
 }
 
-func (s *clientDocumentService) RequestStamp(token, externalID string, dto dto.PsreDocumentStampRequest) ([]byte, int, error) {
+func (s *clientDocumentService) RequestStamp(token, externalID string, req dto.PsreDocumentStampRequest) ([]byte, int, error) {
 	client, err := s.clientPsreSvc.GetByExternalID(externalID)
 	if err != nil {
 		return nil, http.StatusBadRequest, fmt.Errorf("failed get client psre: %w", err)
@@ -520,11 +562,41 @@ func (s *clientDocumentService) RequestStamp(token, externalID string, dto dto.P
 	txErr := s.db.Transaction(func(tx *gorm.DB) error {
 		expireTime := time.Now().Add(time.Duration(model.DocumentProcessExpiredHour) * time.Hour)
 
+		clientDocument, err := s.clientDocumentRepo.FindByExternalID(req.DocumentOrGroupID)
+		if err != nil {
+			status = 400
+			message := fmt.Sprintf("Failed to find client document by external id: %v", err)
+			respBody = utils.ResponseError(message, status)
+			return fmt.Errorf("failed to find client document by external id: %w", err)
+		}
+
+		clientDocuentProcess, err := s.clientDocumentProcessRepo.FindByExternalIDAndExternalUserID(req.DocumentOrGroupID, &req.UserID)
+		if err == nil && clientDocuentProcess != nil {
+			status = 400
+			message := "This user already requested to this document. create new document or using other user"
+			respBody = utils.ResponseError(message, status)
+			return fmt.Errorf("client document process already exists")
+		}
+
+		quantity := 1
+		_, err = utils.NewQuotaUtils().UseQuota(tx, dto.UseQuotaClientRequest{
+			MasterProductID: seeder.ID_PRODUCT_OTP,
+			ClientID:        client.ID,
+			Quantity:        int64(quantity),
+		})
+		if err != nil {
+			message := fmt.Sprintf("Failed to use quota: %v", err)
+			respBody = utils.ResponseError(message, 400)
+			status = 400
+			return fmt.Errorf("failed to use quota: %w", err)
+		}
+
 		clientDocumentProcess := &model.ClientDocumentProcess{
 			ClientID:          client.ID,
-			ExternalID:        dto.DocumentOrGroupID,
-			ExternalUserID:    &dto.UserID,
-			ExternalCompanyID: &dto.CompanyID,
+			ClientDocumentID:  clientDocument.ID,
+			ExternalID:        req.DocumentOrGroupID,
+			ExternalUserID:    &req.UserID,
+			ExternalCompanyID: &req.CompanyID,
 			Status:            model.ClientDocumentProcessStatusWaiting,
 			ExpireTime:        &expireTime,
 			Type:              model.TypeStamp,
@@ -532,7 +604,25 @@ func (s *clientDocumentService) RequestStamp(token, externalID string, dto dto.P
 		if err := tx.Create(&clientDocumentProcess).Error; err != nil {
 			return fmt.Errorf("failed create client document process: %w", err)
 		}
-		for _, position := range dto.Positions {
+
+		for range req.Positions {
+			masterProductID := seeder.ID_PRODUCT_STAMP
+			quantity := int64(1)
+
+			_, err := utils.NewQuotaUtils().UseQuota(tx, dto.UseQuotaClientRequest{
+				MasterProductID: masterProductID,
+				ClientID:        client.ID,
+				Quantity:        quantity,
+			})
+			if err != nil {
+				message := fmt.Sprintf("Failed to use quota: %v", err)
+				respBody = utils.ResponseError(message, 400)
+				status = 400
+				return fmt.Errorf("failed to use quota: %w", err)
+			}
+		}
+
+		for _, position := range req.Positions {
 
 			fileSize, err := utils.CalculateBase64FileSize(position.Image)
 			if err != nil {
@@ -555,7 +645,7 @@ func (s *clientDocumentService) RequestStamp(token, externalID string, dto dto.P
 			}
 		}
 
-		data, st, err := utils.PsreRequest("POST", "/document/request-stamp", dto, token, nil)
+		data, st, err := utils.PsreRequest("POST", "/document/request-stamp", req, token, nil)
 		respBody, status = data, st
 		if err != nil {
 			return fmt.Errorf("failed call psre api: %w", err)

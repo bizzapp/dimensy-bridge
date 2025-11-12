@@ -4,7 +4,6 @@ import (
 	"dimensy-bridge/internal/dto"
 	"dimensy-bridge/internal/service"
 	psreservice "dimensy-bridge/internal/service/psre_service"
-	"dimensy-bridge/pkg/response"
 	"dimensy-bridge/pkg/utils"
 	"encoding/json"
 	"net/http"
@@ -32,7 +31,9 @@ func (h *PsreCompanyHandler) GetClientCompany(c *gin.Context) {
 
 	_, err := utils.ExtractExternalID(authData)
 	if err != nil {
-		response.JSON(c, http.StatusUnauthorized, err.Error(), nil, nil)
+		// response.JSON(c, http.StatusUnauthorized, err.Error(), nil, nil)
+		message := utils.ResponseError(err.Error(), http.StatusUnauthorized)
+		c.Data(http.StatusUnauthorized, "application/json", message)
 		return
 	}
 
@@ -47,16 +48,8 @@ func (h *PsreCompanyHandler) GetClientCompany(c *gin.Context) {
 	// Forward ke PSRE
 	respBody, status, err := h.psreClientCompanySvc.GetCompany(token, params)
 	if err != nil {
-		var psreResp map[string]interface{}
-		if jsonErr := json.Unmarshal(respBody, &psreResp); jsonErr == nil {
-			c.JSON(status, psreResp)
-			return
-		}
-
-		c.JSON(status, gin.H{
-			"code":    status,
-			"message": string(respBody),
-		})
+		message := utils.ResponseError(err.Error(), status)
+		c.Data(status, "application/json", message)
 		return
 	}
 
@@ -67,7 +60,8 @@ func (h *PsreCompanyHandler) GetClientCompany(c *gin.Context) {
 func (h *PsreCompanyHandler) DetailClientCompany(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
-		response.JSON(c, http.StatusBadRequest, "Company ID is required", nil, nil)
+		message := utils.ResponseError("Company ID is required", http.StatusBadRequest)
+		c.Data(http.StatusBadRequest, "application/json", message)
 		return
 	}
 
@@ -86,7 +80,8 @@ func (h *PsreCompanyHandler) InviteClientCompany(c *gin.Context) {
 
 	var req dto.PsreInviteClientCompanyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.JSON(c, http.StatusBadRequest, "Invalid request body", nil, nil)
+		message := utils.ResponseError(err.Error(), http.StatusBadRequest)
+		c.Data(http.StatusBadRequest, "application/json", message)
 		return
 	}
 
@@ -105,7 +100,8 @@ func (h *PsreCompanyHandler) CreateClientCompany(c *gin.Context) {
 
 	var req dto.PsreCreateClientCompanyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.JSON(c, http.StatusBadRequest, "Invalid request body", nil, nil)
+		message := utils.ResponseError(err.Error(), http.StatusBadRequest)
+		c.Data(http.StatusBadRequest, "application/json", message)
 		return
 	}
 
@@ -123,7 +119,8 @@ func (h *PsreCompanyHandler) AcceptInvitationClientUser(c *gin.Context) {
 
 	var req dto.PsreAcceptInvitationClientUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.JSON(c, http.StatusBadRequest, "Invalid request body", nil, nil)
+		message := utils.ResponseError(err.Error(), http.StatusBadRequest)
+		c.Data(http.StatusBadRequest, "application/json", message)
 		return
 	}
 	token := c.Request.Header.Get("Authorization")

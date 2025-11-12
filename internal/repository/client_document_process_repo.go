@@ -9,6 +9,7 @@ import (
 type ClientDocumentProcessRepository interface {
 	Create(data *model.ClientDocumentProcess) error
 	FindByExternalID(externalID string) (*model.ClientDocumentProcess, error)
+	FindByExternalIDAndExternalUserID(externalID string, userID *string) (*model.ClientDocumentProcess, error)
 	UpdateStatus(externalID, status string) error
 	DeleteByExternalID(externalID string) error
 }
@@ -25,6 +26,13 @@ func (r *clientDocumentProcessRepository) Create(data *model.ClientDocumentProce
 	return r.db.Create(data).Error
 }
 
+func (r *clientDocumentProcessRepository) FindByExternalIDAndExternalUserID(externalID string, userID *string) (*model.ClientDocumentProcess, error) {
+	var process model.ClientDocumentProcess
+	if err := r.db.Where("external_id = ? AND external_user_id = ?", externalID, &userID).First(&process).Error; err != nil {
+		return nil, err
+	}
+	return &process, nil
+}
 func (r *clientDocumentProcessRepository) FindByExternalID(externalID string) (*model.ClientDocumentProcess, error) {
 	var process model.ClientDocumentProcess
 	if err := r.db.Where("external_id = ?", externalID).First(&process).Error; err != nil {
