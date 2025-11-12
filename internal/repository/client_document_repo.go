@@ -24,7 +24,7 @@ func NewClientDocumentRepository(db *gorm.DB) ClientDocumentRepository {
 }
 func (r *clientDocumentRepository) FindByExternalID(externalID string) (*model.ClientDocument, error) {
 	var doc model.ClientDocument
-	if err := r.db.Where("external_id = ?", externalID).First(&doc).Error; err != nil {
+	if err := r.db.Where("external_id = ?", externalID).Or("group_external_id = ?", externalID).First(&doc).Error; err != nil {
 		return nil, err
 	}
 	return &doc, nil

@@ -386,8 +386,17 @@ func (s *clientDocumentService) RequestSign(token, externalID string, dto dto.Ps
 		// Calculate expire time based on current time + DocumentProcessExpiredMinutes
 		expireTime := time.Now().Add(time.Duration(model.DocumentProcessExpiredHour) * time.Hour)
 
+		clientDocument, err := s.clientDocumentRepo.FindByExternalID(dto.DocumentOrGroupID)
+		if err != nil {
+			status = 400
+			message := fmt.Sprintf("Failed to find client document by external id: %v", err)
+			respBody = utils.ResponseError(message, status)
+			return fmt.Errorf("failed to find client document by external id: %w", err)
+		}
+
 		clientDocumentProcess := &model.ClientDocumentProcess{
 			ClientID:          client.ID,
+			ClientDocumentID:  clientDocument.ID,
 			ExternalID:        dto.DocumentOrGroupID,
 			ExternalUserID:    dto.UserID,
 			ExternalCompanyID: dto.CompanyID,
@@ -396,12 +405,18 @@ func (s *clientDocumentService) RequestSign(token, externalID string, dto dto.Ps
 			Type:              model.TypeSignMeterai,
 		}
 		if err := tx.Create(&clientDocumentProcess).Error; err != nil {
+			status = 400
+			message := fmt.Sprintf("Failed to create client document process: %v", err)
+			respBody = utils.ResponseError(message, status)
 			return fmt.Errorf("failed create client document process: %w", err)
 		}
 		for _, position := range dto.Positions {
 
 			fileSize, err := utils.CalculateBase64FileSize(position.Image)
 			if err != nil {
+				status = 400
+				message := fmt.Sprintf("Failed to calculate file size: %v", err)
+				respBody = utils.ResponseError(message, status)
 				return fmt.Errorf("failed to calculate file size: %w", err)
 			}
 
@@ -419,15 +434,23 @@ func (s *clientDocumentService) RequestSign(token, externalID string, dto dto.Ps
 				ImageFileSizeKB:         &fileSize,
 			}
 			if err := tx.Create(&clientDocumenProcessDetail).Error; err != nil {
+				status = 400
+				message := fmt.Sprintf("Failed to create client document process detail: %v", err)
+				respBody = utils.ResponseError(message, status)
 				return fmt.Errorf("failed create client document process detail: %w", err)
 			}
 		}
 		data, st, err := utils.PsreRequest("POST", "/document/request-sign", dto, token, nil)
 		respBody, status = data, st
 		if err != nil {
+			status = 400
+			message := fmt.Sprintf("Failed to call psre api: %v", err)
+			respBody = utils.ResponseError(message, status)
 			return fmt.Errorf("failed call psre api: %w", err)
 		}
 		if status >= 400 {
+			message := fmt.Sprintf("Psre api error: %s", string(data))
+			respBody = utils.ResponseError(message, status)
 			return fmt.Errorf("psre api error: %s", string(data))
 		}
 		return nil
