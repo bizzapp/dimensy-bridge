@@ -31,9 +31,11 @@ func (h *PsreCertificateHandler) Issue(c *gin.Context) {
 
 	var req dto.CertificateIssueActiveRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
+		message := utils.ResponseError(err.Error(), http.StatusBadRequest)
+		c.Data(http.StatusBadRequest, "application/json", message)
 		return
 	}
+
 	respBody, status, err := h.certificateService.Issue(token, externalID, &req)
 	if err != nil {
 		c.Data(status, "application/json", respBody)

@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -51,7 +52,6 @@ func (s *certificateService) Issue(token, externalID string, req *dto.Certificat
 		// Get client info
 		client, err := s.clientSvc.GetClientByExternalId(externalID)
 		if err != nil {
-			fmt.Printf("[Certificate Issue] Failed to get client: %v\n", err)
 			message := fmt.Sprintf("Unauthorized: %v", err)
 			respBody = utils.ResponseError(message, 400)
 			status = 400
@@ -64,7 +64,6 @@ func (s *certificateService) Issue(token, externalID string, req *dto.Certificat
 
 		if err != nil {
 			// Try Active as fallback
-			fmt.Printf("[Certificate Issue] PSrE issue failed, trying active: %v\n", err)
 			fallbackData, fallbackStatus, fallbackErr := s.handleActiveAsFallbackWithResponse(tx, token, req, client.ID)
 			if fallbackErr != nil {
 				return fallbackErr
@@ -221,16 +220,61 @@ func (s *certificateService) RevokeRequest(token, externalID string, req *dto.Ce
 	return data, status, nil
 }
 func (s *certificateService) Revoke(token, externalID string, req *dto.CertificateRevokeValidateRequest) ([]byte, int, error) {
-	data, status, err := utils.PsreRequest("POST", "/certificate/revoke", req, token, nil)
-	if err != nil {
-		return data, status, fmt.Errorf("failed call psre api: %w", err)
+
+	var (
+		respBody []byte
+		status   int
+	)
+
+	txErr := s.db.Transaction(func(tx *gorm.DB) error {
+		// Call PSrE API
+		data, psreStatus, err := utils.PsreRequest("POST", "/certificate/revoke", req, token, nil)
+		respBody, status = data, psreStatus
+		if err != nil {
+			return fmt.Errorf("failed call psre api: %w", err)
+		}
+
+		if psreStatus >= 400 {
+			return fmt.Errorf("psre certificate revocation failed: %s", string(data))
+		}
+
+		var resp dto.CertificateRevokeValidateResponse
+		if err := json.Unmarshal(data, &resp); err != nil {
+			message := fmt.Sprintf("Failed to parse PSrE response: %v", err)
+			respBody = utils.ResponseError(message, 500)
+			status = 400
+			return fmt.Errorf("failed to parse psre response: %w", err)
+		}
+
+		if resp.Code == 0 {
+			// Update certificate status to REVOKED
+			cert, err := s.certificateRepo.FindByExternal(req.UserID, req.CompanyID)
+			if err != nil {
+				return fmt.Errorf("failed to find certificate by serial number: %w", err)
+			}
+
+			cert.Status = "REVOKED"
+			// Set deleted timestamp for soft delete
+			cert.DeletedAt = gorm.DeletedAt{
+				Time:  time.Now(),
+				Valid: true,
+			}
+			if err := tx.Save(cert).Error; err != nil {
+				return fmt.Errorf("failed to update certificate status: %w", err)
+			}
+		}
+
+		return nil
+	})
+
+	if txErr != nil {
+		if respBody != nil {
+			return respBody, status, txErr
+		}
+		return nil, http.StatusBadRequest, txErr
 	}
 
-	if status >= 400 {
-		return data, status, fmt.Errorf("psre phone activation failed: %s", string(data))
-	}
-
-	return data, status, nil
+	return respBody, status, nil
 }
 
 // createOrUpdateCertificateWithTx implements create or update logic within a transaction

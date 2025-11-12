@@ -3,19 +3,24 @@ package dto
 import "time"
 
 type CertificateIssueActiveRequest struct {
-	UserID    *string `json:"userId" binding:"omitempty"`
-	CompanyID *string `json:"companyId" binding:"omitempty"`
+	UserID    *string `json:"userId" binding:"required_without=CompanyID"`
+	CompanyID *string `json:"companyId" binding:"required_without=UserID"`
 }
 
 type CertificateRevokeRequest struct {
-	UserID    *string `json:"userId" binding:"omitempty"`
-	CompanyID *string `json:"companyId" binding:"omitempty"`
+	UserID    *string `json:"userId" binding:"omitempty" validate:"required_without=CompanyID"`
+	CompanyID *string `json:"companyId" binding:"omitempty" validate:"required_without=UserID"`
 }
 
 type CertificateRevokeValidateRequest struct {
-	UserID    *string `json:"userId" binding:"omitempty"`
-	CompanyID *string `json:"companyId" binding:"omitempty"`
+	UserID    *string `json:"userId" binding:"omitempty" validate:"required_without=CompanyID"`
+	CompanyID *string `json:"companyId" binding:"omitempty" validate:"required_without=UserID"`
 	OTP       string  `json:"otp" binding:"required"`
+}
+
+type CertificateRevokeValidateResponse struct {
+	Code    int    `json:"code" binding:"required"`
+	Message string `json:"message" binding:"required"`
 }
 type CertificateActiveResponse struct {
 	Code    int                           `json:"code"`
