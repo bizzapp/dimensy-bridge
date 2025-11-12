@@ -22,3 +22,11 @@ func CalculateBase64FileSize(base64Data string) (int64, error) {
 
 	return sizeKB, nil
 }
+
+func KBToMB(kb int64) int64 {
+	return kb / 1024
+}
+
+func MBToKB(mb int64) int64 {
+	return mb * 1024
+}

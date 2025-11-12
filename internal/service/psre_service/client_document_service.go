@@ -3,6 +3,7 @@ package psreservice
 import (
 	"dimensy-bridge/internal/dto"
 	"dimensy-bridge/internal/model"
+	"dimensy-bridge/internal/model/seeder"
 	"dimensy-bridge/internal/repository"
 	"dimensy-bridge/internal/service"
 	"dimensy-bridge/pkg/utils"
@@ -28,10 +29,10 @@ type ClientDocumentService interface {
 }
 
 type clientDocumentService struct {
-	db                        *gorm.DB
-	clientPsreSvc             service.ClientPsreService
-	clientDocumentRepo        repository.ClientDocumentRepository
-	clientDocumentProcessRepo repository.ClientDocumentProcessRepository
+	db                 *gorm.DB
+	clientPsreSvc      service.ClientPsreService
+	clientDocumentRepo repository.ClientDocumentRepository
+	// clientDocumentProcessRepo repository.ClientDocumentProcessRepository
 	// Add necessary dependencies here
 }
 
@@ -58,7 +59,60 @@ func (s *clientDocumentService) UploadSingle(token, externalID string, req dto.P
 		// Calculate file size from base64 document
 		fileSize, err := utils.CalculateBase64FileSize(req.Document)
 		if err != nil {
+			status = 400
 			return fmt.Errorf("failed to calculate file size: %w", err)
+		}
+
+		quantity := 1
+		_, err = utils.NewQuotaUtils().UseQuota(tx, dto.UseQuotaClientRequest{
+			MasterProductID: seeder.ID_PRODUCT_DOCUMENT_UPLOAD_COUNT_LIMIT,
+			ClientID:        client.ID,
+			Quantity:        int64(quantity),
+		})
+		if err != nil {
+			message := fmt.Sprintf("Failed to use quota: %v", err)
+			respBody = utils.ResponseError(message, 400)
+			status = 400
+			return fmt.Errorf("failed to use quota: %w", err)
+		}
+
+		_, err = utils.NewQuotaUtils().UseQuota(tx, dto.UseQuotaClientRequest{
+			MasterProductID: seeder.ID_PRODUCT_DOCUMENT_STORAGE_KB,
+			ClientID:        client.ID,
+			Quantity:        int64(fileSize),
+		})
+		if err != nil {
+			message := fmt.Sprintf("Failed to use quota: %v", err)
+			respBody = utils.ResponseError(message, 400)
+			status = 400
+			return fmt.Errorf("failed to use quota: %w", err)
+		}
+
+		quotaLimit, err := utils.NewQuotaUtils().QuotaLimit(tx, client.ID, seeder.ID_PRODUCT_UPLOAD_SINGLE_DOCUMENT)
+		if err != nil {
+			status = 400
+			message := fmt.Sprintf("Failed to get quota limit: %v", err)
+			respBody = utils.ResponseError(message, 400)
+			return fmt.Errorf("failed to get quota limit: %w", err)
+		}
+
+		// Check max single upload limit
+		if quotaLimit.MaxSingleUpload != nil {
+			maxUploadMB := *quotaLimit.MaxSingleUpload      // MB dari database
+			maxUploadKB := utils.MBToKB(int64(maxUploadMB)) // Convert MB ke KB
+			fileSizeMB := utils.KBToMB(int64(fileSize))     // Convert file size ke MB
+			if int64(fileSize) > maxUploadKB {
+				message := fmt.Sprintf("Max single upload: %d MB (%d KB), Current file: %d KB (%d MB)",
+					maxUploadMB, maxUploadKB, fileSize, fileSizeMB)
+				respBody = utils.ResponseError(message, 400)
+				status = 400
+				return fmt.Errorf("file size exceeds the maximum single upload limit")
+			}
+		} else {
+			message := "No max single upload limit set - allowing upload"
+			respBody = utils.ResponseError(message, 400)
+			status = 400
+			return fmt.Errorf("no max single upload limit set")
 		}
 
 		totalParticipants := 1
@@ -137,7 +191,7 @@ func (s *clientDocumentService) Preview(token, externalID, documentID string) ([
 	}
 	return data, status, nil
 }
-func (s *clientDocumentService) UploadBulk(token, externalID string, dto dto.PsreDocumentBulkFileRequest) ([]byte, int, error) {
+func (s *clientDocumentService) UploadBulk(token, externalID string, req dto.PsreDocumentBulkFileRequest) ([]byte, int, error) {
 	client, err := s.clientPsreSvc.GetByExternalID(externalID)
 	if err != nil {
 		return nil, http.StatusBadRequest, fmt.Errorf("failed get client psre: %w", err)
@@ -149,20 +203,109 @@ func (s *clientDocumentService) UploadBulk(token, externalID string, dto dto.Psr
 	)
 
 	txErr := s.db.Transaction(func(tx *gorm.DB) error {
-		totalParticipants := len(dto.Documents)
+		totalParticipants := len(req.Documents)
 		typeDocument := "BULK"
 
 		// Simpan dokumen yang berhasil dibuat
 		var createdDocs []model.ClientDocument
 		callbackURL := os.Getenv("APP_URL_WEBHOOK_NOTIFICATION")
 
-		for _, document := range dto.Documents {
+		quotaLimit, err := utils.NewQuotaUtils().QuotaLimit(tx, client.ID, seeder.ID_PRODUCT_UPLOAD_BULK_DOCUMENT)
+		if err != nil {
+			status = 400
+			message := fmt.Sprintf("Failed to get quota limit: %v", err)
+			respBody = utils.ResponseError(message, 400)
+			return fmt.Errorf("failed to get quota limit: %w", err)
+		}
+
+		if quotaLimit.MaxBulkUploadCount == nil || *quotaLimit.MaxBulkUploadCount <= 0 {
+			message := "No bulk upload quota available"
+			respBody = utils.ResponseError(message, 400)
+			status = 400
+			return fmt.Errorf("no bulk upload quota available")
+		}
+		if int64(len(req.Documents)) > int64(*quotaLimit.MaxBulkUploadCount) {
+			message := fmt.Sprintf("Exceeds max bulk upload count: %d, Current count: %d", *quotaLimit.MaxBulkUploadCount, len(req.Documents))
+			respBody = utils.ResponseError(message, 400)
+			status = 400
+			return fmt.Errorf("exceeds max bulk upload count: %d", *quotaLimit.MaxBulkUploadCount)
+		}
+
+		totalFileSizeKB := int64(0)
+		for _, document := range req.Documents {
 			// Hitung ukuran file dari base64
 			fileSize, err := utils.CalculateBase64FileSize(document.Document)
 			if err != nil {
 				return fmt.Errorf("failed to calculate file size: %w", err)
 			}
 
+			quantity := 1
+			_, err = utils.NewQuotaUtils().UseQuota(tx, dto.UseQuotaClientRequest{
+				MasterProductID: seeder.ID_PRODUCT_DOCUMENT_UPLOAD_COUNT_LIMIT,
+				ClientID:        client.ID,
+				Quantity:        int64(quantity),
+			})
+			if err != nil {
+				message := fmt.Sprintf("Failed to use quota: %v", err)
+				respBody = utils.ResponseError(message, 400)
+				status = 400
+				return fmt.Errorf("failed to use quota: %w", err)
+			}
+
+			_, err = utils.NewQuotaUtils().UseQuota(tx, dto.UseQuotaClientRequest{
+				MasterProductID: seeder.ID_PRODUCT_DOCUMENT_STORAGE_KB,
+				ClientID:        client.ID,
+				Quantity:        int64(fileSize),
+			})
+			if err != nil {
+				message := fmt.Sprintf("Failed to use quota: %v", err)
+				respBody = utils.ResponseError(message, 400)
+				status = 400
+				return fmt.Errorf("failed to use quota: %w", err)
+			}
+
+			if quotaLimit.MaxBulkUploadLimitPcs != nil {
+				maxUploadMB := *quotaLimit.MaxBulkUploadLimitPcs // MB dari database
+				maxUploadKB := utils.MBToKB(int64(maxUploadMB))  // Convert MB ke KB
+				fileSizeMB := utils.KBToMB(int64(fileSize))      // Convert file size ke MB
+				if int64(fileSize) > maxUploadKB {
+					message := fmt.Sprintf("Max bulk upload per file: %d MB (%d KB), Current file: %d KB (%d MB)",
+						maxUploadMB, maxUploadKB, fileSize, fileSizeMB)
+					respBody = utils.ResponseError(message, 400)
+					status = 400
+					return fmt.Errorf("file size exceeds the maximum bulk upload per file limit")
+				}
+			} else {
+				message := "No max bulk upload per file limit set - allowing upload"
+				respBody = utils.ResponseError(message, 400)
+				status = 400
+				return fmt.Errorf("no max bulk upload per file limit set")
+			}
+			totalFileSizeKB += int64(fileSize)
+		}
+		if quotaLimit.MaxBulkUploadLimitAll != nil {
+			maxUploadMB := *quotaLimit.MaxBulkUploadLimitAll        // MB dari database
+			maxUploadKB := utils.MBToKB(int64(maxUploadMB))         // Convert MB ke KB
+			totalFileSizeMB := utils.KBToMB(int64(totalFileSizeKB)) // Convert file size ke MB
+			if totalFileSizeKB > maxUploadKB {
+				message := fmt.Sprintf("Max bulk upload total size: %d MB (%d KB), Current total size: %d KB (%d MB)",
+					maxUploadMB, maxUploadKB, totalFileSizeKB, totalFileSizeMB)
+				respBody = utils.ResponseError(message, 400)
+				status = 400
+				return fmt.Errorf("total file size exceeds the maximum bulk upload total size limit")
+			}
+		} else {
+			message := "No max bulk upload total size limit set - allowing upload"
+			respBody = utils.ResponseError(message, 400)
+			status = 400
+			return fmt.Errorf("no max bulk upload total size limit set")
+		}
+
+		for _, document := range req.Documents {
+			fileSize, err := utils.CalculateBase64FileSize(document.Document)
+			if err != nil {
+				return fmt.Errorf("failed to calculate file size: %w", err)
+			}
 			clientDocument := model.ClientDocument{
 				ClientID:          client.ID,
 				FileName:          document.FileName,
@@ -171,7 +314,7 @@ func (s *clientDocumentService) UploadBulk(token, externalID string, dto dto.Psr
 				TotalParticipants: &totalParticipants,
 				FileSizeKB:        &fileSize,
 				CallbackURL:       &callbackURL,
-				ClientCallbackURL: &dto.CallbackURL,
+				ClientCallbackURL: &req.CallbackURL,
 			}
 
 			if err := tx.Create(&clientDocument).Error; err != nil {
@@ -181,9 +324,9 @@ func (s *clientDocumentService) UploadBulk(token, externalID string, dto dto.Psr
 			createdDocs = append(createdDocs, clientDocument)
 		}
 
-		dto.CallbackURL = callbackURL
+		req.CallbackURL = callbackURL
 		// Call PSRE API
-		data, st, err := utils.PsreRequest("POST", "/document/upload-bulk", dto, token, nil)
+		data, st, err := utils.PsreRequest("POST", "/document/upload-bulk", req, token, nil)
 		respBody, status = data, st
 		if err != nil {
 			return fmt.Errorf("failed call psre api: %w", err)

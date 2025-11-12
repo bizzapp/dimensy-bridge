@@ -30,8 +30,10 @@ func (h *PsreClientDocumentHandler) Upload(c *gin.Context) {
 	}
 	var req dto.PsreDocumentSingleFileRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
+		message := utils.ResponseError(err.Error(), http.StatusBadRequest)
+		c.Data(http.StatusBadRequest, "application/json", message)
 		return
+
 	}
 
 	respBody, status, err := h.clientDocumentSvc.UploadSingle(token, externalID, req)

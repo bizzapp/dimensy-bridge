@@ -135,6 +135,15 @@ func (qu *QuotaUtils) UseQuota(tx *gorm.DB, req dto.UseQuotaClientRequest) (*mod
 	return &quota, nil
 }
 
+func (qu *QuotaUtils) QuotaLimit(tx *gorm.DB, clientID int64, masterProductID int64) (*model.QuotaClient, error) {
+	var quota model.QuotaClient
+
+	if err := tx.Where("client_id = ? AND master_product_id = ?", clientID, masterProductID).First(&quota).Error; err != nil {
+		return nil, fmt.Errorf("quota not found: %w", err)
+	}
+	return &quota, nil
+}
+
 // CreateInitialQuota creates initial quota from subscription plan
 func (qu *QuotaUtils) CreateInitialQuota(tx *gorm.DB, clientID int64, masterProductID int64, quantity int64, isUnlimited bool, createdBy int64) (*model.QuotaClient, error) {
 	// Create initial quota
