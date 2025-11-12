@@ -48,7 +48,7 @@ func SeedMasterProducts() []model.MasterProduct {
 		},
 		{
 			ID:           ID_PRODUCT_CA_PERSONAL_COMPANY,
-			Name:         "USER Certificate Personal Company",
+			Name:         "User Certificate Personal Company",
 			Code:         "CA_PERSONAL_COMPANY",
 			Quantity:     100000,
 			CurrentStock: 100000,
