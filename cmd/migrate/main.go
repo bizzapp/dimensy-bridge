@@ -41,6 +41,8 @@ func main() {
 		&model.ClientHasSubscriptionPlan{},
 		&model.ClientKYCHistory{},
 		&model.ClientCompanyInvite{},
+		&model.MasterProductAddition{},
+		&model.MasterProductReduction{},
 	}
 
 	refreshMode := len(os.Args) > 1 && os.Args[1] == "refresh"
