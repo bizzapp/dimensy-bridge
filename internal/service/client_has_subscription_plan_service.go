@@ -86,10 +86,25 @@ func (s *clientHasSubscriptionPlanService) Process(id int64, processedBy int64) 
 					return fmt.Errorf("insufficient stock for product ID %d", master.ID)
 				}
 
+				// Simpan current stock sebelum dikurangi
+				previousStock := master.CurrentStock
+
 				// Kurangi stok master product
 				master.CurrentStock -= int64(detail.Quantity)
 				if err := tx.Save(&master).Error; err != nil {
 					return fmt.Errorf("failed to update stock for product %d: %w", master.ID, err)
+				}
+
+				// Simpan record reduction
+				reduction := &model.MasterProductReduction{
+					MasterProductID: master.ID,
+					Quantity:        int64(detail.Quantity),
+					LatestQuota:     previousStock,
+					Type:            "SUBSCRIPTION",
+					UsedBy:          sub.ProcessBy,
+				}
+				if err := tx.Create(reduction).Error; err != nil {
+					return fmt.Errorf("failed to create reduction record: %w", err)
 				}
 			}
 

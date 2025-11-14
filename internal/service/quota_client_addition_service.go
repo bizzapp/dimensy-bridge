@@ -99,6 +99,9 @@ func (s *quotaClientAdditionService) ApproveAddQuota(req dto.ApproveAddQuotaClie
 			return fmt.Errorf("not enough stock in master product")
 		}
 
+		// Simpan current stock sebelum dikurangi (untuk reduction record)
+		previousStock := mp.CurrentStock
+
 		// Tambah quota client
 		newQuota := qc.CurrentQuota + addition.Quantity
 		if err := tx.Model(&qc).Updates(map[string]interface{}{
@@ -112,6 +115,18 @@ func (s *quotaClientAdditionService) ApproveAddQuota(req dto.ApproveAddQuotaClie
 		if !mp.IsUnlimited {
 			if err := tx.Model(&mp).Update("current_stock", gorm.Expr("current_stock - ?", addition.Quantity)).Error; err != nil {
 				return fmt.Errorf("failed to update master product stock: %w", err)
+			}
+
+			// Simpan record reduction
+			reduction := &model.MasterProductReduction{
+				MasterProductID: mp.ID,
+				Quantity:        addition.Quantity,
+				LatestQuota:     previousStock,
+				Type:            "ADDITION",
+				UsedBy:          req.ProcessBy,
+			}
+			if err := tx.Create(reduction).Error; err != nil {
+				return fmt.Errorf("failed to create reduction record: %w", err)
 			}
 		}
 
