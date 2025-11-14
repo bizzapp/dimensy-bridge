@@ -17,7 +17,7 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 	r := gin.Default()
 
 	// Index route - Hello World
-	r.GET("/", func(c *gin.Context) {
+	r.GET("", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"message":     "Hello World",
 			"service":     "Dimensy Bridge API",
@@ -68,9 +68,9 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 
 	user := api.Group("/users")
 	{
-		user.GET("/", deps.UserHdl.List)
+		user.GET("", deps.UserHdl.List)
 		user.GET("/:id", deps.UserHdl.Get)
-		user.POST("/", deps.UserHdl.Create)
+		user.POST("", deps.UserHdl.Create)
 		user.PUT("/:id", deps.UserHdl.Update)
 		user.DELETE("/:id", deps.UserHdl.Delete)
 	}
@@ -80,9 +80,9 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		clients.Use(middleware.JWTAuthMiddleware())
 		clients.GET("/profile-psre/:id", deps.ClientPsreHdl.Profile)
 		clients.GET("/fill-external-id/:id", deps.ClientPsreHdl.FillExternalId)
-		clients.GET("/", deps.ClientHdl.List)
+		clients.GET("", deps.ClientHdl.List)
 		clients.GET("/:id", deps.ClientHdl.Get)
-		clients.POST("/", deps.ClientHdl.Create)
+		clients.POST("", deps.ClientHdl.Create)
 		clients.PUT("/:id", deps.ClientHdl.Update)
 		clients.DELETE("/:id", deps.ClientHdl.Delete)
 		clients.POST("/add-quota", deps.ClientHdl.AddQuota)
@@ -91,36 +91,36 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 	clientSubs := api.Group("/client-subscriptions")
 	{
 		clientSubs.Use(middleware.JWTAuthMiddleware())
-		clientSubs.GET("/", deps.ClientHasSubscriptionHdl.GetAll)
+		clientSubs.GET("", deps.ClientHasSubscriptionHdl.GetAll)
 		clientSubs.GET("/:id", deps.ClientHasSubscriptionHdl.GetByID)
-		clientSubs.POST("/", deps.ClientHasSubscriptionHdl.Create)
+		clientSubs.POST("", deps.ClientHasSubscriptionHdl.Create)
 		clientSubs.POST("/:id/process", deps.ClientHasSubscriptionHdl.Process)
 		clientSubs.DELETE("/:id", deps.ClientHasSubscriptionHdl.Delete)
 	}
 
 	products := api.Group("/products")
 	{
-		products.GET("/", deps.MasterProductHdl.List)
+		products.GET("", deps.MasterProductHdl.List)
 		products.GET("/:id", deps.MasterProductHdl.Get)
-		products.POST("/", deps.MasterProductHdl.Create)
+		products.POST("", deps.MasterProductHdl.Create)
 		products.PUT("/:id", deps.MasterProductHdl.Update)
 		products.DELETE("/:id", deps.MasterProductHdl.Delete)
 	}
 
 	quotas := api.Group("/quotas")
 	{
-		quotas.GET("/", deps.QuotaClientHdl.List)
+		quotas.GET("", deps.QuotaClientHdl.List)
 		quotas.GET("/:id", deps.QuotaClientHdl.Get)
-		quotas.POST("/", deps.QuotaClientHdl.Create)
+		quotas.POST("", deps.QuotaClientHdl.Create)
 		quotas.PUT("/:id", deps.QuotaClientHdl.Update)
 		quotas.DELETE("/:id", deps.QuotaClientHdl.Delete)
 	}
 
 	additions := api.Group("/quota-additions")
 	{
-		additions.GET("/", deps.QuotaClientAdditionHdl.List)
+		additions.GET("", deps.QuotaClientAdditionHdl.List)
 		additions.GET("/:id", deps.QuotaClientAdditionHdl.Get)
-		additions.POST("/", deps.QuotaClientAdditionHdl.Create)
+		additions.POST("", deps.QuotaClientAdditionHdl.Create)
 		additions.PUT("/:id", deps.QuotaClientAdditionHdl.Update)
 		additions.DELETE("/:id", deps.QuotaClientAdditionHdl.Delete)
 	}
@@ -133,19 +133,19 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 
 	clientCompany := api.Group("/client-companies")
 	{
-		clientCompany.GET("/", deps.ClientCompanyHdl.List)
+		clientCompany.GET("", deps.ClientCompanyHdl.List)
 		clientCompany.GET("/:id", deps.ClientCompanyHdl.Get)
-		clientCompany.POST("/", deps.ClientCompanyHdl.Create)
+		clientCompany.POST("", deps.ClientCompanyHdl.Create)
 		clientCompany.PUT("/:id", deps.ClientCompanyHdl.Update)
 		clientCompany.DELETE("/:id", deps.ClientCompanyHdl.Delete)
 	}
 
 	group := api.Group("/client_users")
 	{
-		group.GET("/", deps.ClientUserHdl.GetAll)
+		group.GET("", deps.ClientUserHdl.GetAll)
 		group.GET("/:id", deps.ClientUserHdl.GetByID)
-		group.POST("/", deps.ClientUserHdl.Create)
-		group.PUT("/", deps.ClientUserHdl.Update)
+		group.POST("", deps.ClientUserHdl.Create)
+		group.PUT("", deps.ClientUserHdl.Update)
 		group.DELETE("/:id", deps.ClientUserHdl.Delete)
 	}
 
