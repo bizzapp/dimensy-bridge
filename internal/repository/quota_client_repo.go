@@ -3,6 +3,7 @@ package repository
 import (
 	"dimensy-bridge/internal/dto"
 	"dimensy-bridge/internal/model"
+	"sort"
 
 	"gorm.io/gorm"
 )
@@ -14,6 +15,8 @@ type QuotaClientRepository interface {
 	Update(quota *model.QuotaClient) error
 	Delete(id int64) error
 	FindByClientProduct(req dto.FindQuotaClientByClientProductRequest) (*model.QuotaClient, error)
+
+	GetHistory(clientID int64, limit int) ([]dto.QuotaHistoryItem, error)
 }
 
 type quotaClientRepository struct {
@@ -22,6 +25,78 @@ type quotaClientRepository struct {
 
 func NewQuotaClientRepository(db *gorm.DB) QuotaClientRepository {
 	return &quotaClientRepository{db}
+}
+
+func (r *quotaClientRepository) GetHistory(clientID int64, limit int) ([]dto.QuotaHistoryItem, error) {
+	var additions []dto.QuotaHistoryItem
+	var reductions []dto.QuotaHistoryItem
+
+	// ============================
+	// 📌 Query Addition History
+	// ============================
+	if err := r.db.Model(&model.QuotaClientAddition{}).
+		Select(`
+			quota_client_additions.id,
+			quota_clients.master_product_id,
+			master_products.name AS master_product_name,
+			quota_client_additions.type,
+			quota_client_additions.quantity,
+			quota_client_additions.created_at
+		`).
+		Joins("JOIN quota_clients ON quota_clients.id = quota_client_additions.quota_client_id").
+		Joins("JOIN master_products ON master_products.id = quota_clients.master_product_id").
+		Where("quota_clients.client_id = ?", clientID).
+		Limit(limit).
+		Find(&additions).Error; err != nil {
+		return nil, err
+	}
+
+	// Tambahkan jenis direction
+	for i := range additions {
+		additions[i].Direction = "ADDITION"
+	}
+
+	// ============================
+	// 📌 Query Reduction History
+	// ============================
+	if err := r.db.Model(&model.QuotaClientReduction{}).
+		Select(`
+			quota_client_reductions.id,
+			quota_clients.master_product_id,
+			master_products.name AS master_product_name,
+			quota_client_reductions.type,
+
+			(quota_client_reductions.quantity * -1) AS quantity,
+			quota_client_reductions.created_at
+		`).
+		Joins("JOIN quota_clients ON quota_clients.id = quota_client_reductions.quota_client_id").
+		Joins("JOIN master_products ON master_products.id = quota_clients.master_product_id").
+		Where("quota_clients.client_id = ?", clientID).
+		Limit(limit).
+		Find(&reductions).Error; err != nil {
+		return nil, err
+	}
+
+	for i := range reductions {
+		reductions[i].Direction = "REDUCTION"
+	}
+
+	// ============================
+	// 📌 Gabungkan & Sort DESC
+	// ============================
+
+	all := append(additions, reductions...)
+
+	sort.Slice(all, func(i, j int) bool {
+		return all[i].CreatedAt.After(*all[j].CreatedAt)
+	})
+
+	// Limit global
+	if len(all) > limit {
+		all = all[:limit]
+	}
+
+	return all, nil
 }
 
 func (r *quotaClientRepository) FindAll(limit, offset int, filters map[string]interface{}) ([]model.QuotaClient, int64, error) {

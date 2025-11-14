@@ -109,6 +109,7 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 
 	quotas := api.Group("/quotas")
 	{
+		quotas.GET("/history", deps.QuotaClientHdl.GetHistory)
 		quotas.GET("", deps.QuotaClientHdl.List)
 		quotas.GET("/:id", deps.QuotaClientHdl.Get)
 		quotas.POST("", deps.QuotaClientHdl.Create)

@@ -15,6 +15,7 @@ type QuotaClientService interface {
 	CreateQuota(quota *model.QuotaClient) error
 	UpdateQuota(quota *model.QuotaClient) error
 	DeleteQuota(id int64) error
+	GetHistory(clientID int64, limit int) ([]dto.QuotaHistoryItem, error)
 	// UseQuota(dto.UseQuotaClientRequest) (*model.QuotaClient, error)
 	AddQuotaWithApprove(tx *gorm.DB, req dto.AddQuotaClientWithApproveRequest) (*model.QuotaClient, error)
 }
@@ -35,6 +36,13 @@ func NewQuotaClientService(db *gorm.DB, quotaClientRepo repository.QuotaClientRe
 		quotaClientAdditionRepo: quotaClientAdditionRepo,
 		quotaUtils:              utils.NewQuotaUtils(),
 	}
+}
+
+func (s *quotaClientService) GetHistory(clientID int64, limit int) ([]dto.QuotaHistoryItem, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	return s.quotaClientRepo.GetHistory(clientID, limit)
 }
 
 func (s *quotaClientService) GetQuotas(page, limit int, filters map[string]interface{}) ([]model.QuotaClient, int64, error) {

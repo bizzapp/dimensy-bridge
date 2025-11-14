@@ -46,6 +46,34 @@ func (h *QuotaClientHandler) List(c *gin.Context) {
 	response.JSON(c, http.StatusOK, "List quota berhasil diambil", quotas, meta)
 }
 
+func (h *QuotaClientHandler) GetHistory(c *gin.Context) {
+	clientIdStr := c.Query("client_id")
+	limitStr := c.DefaultQuery("limit", "20")
+
+	clientID, err := strconv.ParseInt(clientIdStr, 10, 64)
+	if err != nil || clientID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid client_id"})
+		return
+	}
+
+	limit, _ := strconv.Atoi(limitStr)
+
+	data, err := h.service.GetHistory(clientID, limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "success",
+		"data":    data,
+	})
+}
+
 func (h *QuotaClientHandler) Get(c *gin.Context) {
 	id, _ := strconv.ParseInt(c.Param("id"), 10, 64)
 	quota, err := h.service.GetQuotaByID(id)

@@ -1,5 +1,7 @@
 package dto
 
+import "time"
+
 type AddQuotaClientRequest struct {
 	MasterProductID       int64   `json:"master_product_id" binding:"required"`
 	ClientID              int64   `json:"client_id" binding:"required"`
@@ -42,4 +44,14 @@ type UseQuotaClientRequest struct {
 type FindQuotaClientByClientProductRequest struct {
 	MasterProductID int64 `json:"master_product_id" binding:"required"`
 	ClientID        int64 `json:"client_id" binding:"required"`
+}
+
+type QuotaHistoryItem struct {
+	ID                int64      `json:"id"`
+	MasterProductID   int64      `json:"master_product_id"`
+	MasterProductName string     `json:"master_product_name"`
+	Type              string     `json:"type"`
+	Quantity          int64      `json:"quantity"`
+	CreatedAt         *time.Time `json:"created_at"`
+	Direction         string     `json:"direction"` // ADDITION / REDUCTION
 }
