@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type QuotaClientAdditionService interface {
@@ -73,12 +74,16 @@ func (s *quotaClientAdditionService) UpdateAddition(addition *model.QuotaClientA
 func (s *quotaClientAdditionService) DeleteAddition(id int64) error {
 	return s.additionRepo.Delete(id)
 }
-
-// 🔹 Step 2: Approve addition (apply quota & reduce stock)
 func (s *quotaClientAdditionService) ApproveAddQuota(req dto.ApproveAddQuotaClientRequest) error {
 	return s.db.Transaction(func(tx *gorm.DB) error {
+
+		// ============================================
+		// LOCK addition row (mencegah double approve)
+		// ============================================
 		var addition model.QuotaClientAddition
-		if err := tx.Preload("QuotaClient").First(&addition, req.QuotaAdditionID).Error; err != nil {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Preload("QuotaClient").
+			First(&addition, req.QuotaAdditionID).Error; err != nil {
 			return fmt.Errorf("addition not found: %w", err)
 		}
 
@@ -86,53 +91,72 @@ func (s *quotaClientAdditionService) ApproveAddQuota(req dto.ApproveAddQuotaClie
 			return errors.New("addition already approved")
 		}
 
-		var qc = addition.QuotaClient
+		qc := addition.QuotaClient
 
-		// Ambil MasterProduct
+		// ============================================
+		// LOCK master product row
+		// ============================================
 		var mp model.MasterProduct
-		if err := tx.First(&mp, qc.MasterProductID).Error; err != nil {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			First(&mp, qc.MasterProductID).Error; err != nil {
 			return fmt.Errorf("master product not found: %w", err)
 		}
 
-		// Cek stok
+		// Cek stok latest (sudah locked)
 		if !mp.IsUnlimited && mp.CurrentStock < addition.Quantity {
 			return fmt.Errorf("not enough stock in master product")
 		}
 
-		// Simpan current stock sebelum dikurangi (untuk reduction record)
-		previousStock := mp.CurrentStock
-
-		// Tambah quota client
-		newQuota := qc.CurrentQuota + addition.Quantity
-		if err := tx.Model(&qc).Updates(map[string]interface{}{
-			"quantity":      gorm.Expr("quantity + ?", addition.Quantity),
-			"current_quota": newQuota,
-		}).Error; err != nil {
+		// ============================================
+		// UPDATE QuotaClient secara atomik
+		// ============================================
+		if err := tx.Model(&qc).
+			Where("id = ?", qc.ID).
+			Updates(map[string]interface{}{
+				"quantity":      gorm.Expr("quantity + ?", addition.Quantity),
+				"current_quota": gorm.Expr("current_quota + ?", addition.Quantity),
+			}).Error; err != nil {
 			return fmt.Errorf("failed to update quota client: %w", err)
 		}
 
-		// Kurangi stok master product
+		// ============================================
+		// Kurangi stok master product (atomic)
+		// ============================================
+		var latestStock int64
+
 		if !mp.IsUnlimited {
-			if err := tx.Model(&mp).Update("current_stock", gorm.Expr("current_stock - ?", addition.Quantity)).Error; err != nil {
+			if err := tx.Model(&mp).
+				Where("id = ?", mp.ID).
+				Update("current_stock", gorm.Expr("current_stock - ?", addition.Quantity)).Error; err != nil {
 				return fmt.Errorf("failed to update master product stock: %w", err)
 			}
+
+			// Baca ulang stok terbaru setelah update (agar akurat)
+			if err := tx.Model(&mp).Select("current_stock").First(&mp).Error; err != nil {
+				return fmt.Errorf("failed to reload master product stock: %w", err)
+			}
+
+			latestStock = mp.CurrentStock
 
 			// Simpan record reduction
 			reduction := &model.MasterProductReduction{
 				MasterProductID: mp.ID,
 				Quantity:        addition.Quantity,
-				LatestQuota:     previousStock,
+				LatestQuota:     latestStock,
 				Type:            "ADDITION",
 				UsedBy:          req.ProcessBy,
 			}
+
 			if err := tx.Create(reduction).Error; err != nil {
 				return fmt.Errorf("failed to create reduction record: %w", err)
 			}
 		}
 
-		// Update addition record
+		// ============================================
+		// Tandai addition sudah diproses
+		// ============================================
 		if err := tx.Model(&addition).Updates(map[string]interface{}{
-			"latest_quota": newQuota,
+			"latest_quota": gorm.Expr("latest_quota + ?", addition.Quantity),
 			"is_process":   true,
 			"process_by":   req.ProcessBy,
 			"updated_at":   time.Now(),

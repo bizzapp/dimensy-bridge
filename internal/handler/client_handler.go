@@ -150,4 +150,5 @@ func (h *ClientHandler) ApproveAddQuota(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	c.JSON(http.StatusCreated, gin.H{"message": "Quota addition approved successfully"})
 }

@@ -81,13 +81,12 @@ func (s *clientHasSubscriptionPlanService) Process(id int64, processedBy int64) 
 			}
 
 			// Validasi stok cukup
-			if !detail.IsUnlimited {
+			if !master.IsUnlimited {
 				if master.CurrentStock < int64(detail.Quantity) {
 					return fmt.Errorf("insufficient stock for product ID %d", master.ID)
 				}
 
 				// Simpan current stock sebelum dikurangi
-				previousStock := master.CurrentStock
 
 				// Kurangi stok master product
 				master.CurrentStock -= int64(detail.Quantity)
@@ -99,7 +98,7 @@ func (s *clientHasSubscriptionPlanService) Process(id int64, processedBy int64) 
 				reduction := &model.MasterProductReduction{
 					MasterProductID: master.ID,
 					Quantity:        int64(detail.Quantity),
-					LatestQuota:     previousStock,
+					LatestQuota:     master.CurrentStock,
 					Type:            "SUBSCRIPTION",
 					UsedBy:          sub.ProcessBy,
 				}
