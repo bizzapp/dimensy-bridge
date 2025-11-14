@@ -6,7 +6,9 @@ import (
 	"dimensy-bridge/pkg/utils"
 	"errors"
 	"os"
+	"time"
 
+	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -18,14 +20,14 @@ type AuthService interface {
 }
 
 type authService struct {
-	authRepo  repository.AuthRepository
-	blacklist map[string]bool
+	authRepo repository.AuthRepository
+
+	blacklistRepo repository.TokenBlacklistRepository
 }
 
-func NewAuthService(authRepo repository.AuthRepository) AuthService {
+func NewAuthService(authRepo repository.AuthRepository, blacklistRepo repository.TokenBlacklistRepository) AuthService {
 	return &authService{
-		authRepo:  authRepo,
-		blacklist: make(map[string]bool),
+		authRepo: authRepo, blacklistRepo: blacklistRepo,
 	}
 }
 
@@ -61,16 +63,29 @@ func (s *authService) Login(email *string, password *string) (string, *model.Use
 	return token, user, nil
 }
 
-func (s *authService) Logout(token string) error {
-	if token == "" {
-		return errors.New("empty token")
+func (s *authService) Logout(tokenString string) error {
+	// Parse token to get expiration time
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return []byte(os.Getenv("JWT_SECRET")), nil
+	})
+
+	if err != nil {
+		return errors.New("invalid token")
 	}
 
-	// simpan ke blacklist (contoh memory, production lebih baik pakai Redis)
-	s.blacklist[token] = true
-	return nil
-}
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return errors.New("invalid token claims")
+	}
 
-func (s *authService) IsBlacklisted(token string) bool {
-	return s.blacklist[token]
+	// Get expiration time from token
+	exp, ok := claims["exp"].(float64)
+	if !ok {
+		return errors.New("invalid token expiration")
+	}
+
+	expiresAt := time.Unix(int64(exp), 0)
+
+	// Add token to blacklist
+	return s.blacklistRepo.Create(tokenString, expiresAt)
 }

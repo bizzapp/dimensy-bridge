@@ -3,7 +3,6 @@ package handler
 import (
 	"dimensy-bridge/internal/service"
 	"dimensy-bridge/pkg/response"
-	"dimensy-bridge/pkg/utils/jwtutil"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -55,34 +54,28 @@ func (h *AuthHandler) Login(c *gin.Context) {
 }
 
 func (h *AuthHandler) Logout(c *gin.Context) {
-	// Ambil token dari header Authorization
-	token, err := jwtutil.GetTokenFromContext(c)
-	if token == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Token not provided",
-		})
-		return
-	}
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "cannot get token"})
+	// Get token from header
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
+		response.Error(c, http.StatusBadRequest, "TOKEN_REQUIRED", "Authorization header required", "")
 		return
 	}
 
-	_, _, err = jwtutil.GetUserIDAndRoleFromContext(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	// Remove "Bearer " prefix
+	tokenString := ""
+	if len(authHeader) > 7 && authHeader[:7] == "Bearer " {
+		tokenString = authHeader[7:]
+	} else {
+		response.Error(c, http.StatusBadRequest, "INVALID_TOKEN_FORMAT", "Invalid token format", "")
 		return
 	}
 
-	// Blacklist token (opsional, tergantung implementasi)
-	if err := h.authSvc.Logout(token); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "Failed to logout",
-			"error":   err.Error(),
-		})
+	// Add token to blacklist
+	err := h.authSvc.Logout(tokenString)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "LOGOUT_FAILED", "Failed to logout", err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Logout successful",
-	})
+
+	response.JSON(c, http.StatusOK, "Logout successful", nil, nil)
 }

@@ -118,6 +118,8 @@ type AppDependencies struct {
 	ClientCompanyInviteSvc  service.ClientCompanyInviteService
 
 	ClientDocumentProcessRepo repository.ClientDocumentProcessRepository
+
+	TokenBlacklistRepo repository.TokenBlacklistRepository
 }
 
 func NewAppDependencies(db *gorm.DB) *AppDependencies {
@@ -141,8 +143,10 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	clientCompanyInviteRepo := repository.NewClientCompanyInviteRepository(db)
 	clientDocumentProcessRepo := repository.NewClientDocumentProcessRepository(db)
 
+	tokenBlacklistRepo := repository.NewTokenBlacklistRepository(db)
+
 	// === CORE SERVICES ===
-	authSvc := service.NewAuthService(authRepo)
+	authSvc := service.NewAuthService(authRepo, tokenBlacklistRepo)
 	userSvc := service.NewUserService(userRepo)
 	quotaClientSvc := service.NewQuotaClientService(db, quotaClientRepo, quotaClientReductionRepo, quotaClientAdditionRepo)
 	clientHasSubscriptionPlanSvc := service.NewClientHasSubscriptionPlanService(clientHasSubscriptionPlanRepo, quotaClientRepo, subscriptionPlanRepo, quotaClientSvc)
@@ -191,10 +195,11 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	psreBackendHdl := psre_handler.NewPsreBackendHandler(psreBackendSvc)
 	webhookHdl := handler.NewWebhookHandler(webhookSvc)
 	return &AppDependencies{
-		DB:       db,
-		AuthRepo: authRepo,
-		AuthSvc:  authSvc,
-		AuthHdl:  authHdl,
+		DB:                 db,
+		AuthRepo:           authRepo,
+		AuthSvc:            authSvc,
+		AuthHdl:            authHdl,
+		TokenBlacklistRepo: tokenBlacklistRepo,
 
 		UserRepo: userRepo,
 		UserSvc:  userSvc,

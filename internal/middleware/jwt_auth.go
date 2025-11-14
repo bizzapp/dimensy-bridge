@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"dimensy-bridge/internal/repository"
 	"errors"
 	"fmt"
 	"net/http"
@@ -34,6 +35,10 @@ type Claims struct {
 }
 
 func JWTAuthMiddleware() gin.HandlerFunc {
+	return JWTAuthMiddlewareWithBlacklist(nil)
+}
+
+func JWTAuthMiddlewareWithBlacklist(blacklistRepo repository.TokenBlacklistRepository) gin.HandlerFunc {
 	jwtKey := []byte(os.Getenv("JWT_SECRET"))
 	tokenCookieName := os.Getenv("COOKIE_NAME")
 	if tokenCookieName == "" {
@@ -62,6 +67,21 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		// Check if token is blacklisted
+		if blacklistRepo != nil {
+			isBlacklisted, err := blacklistRepo.IsBlacklisted(tokenString)
+			if err != nil {
+				fmt.Printf("[AUTH] Error checking blacklist: %v\n", err)
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+				return
+			}
+			if isBlacklisted {
+				fmt.Println("[AUTH] Token is blacklisted")
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token is blacklisted"})
+				return
+			}
+		}
+
 		claims := &Claims{}
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
 			// Validasi algoritma
@@ -88,7 +108,6 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 		// Simpan ke context (konsisten pakai konstanta)
 		c.Set(CtxUserIDKey, claims.UserID)
 		c.Set(CtxRoleKey, claims.Role)
-		c.Set(CtxTokenKey, tokenString)
 
 		c.Next()
 	}

@@ -43,6 +43,7 @@ func main() {
 		&model.ClientCompanyInvite{},
 		&model.MasterProductAddition{},
 		&model.MasterProductReduction{},
+		&model.TokenBlacklist{},
 	}
 
 	refreshMode := len(os.Args) > 1 && os.Args[1] == "refresh"

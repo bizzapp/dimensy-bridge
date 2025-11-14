@@ -62,8 +62,7 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 	{
 		auth.POST("/login", deps.AuthHdl.Login)
 
-		auth.Use(middleware.JWTAuthMiddleware())
-		auth.POST("/logout", deps.AuthHdl.Logout)
+		auth.POST("/logout", middleware.JWTAuthMiddlewareWithBlacklist(deps.TokenBlacklistRepo), deps.AuthHdl.Logout)
 	}
 
 	user := api.Group("/users")
@@ -77,7 +76,8 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 
 	clients := api.Group("/clients")
 	{
-		clients.Use(middleware.JWTAuthMiddleware())
+		clients.Use(middleware.JWTAuthMiddlewareWithBlacklist(deps.TokenBlacklistRepo))
+
 		clients.GET("/profile-psre/:id", deps.ClientPsreHdl.Profile)
 		clients.GET("/fill-external-id/:id", deps.ClientPsreHdl.FillExternalId)
 		clients.GET("", deps.ClientHdl.List)
@@ -90,7 +90,7 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 	}
 	clientSubs := api.Group("/client-subscriptions")
 	{
-		clientSubs.Use(middleware.JWTAuthMiddleware())
+		clientSubs.Use(middleware.JWTAuthMiddlewareWithBlacklist(deps.TokenBlacklistRepo))
 		clientSubs.GET("", deps.ClientHasSubscriptionHdl.GetAll)
 		clientSubs.GET("/:id", deps.ClientHasSubscriptionHdl.GetByID)
 		clientSubs.POST("", deps.ClientHasSubscriptionHdl.Create)
@@ -100,6 +100,7 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 
 	products := api.Group("/products")
 	{
+		products.Use(middleware.JWTAuthMiddlewareWithBlacklist(deps.TokenBlacklistRepo))
 		products.GET("/history", deps.MasterProductHdl.GetHistory)
 		products.GET("", deps.MasterProductHdl.List)
 		products.GET("/:id", deps.MasterProductHdl.Get)
@@ -110,6 +111,7 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 
 	quotas := api.Group("/quotas")
 	{
+		quotas.Use(middleware.JWTAuthMiddlewareWithBlacklist(deps.TokenBlacklistRepo))
 		quotas.GET("/history", deps.QuotaClientHdl.GetHistory)
 		quotas.GET("", deps.QuotaClientHdl.List)
 		quotas.GET("/:id", deps.QuotaClientHdl.Get)
@@ -120,6 +122,7 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 
 	additions := api.Group("/quota-additions")
 	{
+		additions.Use(middleware.JWTAuthMiddlewareWithBlacklist(deps.TokenBlacklistRepo))
 		additions.GET("", deps.QuotaClientAdditionHdl.List)
 		additions.GET("/:id", deps.QuotaClientAdditionHdl.Get)
 		additions.POST("", deps.QuotaClientAdditionHdl.Create)
@@ -129,12 +132,14 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 
 	clientPsre := api.Group("/client-psre")
 	{
+		clientPsre.Use(middleware.JWTAuthMiddlewareWithBlacklist(deps.TokenBlacklistRepo))
 		clientPsre.POST("/register", deps.ClientPsreHdl.Register)
 		clientPsre.POST("/register-with-fill-external-id", deps.ClientPsreHdl.RegisterWithFillExternalId)
 	}
 
 	clientCompany := api.Group("/client-companies")
 	{
+		clientCompany.Use(middleware.JWTAuthMiddlewareWithBlacklist(deps.TokenBlacklistRepo))
 		clientCompany.GET("", deps.ClientCompanyHdl.List)
 		clientCompany.GET("/:id", deps.ClientCompanyHdl.Get)
 		clientCompany.POST("", deps.ClientCompanyHdl.Create)
@@ -144,6 +149,7 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 
 	group := api.Group("/client_users")
 	{
+		group.Use(middleware.JWTAuthMiddlewareWithBlacklist(deps.TokenBlacklistRepo))
 		group.GET("", deps.ClientUserHdl.GetAll)
 		group.GET("/:id", deps.ClientUserHdl.GetByID)
 		group.POST("", deps.ClientUserHdl.Create)
