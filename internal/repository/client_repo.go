@@ -7,7 +7,7 @@ import (
 )
 
 type ClientRepository interface {
-	FindAll(limit, offset int, filters map[string]interface{}) ([]model.Client, int64, error)
+	FindAll(limit, offset int, searchTerm string) ([]model.Client, int64, error)
 	FindByID(id int64) (*model.Client, error)
 	FindByExternalID(externalID string) (*model.Client, error)
 	Create(client *model.Client) error
@@ -37,14 +37,16 @@ func (r *clientRepository) FindByExternalID(externalID string) (*model.Client, e
 	return &clientPsre.Client, nil
 }
 
-func (r *clientRepository) FindAll(limit, offset int, filters map[string]interface{}) ([]model.Client, int64, error) {
+func (r *clientRepository) FindAll(limit, offset int, searchTerm string) ([]model.Client, int64, error) {
 	var clients []model.Client
 	var total int64
 
 	query := r.db.Model(&model.Client{}).Preload("User").Preload("ClientPsre")
 
-	for key, value := range filters {
-		query = query.Where(key+" = ?", value)
+	if searchTerm != "" {
+		searchPattern := "%" + searchTerm + "%"
+		query = query.Joins("LEFT JOIN users ON users.id = clients.user_id").
+			Where("clients.company_name ILIKE ? OR users.email ILIKE ? OR clients.pic_name ILIKE ?", searchPattern, searchPattern, searchPattern)
 	}
 
 	if err := query.Count(&total).Error; err != nil {

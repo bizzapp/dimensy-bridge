@@ -30,12 +30,12 @@ func (h *ClientHandler) List(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 
-	filters := map[string]interface{}{}
-	if companyName := c.Query("company_name"); companyName != "" {
-		filters["company_name"] = companyName
+	var searchTerm string
+	if filter := c.Query("filters"); filter != "" {
+		searchTerm = filter
 	}
 
-	clients, total, err := h.service.GetClients(page, limit, filters)
+	clients, total, err := h.service.GetClients(page, limit, searchTerm)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "CLIENT_LIST_ERROR", "Gagal mengambil data client", err.Error())
 		return

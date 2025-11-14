@@ -8,7 +8,7 @@ import (
 )
 
 type ClientService interface {
-	GetClients(page, limit int, filters map[string]interface{}) ([]model.Client, int64, error)
+	GetClients(page, limit int, searchTerm string) ([]model.Client, int64, error)
 	GetClientByID(id int64) (*model.Client, error)
 	CreateClient(companyName, picName, email string) (*model.Client, error)
 	UpdateClient(client *model.Client) error
@@ -66,9 +66,9 @@ func (s *clientService) AddQuota(req dto.AddQuotaClientRequest) error {
 	return nil
 }
 
-func (s *clientService) GetClients(page, limit int, filters map[string]interface{}) ([]model.Client, int64, error) {
+func (s *clientService) GetClients(page, limit int, searchTerm string) ([]model.Client, int64, error) {
 	offset := (page - 1) * limit
-	return s.clientRepo.FindAll(limit, offset, filters)
+	return s.clientRepo.FindAll(limit, offset, searchTerm)
 }
 
 func (s *clientService) GetClientByID(id int64) (*model.Client, error) {
