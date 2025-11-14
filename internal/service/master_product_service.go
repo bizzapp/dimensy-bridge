@@ -1,6 +1,7 @@
 package service
 
 import (
+	"dimensy-bridge/internal/dto"
 	"dimensy-bridge/internal/model"
 	"dimensy-bridge/internal/repository"
 )
@@ -11,6 +12,7 @@ type MasterProductService interface {
 	CreateProduct(product *model.MasterProduct) error
 	UpdateProduct(product *model.MasterProduct) error
 	DeleteProduct(id int64) error
+	GetHistory(masterProductID *int64, limit int) ([]dto.MasterProductHistoryItem, error)
 }
 
 type masterProductService struct {
@@ -19,6 +21,13 @@ type masterProductService struct {
 
 func NewMasterProductService(repo repository.MasterProductRepository) MasterProductService {
 	return &masterProductService{repo}
+}
+
+func (s *masterProductService) GetHistory(masterProductID *int64, limit int) ([]dto.MasterProductHistoryItem, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	return s.repo.GetHistory(masterProductID, limit)
 }
 
 func (s *masterProductService) GetProducts(page, limit int, filters map[string]interface{}) ([]model.MasterProduct, int64, error) {

@@ -1,7 +1,9 @@
 package repository
 
 import (
+	"dimensy-bridge/internal/dto"
 	"dimensy-bridge/internal/model"
+	"sort"
 
 	"gorm.io/gorm"
 )
@@ -12,6 +14,7 @@ type MasterProductRepository interface {
 	Create(product *model.MasterProduct) error
 	Update(product *model.MasterProduct) error
 	Delete(id int64) error
+	GetHistory(masterProductID *int64, limit int) ([]dto.MasterProductHistoryItem, error)
 }
 
 type masterProductRepository struct {
@@ -22,6 +25,63 @@ func NewMasterProductRepository(db *gorm.DB) MasterProductRepository {
 	return &masterProductRepository{db}
 }
 
+func (r *masterProductRepository) GetHistory(masterProductID *int64, limit int) ([]dto.MasterProductHistoryItem, error) {
+	var adds []dto.MasterProductHistoryItem
+	var reducs []dto.MasterProductHistoryItem
+
+	addQuery := r.db.Model(&model.MasterProductAddition{}).
+		Select(`
+			id,
+			master_product_id,
+			quantity,
+			type,
+			created_at
+		`).
+		Where("is_process = ?", true)
+
+	reduceQuery := r.db.Model(&model.MasterProductReduction{}).
+		Select(`
+			id,
+			master_product_id,
+			(quantity * -1) AS quantity,
+			type,
+			created_at
+		`)
+
+	// Jika ada filter masterProductID
+	if masterProductID != nil {
+		addQuery = addQuery.Where("master_product_id = ?", *masterProductID)
+		reduceQuery = reduceQuery.Where("master_product_id = ?", *masterProductID)
+	}
+
+	if err := addQuery.Limit(limit).Find(&adds).Error; err != nil {
+		return nil, err
+	}
+	for i := range adds {
+		adds[i].Direction = "ADDITION"
+	}
+
+	if err := reduceQuery.Limit(limit).Find(&reducs).Error; err != nil {
+		return nil, err
+	}
+	for i := range reducs {
+		reducs[i].Direction = "REDUCTION"
+	}
+
+	// Gabungkan
+	all := append(adds, reducs...)
+
+	// Sort berdasarkan waktu (DESC)
+	sort.Slice(all, func(i, j int) bool {
+		return all[i].CreatedAt.After(*all[j].CreatedAt)
+	})
+
+	if len(all) > limit {
+		all = all[:limit]
+	}
+
+	return all, nil
+}
 func (r *masterProductRepository) FindAll(limit, offset int, filters map[string]interface{}) ([]model.MasterProduct, int64, error) {
 	var products []model.MasterProduct
 	var total int64

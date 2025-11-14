@@ -100,6 +100,7 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 
 	products := api.Group("/products")
 	{
+		products.GET("/history", deps.MasterProductHdl.GetHistory)
 		products.GET("", deps.MasterProductHdl.List)
 		products.GET("/:id", deps.MasterProductHdl.Get)
 		products.POST("", deps.MasterProductHdl.Create)

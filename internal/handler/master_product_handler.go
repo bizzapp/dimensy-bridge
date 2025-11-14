@@ -18,6 +18,37 @@ func NewMasterProductHandler(s service.MasterProductService) *MasterProductHandl
 	return &MasterProductHandler{s}
 }
 
+func (h *MasterProductHandler) GetHistory(c *gin.Context) {
+	productIDStr := c.Query("product_id")
+	limitStr := c.DefaultQuery("limit", "20")
+
+	var productID *int64 = nil
+
+	// Jika user mengisi product_id → gunakan filter
+	if productIDStr != "" {
+		val, err := strconv.ParseInt(productIDStr, 10, 64)
+		if err != nil || val <= 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "invalid product_id"})
+			return
+		}
+		productID = &val
+	}
+
+	limit, _ := strconv.Atoi(limitStr)
+
+	data, err := h.service.GetHistory(productID, limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "success",
+		"data":    data,
+	})
+}
+
 func (h *MasterProductHandler) List(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
