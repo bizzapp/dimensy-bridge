@@ -212,6 +212,7 @@ func (s *clientService) ProfilePsre(clientID int64) (*model.ClientPsre, error) {
 	if client.ClientPsre == nil {
 		client.ClientPsre = &model.ClientPsre{}
 	}
+	client.ClientPsre.ClientID = clientID
 	client.ClientPsre.ExternalID = psreID
 
 	return client.ClientPsre, nil
