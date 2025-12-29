@@ -27,6 +27,7 @@ func main() {
 		&model.QuotaClient{},
 		&model.QuotaClientAddition{},
 		&model.QuotaClientReduction{},
+		&model.ClientIPWhitelist{},
 		&model.ClientPsre{},
 		&model.ClientRequestLog{},
 		&model.ClientCompany{},

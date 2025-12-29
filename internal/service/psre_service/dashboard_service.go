@@ -19,7 +19,6 @@ func NewDashboardService() DashboardService {
 }
 func (s *dashboardService) GetCertificateDashboard(token string) ([]byte, int, error) {
 	data, status, err := utils.PsreRequest("GET", "/backend/dashboard/certificate", nil, token, nil)
-	fmt.Println(token)
 	if err != nil {
 		return data, status, fmt.Errorf("failed call psre api: %w", err)
 	}

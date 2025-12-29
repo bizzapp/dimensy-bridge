@@ -2,7 +2,6 @@ package psrehandler
 
 import (
 	psreservice "dimensy-bridge/internal/service/psre_service"
-	"fmt"
 
 	"github.com/gin-gonic/gin"
 )
@@ -32,7 +31,6 @@ func (h *PsreDashboardHandler) Document(c *gin.Context) {
 	token := c.Request.Header.Get("Authorization")
 
 	respBody, status, err := h.dashboardService.GetDocumentDashboard(token)
-	fmt.Println(respBody)
 	if err != nil {
 		c.Data(status, "application/json", respBody)
 		return

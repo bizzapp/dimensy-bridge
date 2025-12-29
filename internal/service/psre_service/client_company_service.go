@@ -119,7 +119,6 @@ func (s *clientCompanyService) InviteClientCompany(authData interface{}, token s
 				message := fmt.Sprintf("Failed to find client user: %v", err)
 				respBody = utils.ResponseError(message, 400)
 				status = 400
-				// fmt.Println("kesini")
 				return fmt.Errorf("failed to find client user: %w", err)
 			}
 			clientCompany, err := s.clientCompanyRepo.FindByExternalID(body.CompanyID)
@@ -262,7 +261,6 @@ func (s *clientCompanyService) CreateClientCompany(
 
 			return fmt.Errorf("failed to use quota: %w", err)
 		}
-		// fmt.Println("Use Quota Success:", useQuota)
 
 		clientCompany := &model.ClientCompany{
 			ClientID: client.ID,

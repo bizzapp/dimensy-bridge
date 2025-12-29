@@ -6,7 +6,6 @@ import (
 	psreservice "dimensy-bridge/internal/service/psre_service"
 	"dimensy-bridge/pkg/response"
 	"dimensy-bridge/pkg/utils"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -50,7 +49,6 @@ func (h *PsreClientUserHandler) Activate(c *gin.Context) {
 	}
 	respBody, status, err := h.psreClientUserSvc.ActivateUser(token, externalID, &req)
 	if err != nil {
-		fmt.Println(respBody, "respBody")
 		c.Data(status, "application/json", respBody)
 		return
 	}
@@ -227,7 +225,6 @@ func (h *PsreClientUserHandler) RequestKYC(c *gin.Context) {
 
 	respBody, status, err := h.psreClientUserSvc.RequestKYC(token, externalID, &req)
 	if err != nil {
-		// fmt.Println(string(respBody), "respBody")
 		c.Data(status, "application/json", respBody)
 		return
 	}

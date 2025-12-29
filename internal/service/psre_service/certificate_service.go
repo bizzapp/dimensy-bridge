@@ -143,7 +143,6 @@ func (s *certificateService) Active(token, externalID string, req *dto.Certifica
 		// Get client info
 		client, err := s.clientSvc.GetClientByExternalId(externalID)
 		if err != nil {
-			fmt.Printf("[Certificate Active] Failed to get client: %v\n", err)
 			message := fmt.Sprintf("Unauthorized: %v", err)
 			respBody = utils.ResponseError(message, 400)
 			status = 400
@@ -337,8 +336,6 @@ func (s *certificateService) createOrUpdateCertificateWithTx(tx *gorm.DB, client
 
 // handleActiveAsFallbackWithResponse handles fallback to Active when Issue fails and returns response
 func (s *certificateService) handleActiveAsFallbackWithResponse(tx *gorm.DB, token string, req *dto.CertificateIssueActiveRequest, clientID int64) ([]byte, int, error) {
-	// fmt.Printf("[Certificate] Trying Active as fallback for clientID=%d\n", clientID)
-
 	// Call PSrE Active API
 	data, psreStatus, err := utils.PsreRequest("POST", "/certificate/active", req, token, nil)
 	if err != nil {

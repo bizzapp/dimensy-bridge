@@ -7,11 +7,13 @@ import (
 	"dimensy-bridge/internal/service"
 	psre_service "dimensy-bridge/internal/service/psre_service"
 
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
 type AppDependencies struct {
-	DB *gorm.DB
+	DB          *gorm.DB
+	RedisClient *redis.Client
 
 	// Auth Module
 	AuthRepo repository.AuthRepository
@@ -119,10 +121,18 @@ type AppDependencies struct {
 
 	ClientDocumentProcessRepo repository.ClientDocumentProcessRepository
 
+	// Client IP Whitelist Module
+	ClientIPWhitelistRepo repository.ClientIPWhitelistRepository
+	ClientIPWhitelistSvc  service.ClientIPWhitelistService
+	ClientIPWhitelistHdl  *handler.ClientIPWhitelistHandler
+
 	TokenBlacklistRepo repository.TokenBlacklistRepository
 }
 
 func NewAppDependencies(db *gorm.DB) *AppDependencies {
+	// Initialize Redis client
+	redisClient := InitRedis()
+
 	// === REPOSITORIES ===
 	authRepo := repository.NewAuthRepository(db)
 	userRepo := repository.NewUserRepository(db)
@@ -142,6 +152,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	clientKYCHistoryRepo := repository.NewClientKYCHistoryRepository(db)
 	clientCompanyInviteRepo := repository.NewClientCompanyInviteRepository(db)
 	clientDocumentProcessRepo := repository.NewClientDocumentProcessRepository(db)
+	clientIPWhitelistRepo := repository.NewClientIPWhitelistRepository(db)
 
 	tokenBlacklistRepo := repository.NewTokenBlacklistRepository(db)
 
@@ -171,7 +182,9 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	psreClientDocumentSvc := psre_service.NewClientDocumentService(db, clientPsreSvc, clientDocumentRepo, clientDocumentProcessRepo)
 	psreDashboardSvc := psre_service.NewDashboardService()
 	psreBackendSvc := psre_service.NewBackendService()
+	clientIPWhitelistSvc := service.NewClientIPWhitelistService(clientIPWhitelistRepo)
 
+	// === C
 	// === CORE HANDLERS ===
 	authHdl := handler.NewAuthHandler(authSvc)
 	userHdl := handler.NewUserHandler(userSvc)
@@ -191,11 +204,13 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	psreClientUserHdl := psre_handler.NewPsreClientUserHandler(clientUserSvc, clientPsreSvc, clientCompanySvc, psreClientUserSvc)
 	psreCertificateHdl := psre_handler.NewPsreCertificateHandler(psreCertificateSvc)
 	psreClientDocumentHdl := psre_handler.NewPsreClientDocumentHandler(psreClientDocumentSvc)
+	clientIPWhitelistHdl := handler.NewClientIPWhitelistHandler(clientIPWhitelistSvc)
 	psreDashboardHdl := psre_handler.NewPsreDashboardHandler(psreDashboardSvc)
 	psreBackendHdl := psre_handler.NewPsreBackendHandler(psreBackendSvc)
 	webhookHdl := handler.NewWebhookHandler(webhookSvc)
 	return &AppDependencies{
 		DB:                 db,
+		RedisClient:        redisClient,
 		AuthRepo:           authRepo,
 		AuthSvc:            authSvc,
 		AuthHdl:            authHdl,
@@ -256,6 +271,10 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 		PsreDocumentSvc:       psreClientDocumentSvc,
 		PsreDashboardHdl:      psreDashboardHdl,
 		PsreDashboardSvc:      psreDashboardSvc,
+
+		ClientIPWhitelistRepo: clientIPWhitelistRepo,
+		ClientIPWhitelistSvc:  clientIPWhitelistSvc,
+		ClientIPWhitelistHdl:  clientIPWhitelistHdl,
 		PsreBackendHdl:        psreBackendHdl,
 		PsreBackendSvc:        psreBackendSvc,
 		WebhookHdl:            webhookHdl,

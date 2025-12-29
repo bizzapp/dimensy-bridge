@@ -33,7 +33,7 @@ func (r *clientPsreRepository) FindByID(id int64) (*model.ClientPsre, error) {
 
 func (r *clientPsreRepository) FindByExternalID(externalID string) (*model.Client, error) {
 	var psre model.ClientPsre
-	if err := r.db.Preload("Client").Where("external_id = ?", externalID).First(&psre).Error; err != nil {
+	if err := r.db.Preload("Client").Where("external_id = ? AND deleted_at IS NULL", externalID).First(&psre).Error; err != nil {
 		return nil, err
 	}
 	return &psre.Client, nil

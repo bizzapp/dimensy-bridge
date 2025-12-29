@@ -10,7 +10,6 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"golang.org/x/time/rate"
 )
 
 func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
@@ -55,7 +54,7 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		panic("JWT_SECRET environment variable is required")
 	}
 
-	rl := middleware.NewRateLimiter(rate.Every(200*time.Millisecond), 10)
+	rl := middleware.NewRedisRateLimiter(deps.RedisClient, 200, 60*time.Second)
 
 	api := r.Group("/api/v1")
 	auth := api.Group("/auth")
@@ -155,6 +154,17 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		group.POST("", deps.ClientUserHdl.Create)
 		group.PUT("", deps.ClientUserHdl.Update)
 		group.DELETE("/:id", deps.ClientUserHdl.Delete)
+	}
+
+	// Client IP Whitelist routes
+	clientIPWhitelist := api.Group("/client-ip-whitelist")
+	{
+		clientIPWhitelist.Use(middleware.JWTAuthMiddlewareWithBlacklist(deps.TokenBlacklistRepo))
+		clientIPWhitelist.GET("/client/:client_id", deps.ClientIPWhitelistHdl.GetByClientID)
+		clientIPWhitelist.GET("/:id", deps.ClientIPWhitelistHdl.GetByID)
+		clientIPWhitelist.POST("", deps.ClientIPWhitelistHdl.Create)
+		clientIPWhitelist.PUT("/:id", deps.ClientIPWhitelistHdl.Update)
+		clientIPWhitelist.DELETE("/:id", deps.ClientIPWhitelistHdl.Delete)
 	}
 
 	// Setup PSRE routes

@@ -50,19 +50,16 @@ func JWTAuthMiddlewareWithBlacklist(blacklistRepo repository.TokenBlacklistRepos
 
 		// 1) Coba dari cookie
 		if cookie, err := c.Cookie(tokenCookieName); err == nil && cookie != "" {
-			fmt.Println("[AUTH] Token dari cookie")
 			tokenString = cookie
 		} else {
 			// 2) Fallback ke Authorization header
 			authHeader := c.GetHeader("Authorization")
 			if strings.HasPrefix(authHeader, "Bearer ") {
-				fmt.Println("[AUTH] Token dari Authorization header")
 				tokenString = strings.TrimPrefix(authHeader, "Bearer ")
 			}
 		}
 
 		if tokenString == "" {
-			fmt.Println("[AUTH] Token tidak ditemukan")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token not provided"})
 			return
 		}
@@ -71,12 +68,10 @@ func JWTAuthMiddlewareWithBlacklist(blacklistRepo repository.TokenBlacklistRepos
 		if blacklistRepo != nil {
 			isBlacklisted, err := blacklistRepo.IsBlacklisted(tokenString)
 			if err != nil {
-				fmt.Printf("[AUTH] Error checking blacklist: %v\n", err)
 				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 				return
 			}
 			if isBlacklisted {
-				fmt.Println("[AUTH] Token is blacklisted")
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token is blacklisted"})
 				return
 			}
