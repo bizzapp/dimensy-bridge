@@ -45,3 +45,23 @@ func Error(c *gin.Context, status int, code string, message string, detail strin
 		},
 	})
 }
+
+// ErrorResponse returns a map for error responses
+func ErrorResponse(message string, details string) gin.H {
+	return gin.H{
+		"success": false,
+		"message": message,
+		"error": gin.H{
+			"details": details,
+		},
+	}
+}
+
+// SuccessResponse returns a map for success responses
+func SuccessResponse(message string, data interface{}) gin.H {
+	return gin.H{
+		"success": true,
+		"message": message,
+		"data":    data,
+	}
+}

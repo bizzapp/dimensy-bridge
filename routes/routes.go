@@ -166,6 +166,22 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		clientIPWhitelist.PUT("/:id", deps.ClientIPWhitelistHdl.Update)
 		clientIPWhitelist.DELETE("/:id", deps.ClientIPWhitelistHdl.Delete)
 	}
+	// Inventory Master Product routes
+	inventory := api.Group("/inventory_master_product")
+	{
+		inventory.Use(middleware.JWTAuthMiddlewareWithBlacklist(deps.TokenBlacklistRepo))
+		inventory.GET("", deps.InventoryMasterProductHdl.Index)
+		inventory.GET("/list", deps.InventoryMasterProductHdl.List)
+		inventory.POST("/store_or_update", deps.InventoryMasterProductHdl.StoreOrUpdate)
+		inventory.GET("/:id/show", deps.InventoryMasterProductHdl.Show)
+		inventory.POST("/:id/mark_processed", deps.InventoryMasterProductHdl.MarkAsProcessed)
+		inventory.POST("/:id/adjust_stock", deps.InventoryMasterProductHdl.AdjustStock)
+		inventory.GET("/:id/logs", deps.InventoryMasterProductHdl.GetLogs)
+		inventory.POST("/:id/toggle_priority", deps.InventoryMasterProductHdl.TogglePriority)
+		inventory.DELETE("/:id/delete", deps.InventoryMasterProductHdl.Delete)
+		inventory.GET("/low_stock/items", deps.InventoryMasterProductHdl.GetLowStockItems)
+		inventory.GET("/total/value", deps.InventoryMasterProductHdl.GetTotalValue)
+	}
 
 	// Setup PSRE routes
 	SetupPsreRoutes(api, deps, rl)

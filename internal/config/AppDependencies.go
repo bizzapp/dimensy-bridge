@@ -126,6 +126,12 @@ type AppDependencies struct {
 	ClientIPWhitelistSvc  service.ClientIPWhitelistService
 	ClientIPWhitelistHdl  *handler.ClientIPWhitelistHandler
 
+	// Inventory Master Product Module
+	InventoryMasterProductRepo    repository.InventoryMasterProductRepository
+	InventoryMasterProductLogRepo repository.InventoryMasterProductLogRepository
+	InventoryMasterProductSvc     service.InventoryMasterProductService
+	InventoryMasterProductHdl     *handler.InventoryMasterProductHandler
+
 	TokenBlacklistRepo repository.TokenBlacklistRepository
 }
 
@@ -197,6 +203,12 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	quotaClientAdditionHdl := handler.NewQuotaClientAdditionHandler(quotaClientAdditionSvc)
 	certificateHdl := handler.NewCertificateHandler(certificateSvc)
 	clientHasSubscriptionPlanHdl := handler.NewClientHasSubscriptionPlanHandler(clientHasSubscriptionPlanSvc)
+
+	// === INVENTORY HANDLERS ===
+	inventoryMasterProductRepo := repository.NewInventoryMasterProductRepository(db)
+	inventoryMasterProductLogRepo := repository.NewInventoryMasterProductLogRepository(db)
+	inventoryMasterProductSvc := service.NewInventoryMasterProductService(inventoryMasterProductRepo, inventoryMasterProductLogRepo)
+	inventoryMasterProductHdl := handler.NewInventoryMasterProductHandler(inventoryMasterProductSvc)
 
 	// === PSRE HANDLERS ===
 	psreClientHdl := psre_handler.NewPsreClientHandler(psreClientSvc)
@@ -279,5 +291,10 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 		PsreBackendSvc:        psreBackendSvc,
 		WebhookHdl:            webhookHdl,
 		WebhookSvc:            webhookSvc,
+
+		InventoryMasterProductRepo:    inventoryMasterProductRepo,
+		InventoryMasterProductLogRepo: inventoryMasterProductLogRepo,
+		InventoryMasterProductSvc:     inventoryMasterProductSvc,
+		InventoryMasterProductHdl:     inventoryMasterProductHdl,
 	}
 }
