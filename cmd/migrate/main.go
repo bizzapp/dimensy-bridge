@@ -44,6 +44,8 @@ func main() {
 		&model.ClientCompanyInvite{},
 		&model.MasterProductAddition{},
 		&model.MasterProductReduction{},
+		&model.InventoryMasterProduct{},
+		&model.InventoryMasterProductLog{},
 		&model.TokenBlacklist{},
 	}
 
