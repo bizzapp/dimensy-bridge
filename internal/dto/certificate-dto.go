@@ -1,21 +1,25 @@
 package dto
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type CertificateIssueActiveRequest struct {
-	UserID    *string `json:"userId" binding:"required_without=CompanyID"`
-	CompanyID *string `json:"companyId" binding:"required_without=UserID"`
+	UserID    *uuid.UUID `json:"userId" binding:"required_without=CompanyID"`
+	CompanyID *uuid.UUID `json:"companyId" binding:"required_without=UserID"`
 }
 
 type CertificateRevokeRequest struct {
-	UserID    *string `json:"userId" binding:"omitempty" validate:"required_without=CompanyID"`
-	CompanyID *string `json:"companyId" binding:"omitempty" validate:"required_without=UserID"`
+	UserID    *uuid.UUID `json:"userId" binding:"omitempty" validate:"required_without=CompanyID"`
+	CompanyID *uuid.UUID `json:"companyId" binding:"omitempty" validate:"required_without=UserID"`
 }
 
 type CertificateRevokeValidateRequest struct {
-	UserID    *string `json:"userId" binding:"omitempty" validate:"required_without=CompanyID"`
-	CompanyID *string `json:"companyId" binding:"omitempty" validate:"required_without=UserID"`
-	OTP       string  `json:"otp" binding:"required"`
+	UserID    *uuid.UUID `json:"userId" binding:"omitempty" validate:"required_without=CompanyID"`
+	CompanyID *uuid.UUID `json:"companyId" binding:"omitempty" validate:"required_without=UserID"`
+	OTP       string     `json:"otp" binding:"required"`
 }
 
 type CertificateRevokeValidateResponse struct {

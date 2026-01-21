@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -165,7 +166,11 @@ func (s *clientUserService) RegisterUser(token, externalID string, req *dto.Clie
 			return fmt.Errorf("psre register failed: %s", psreResp.Message)
 		}
 
-		user.ExternalID = &psreResp.UserID
+		externalUUID, err := uuid.Parse(psreResp.UserID)
+		if err != nil {
+			return fmt.Errorf("failed to parse user id as uuid: %w", err)
+		}
+		user.ExternalID = &externalUUID
 		if err := tx.Save(&user).Error; err != nil {
 			return fmt.Errorf("failed update external_id: %w", err)
 		}
@@ -206,7 +211,11 @@ func (s *clientUserService) ActivateUser(token, externalID string, req *dto.Clie
 
 	// ✅ Panggil repository untuk update DB
 	if resp.Code == 0 {
-		if err := s.clientUserRepo.UpdateActiveStatus(resp.Data.UserID, true); err != nil {
+		externalUUID, err := uuid.Parse(resp.Data.UserID)
+		if err != nil {
+			return data, status, fmt.Errorf("failed to parse user id as uuid: %w", err)
+		}
+		if err := s.clientUserRepo.UpdateActiveStatus(externalUUID, true); err != nil {
 			return data, status, fmt.Errorf("failed to update user active status: %w", err)
 		}
 	}
@@ -361,7 +370,11 @@ func (s *clientUserService) PhoneActivation(token, externalID string, req *dto.C
 		return data, status, fmt.Errorf("failed to parse psre response: %w", err)
 	}
 	if resp.Code == 0 {
-		if err := s.clientUserRepo.UpdateVerifyPhoneStatus(req.UserID, true); err != nil {
+		userUUID, err := uuid.Parse(req.UserID)
+		if err != nil {
+			return data, status, fmt.Errorf("failed to parse user id as uuid: %w", err)
+		}
+		if err := s.clientUserRepo.UpdateVerifyPhoneStatus(userUUID, true); err != nil {
 			return data, status, fmt.Errorf("failed to update user verify phone status: %w", err)
 		}
 	}
@@ -467,11 +480,18 @@ func (s *clientUserService) SyncUsers(token, externalID string) ([]byte, int, er
 				continue
 			}
 
+			// Parse UserID as UUID
+			userUUID, err := uuid.Parse(userData.ID)
+			if err != nil {
+				fmt.Printf("Warning: Failed to parse user id as uuid for %s: %v\n", userData.ID, err)
+				continue
+			}
+
 			// Create ClientUser model
 			clientUser := &model.ClientUser{
 				ClientID:        client.ID,
 				ClientCompanyID: nil, // Will be updated based on userCompany data if needed
-				ExternalID:      &userData.ID,
+				ExternalID:      &userUUID,
 				NIK:             &userData.NIK,
 				Name:            &userData.FullName,
 				Birthdate:       birthdate,
@@ -485,7 +505,7 @@ func (s *clientUserService) SyncUsers(token, externalID string) ([]byte, int, er
 			}
 
 			// Check if user already exists
-			existingUser, err := s.clientUserRepo.FindByExternalID(userData.ID)
+			existingUser, err := s.clientUserRepo.FindByExternalID(userUUID)
 			isNewUser := err == gorm.ErrRecordNotFound
 
 			if isNewUser {

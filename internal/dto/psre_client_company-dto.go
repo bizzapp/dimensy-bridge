@@ -1,5 +1,7 @@
 package dto
 
+import "github.com/google/uuid"
+
 type PsreCreateClientCompanyRequest struct {
 	CompanyName     string `json:"companyName" validate:"required"`
 	CompanyAddress  string `json:"companyAddress" validate:"required"`
@@ -11,9 +13,9 @@ type PsreCreateClientCompanyRequest struct {
 }
 
 type PsreRegisterCompanyResponse struct {
-	Code      int    `json:"code"`
-	Message   string `json:"message"`
-	CompanyID string `json:"companyId"`
+	Code      int       `json:"code"`
+	Message   string    `json:"message"`
+	CompanyID uuid.UUID `json:"companyId"`
 }
 
 type PsreAcceptInvitationResponse struct {
@@ -23,14 +25,14 @@ type PsreAcceptInvitationResponse struct {
 }
 
 type PsreAcceptInvitationResponseData struct {
-	UserID    string `json:"userId"`
-	CompanyID string `json:"companyId"`
+	UserID    uuid.UUID `json:"userId"`
+	CompanyID uuid.UUID `json:"companyId"`
 }
 
 type PsreInviteClientCompanyRequest struct {
-	UserID    string `json:"userId" validate:"required"`
-	CompanyID string `json:"companyId" validate:"required"`
-	URL       string `json:"url" validate:"required,url"`
+	UserID    uuid.UUID `json:"userId" validate:"required"`
+	CompanyID uuid.UUID `json:"companyId" validate:"required"`
+	URL       string    `json:"url" validate:"required,url"`
 }
 
 type PsreAcceptInvitationClientUserRequest struct {

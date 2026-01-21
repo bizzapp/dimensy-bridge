@@ -3,6 +3,8 @@ package dto
 import (
 	"encoding/json"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type ClientUserActivateRequest struct {
@@ -27,9 +29,9 @@ type ClientUserPhoneActivationRequest struct {
 }
 
 type ClientUserKYCRequest struct {
-	UserID     string `json:"userId" binding:"required"`
-	SuccessURL string `json:"successUrl" binding:"required,url"`
-	FailedURL  string `json:"failedUrl" binding:"required,url"`
+	UserID     uuid.UUID `json:"userId" binding:"required"`
+	SuccessURL string    `json:"successUrl" binding:"required,url"`
+	FailedURL  string    `json:"failedUrl" binding:"required,url"`
 }
 
 type ClientUserVerifyKYCRequest struct {
@@ -43,7 +45,7 @@ type ClientUserRequest struct {
 	Phone     string     `json:"phone" binding:"required"`
 	IsWNI     bool       `json:"isWni" binding:"required"`
 	URL       string     `json:"url" binding:"omitempty,url"`
-	CompanyID *string    `json:"companyId,omitempty"` // nullable
+	CompanyID *uuid.UUID `json:"companyId,omitempty"` // nullable
 }
 
 // CustomDate bisa mem-parse "1994-08-25" langsung ke time.Time

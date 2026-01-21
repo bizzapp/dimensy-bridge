@@ -6,6 +6,8 @@ import (
 	"errors"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type ClientUserService interface {
@@ -14,7 +16,7 @@ type ClientUserService interface {
 	Create(user *model.ClientUser) (*model.ClientUser, error)
 	Update(user *model.ClientUser) error
 	Delete(id uint) error
-	GetByExternalID(externalID string) (*model.ClientUser, error)
+	GetByExternalID(externalID uuid.UUID) (*model.ClientUser, error)
 }
 
 type clientUserService struct {
@@ -29,7 +31,7 @@ func (s *clientUserService) GetAll() ([]model.ClientUser, error) {
 	return s.repo.FindAll()
 }
 
-func (s *clientUserService) GetByExternalID(externalID string) (*model.ClientUser, error) {
+func (s *clientUserService) GetByExternalID(externalID uuid.UUID) (*model.ClientUser, error) {
 	return s.repo.FindByExternalID(externalID)
 }
 

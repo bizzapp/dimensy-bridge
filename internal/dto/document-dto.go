@@ -1,5 +1,7 @@
 package dto
 
+import "github.com/google/uuid"
+
 // PsreDocumentSingleFileRequest untuk upload single document
 type PsreDocumentSingleFileRequest struct {
 	CallbackURL string `json:"callbackUrl" binding:"required,url"`
@@ -28,9 +30,9 @@ type PsreDocumentFileRequest struct {
 // PsreDocumentSignRequest untuk request digital signature
 
 type PsreDocumentSignRequest struct {
-	DocumentOrGroupID string                     `json:"documentOrGroupId" binding:"required"`
-	UserID            *string                    `json:"userId,omitempty"`
-	CompanyID         *string                    `json:"companyId,omitempty"`
+	DocumentOrGroupID uuid.UUID                  `json:"documentOrGroupId" binding:"required"`
+	UserID            *uuid.UUID                 `json:"userId,omitempty"`
+	CompanyID         *uuid.UUID                 `json:"companyId,omitempty"`
 	Positions         []PsreDocumentSignPosition `json:"positions" binding:"required,min=1,dive"`
 }
 
@@ -57,9 +59,9 @@ type PsreDocumentProcessSignRequest struct {
 // PsreDocumentStampRequest untuk request digital stamp
 
 type PsreDocumentStampRequest struct {
-	DocumentOrGroupID string                      `json:"documentOrGroupId" binding:"required"`
-	CompanyID         string                      `json:"companyId" binding:"required"`
-	UserID            string                      `json:"userId" binding:"required"`
+	DocumentOrGroupID uuid.UUID                   `json:"documentOrGroupId" binding:"required"`
+	CompanyID         uuid.UUID                   `json:"companyId" binding:"required"`
+	UserID            uuid.UUID                   `json:"userId" binding:"required"`
 	Positions         []PsreDocumentStampPosition `json:"positions" binding:"required,dive"`
 }
 
@@ -77,16 +79,16 @@ type PsreDocumentStampPosition struct {
 
 // PsreDocumentProcessStampRequest untuk process stamping
 type PsreDocumentProcessStampRequest struct {
-	IsApprove         bool   `json:"isApprove" binding:"required"`
-	DocumentOrGroupID string `json:"documentOrGroupId" binding:"required"`
-	Otp               string `json:"otp" binding:"required"`
-	IP                string `json:"ip" binding:"required,ip"` // validasi IP otomatis
+	IsApprove         bool      `json:"isApprove" binding:"required"`
+	DocumentOrGroupID uuid.UUID `json:"documentOrGroupId" binding:"required"`
+	Otp               string    `json:"otp" binding:"required"`
+	IP                string    `json:"ip" binding:"required,ip"` // validasi IP otomatis
 }
 
 // PsreDocumentOtpSignRequest untuk request OTP untuk signing
 type PsreDocumentOtpSignRequest struct {
-	DocumentOrGroupID string  `json:"documentOrGroupId" binding:"required"`
-	UserID            *string `json:"userId,omitempty"`    // boleh null
-	CompanyID         *string `json:"companyId,omitempty"` // boleh null
-	DocumentType      string  `json:"documentType" binding:"required,oneof=SIGN STAMP"`
+	DocumentOrGroupID uuid.UUID  `json:"documentOrGroupId" binding:"required"`
+	UserID            *uuid.UUID `json:"userId,omitempty"`    // boleh null
+	CompanyID         *uuid.UUID `json:"companyId,omitempty"` // boleh null
+	DocumentType      string     `json:"documentType" binding:"required,oneof=SIGN STAMP"`
 }

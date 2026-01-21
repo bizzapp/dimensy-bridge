@@ -3,6 +3,7 @@ package model
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -11,8 +12,8 @@ type ClientCompanyInvite struct {
 	ClientID          int64          `gorm:"not null" json:"client_id"`
 	ClientUserID      int64          `gorm:"not null" json:"client_user_id"`
 	ClientCompanyID   int64          `gorm:"not null" json:"client_company_id"`
-	ExternalUserID    string         `gorm:"size:100;not null" json:"external_user_id"`
-	ExternalCompanyID string         `gorm:"size:100;not null" json:"external_company_id"`
+	ExternalUserID    uuid.UUID      `gorm:"type:uuid;not null" json:"external_user_id"`
+	ExternalCompanyID uuid.UUID      `gorm:"type:uuid;not null" json:"external_company_id"`
 	IsVerify          bool           `gorm:"default:false" json:"is_verify"`
 	VerifyTime        *time.Time     `json:"verify_time,omitempty"`
 	CreatedAt         *time.Time     `json:"created_at,omitempty"`

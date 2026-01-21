@@ -87,7 +87,7 @@ func (s *certificateService) Issue(token, externalID string, req *dto.Certificat
 		if resp.Code == 0 {
 			// Get user if external ID provided
 			var userID *int64
-			if req.UserID != nil && *req.UserID != "" {
+			if req.UserID != nil {
 				u, err := s.clientUserSvc.GetByExternalID(*req.UserID)
 				if err != nil {
 					return fmt.Errorf("failed to get user by external id: %w", err)
@@ -97,7 +97,7 @@ func (s *certificateService) Issue(token, externalID string, req *dto.Certificat
 
 			// Get company if external ID provided
 			var companyID *int64
-			if req.CompanyID != nil && *req.CompanyID != "" {
+			if req.CompanyID != nil {
 				c, err := s.clientCompanySvc.GetByExternalID(*req.CompanyID)
 				if err != nil {
 					return fmt.Errorf("failed to get company by external id: %w", err)
@@ -169,7 +169,7 @@ func (s *certificateService) Active(token, externalID string, req *dto.Certifica
 		if resp.Code == 0 {
 			// Get user if external ID provided
 			var userID *int64
-			if req.UserID != nil && *req.UserID != "" {
+			if req.UserID != nil {
 				u, err := s.clientUserSvc.GetByExternalID(*req.UserID)
 				if err != nil {
 					return fmt.Errorf("failed to get user by external id: %w", err)
@@ -179,7 +179,7 @@ func (s *certificateService) Active(token, externalID string, req *dto.Certifica
 
 			// Get company if external ID provided
 			var companyID *int64
-			if req.CompanyID != nil && *req.CompanyID != "" {
+			if req.CompanyID != nil {
 				c, err := s.clientCompanySvc.GetByExternalID(*req.CompanyID)
 				if err != nil {
 					return fmt.Errorf("failed to get company by external id: %w", err)
@@ -354,7 +354,7 @@ func (s *certificateService) handleActiveAsFallbackWithResponse(tx *gorm.DB, tok
 	if resp.Code == 0 {
 		// Get user if external ID provided
 		var userID *int64
-		if req.UserID != nil && *req.UserID != "" {
+		if req.UserID != nil {
 			u, err := s.clientUserSvc.GetByExternalID(*req.UserID)
 			if err != nil {
 				return data, psreStatus, fmt.Errorf("failed to get user by external id in fallback: %w", err)
@@ -364,7 +364,7 @@ func (s *certificateService) handleActiveAsFallbackWithResponse(tx *gorm.DB, tok
 
 		// Get company if external ID provided
 		var companyID *int64
-		if req.CompanyID != nil && *req.CompanyID != "" {
+		if req.CompanyID != nil {
 			c, err := s.clientCompanySvc.GetByExternalID(*req.CompanyID)
 			if err != nil {
 				return data, psreStatus, fmt.Errorf("failed to get company by external id in fallback: %w", err)

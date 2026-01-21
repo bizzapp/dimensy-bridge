@@ -1,12 +1,16 @@
 package model
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type ClientKYCHistory struct {
 	ID             int64      `gorm:"primaryKey;autoIncrement" json:"id"`
 	ClientID       int64      `gorm:"not null;index" json:"client_id"`
 	ClientUserID   int64      `gorm:"not null;index" json:"client_user_id"`
-	ExternalUserID string     `gorm:"size:255;not null" json:"external_user_id"`
+	ExternalUserID uuid.UUID  `gorm:"type:uuid;not null" json:"external_user_id"`
 	Signature      string     `gorm:"size:255;unique;not null" json:"signature"` // 🔹 unique & required string
 	IsVerify       bool       `gorm:"default:false" json:"is_verify"`
 	IsReject       bool       `gorm:"default:false" json:"is_reject"`

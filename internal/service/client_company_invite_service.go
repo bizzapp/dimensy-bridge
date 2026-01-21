@@ -4,11 +4,13 @@ import (
 	"dimensy-bridge/internal/model"
 	"dimensy-bridge/internal/repository"
 	"errors"
+
+	"github.com/google/uuid"
 )
 
 type ClientCompanyInviteService interface {
 	CreateInvite(req *model.ClientCompanyInvite) (*model.ClientCompanyInvite, error)
-	GetInviteByExternal(clientID int64, userID, companyID string) (*model.ClientCompanyInvite, error)
+	GetInviteByExternal(clientID int64, userID, companyID uuid.UUID) (*model.ClientCompanyInvite, error)
 	VerifyInvite(id int64) error
 }
 
@@ -32,7 +34,7 @@ func (s *clientCompanyInviteService) CreateInvite(req *model.ClientCompanyInvite
 	return req, nil
 }
 
-func (s *clientCompanyInviteService) GetInviteByExternal(clientID int64, userID, companyID string) (*model.ClientCompanyInvite, error) {
+func (s *clientCompanyInviteService) GetInviteByExternal(clientID int64, userID, companyID uuid.UUID) (*model.ClientCompanyInvite, error) {
 	return s.repo.FindByExternal(clientID, userID, companyID)
 }
 

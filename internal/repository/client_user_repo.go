@@ -3,6 +3,7 @@ package repository
 import (
 	"dimensy-bridge/internal/model"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 	// "project/model"
 )
@@ -13,12 +14,12 @@ type ClientUserRepository interface {
 	Create(user *model.ClientUser) error
 	Update(user *model.ClientUser) error
 	Delete(id uint) error
-	UpdateActiveStatus(externalID string, active bool) error
-	UpdateVerifyPhoneStatus(externalID string, verify bool) error
-	UpdateVerifyKYCStatus(externalID string, verify bool) error
-	FindByExternalID(externalID string) (*model.ClientUser, error)
+	UpdateActiveStatus(externalID uuid.UUID, active bool) error
+	UpdateVerifyPhoneStatus(externalID uuid.UUID, verify bool) error
+	UpdateVerifyKYCStatus(externalID uuid.UUID, verify bool) error
+	FindByExternalID(externalID uuid.UUID) (*model.ClientUser, error)
 	CreateOrUpdate(user *model.ClientUser) error
-	FindByExternalIDs(externalIDs []string) ([]model.ClientUser, error)
+	FindByExternalIDs(externalIDs []uuid.UUID) ([]model.ClientUser, error)
 }
 
 type clientUserRepository struct {
@@ -28,7 +29,7 @@ type clientUserRepository struct {
 func NewClientUserRepository(db *gorm.DB) ClientUserRepository {
 	return &clientUserRepository{db}
 }
-func (r *clientUserRepository) FindByExternalID(externalID string) (*model.ClientUser, error) {
+func (r *clientUserRepository) FindByExternalID(externalID uuid.UUID) (*model.ClientUser, error) {
 	var user model.ClientUser
 	err := r.db.Preload("Client").Preload("ClientCompany").Where("external_id = ?", externalID).First(&user).Error
 	return &user, err
@@ -45,18 +46,18 @@ func (r *clientUserRepository) FindByID(id uint) (*model.ClientUser, error) {
 	err := r.db.Preload("Client").Preload("ClientCompany").First(&user, id).Error
 	return &user, err
 }
-func (r *clientUserRepository) UpdateActiveStatus(externalID string, active bool) error {
+func (r *clientUserRepository) UpdateActiveStatus(externalID uuid.UUID, active bool) error {
 	return r.db.Model(&model.ClientUser{}).
 		Where("external_id = ?", externalID).
 		Update("is_active", active).Error
 }
-func (r *clientUserRepository) UpdateVerifyPhoneStatus(externalID string, verify bool) error {
+func (r *clientUserRepository) UpdateVerifyPhoneStatus(externalID uuid.UUID, verify bool) error {
 	return r.db.Model(&model.ClientUser{}).
 		Where("external_id = ?", externalID).
 		Update("is_verify_phone", verify).Error
 }
 
-func (r *clientUserRepository) UpdateVerifyKYCStatus(externalID string, verify bool) error {
+func (r *clientUserRepository) UpdateVerifyKYCStatus(externalID uuid.UUID, verify bool) error {
 	return r.db.Model(&model.ClientUser{}).
 		Where("external_id = ?", externalID).
 		Update("is_verify_kyc", verify).Error
@@ -94,7 +95,7 @@ func (r *clientUserRepository) CreateOrUpdate(user *model.ClientUser) error {
 }
 
 // FindByExternalIDs finds multiple users by their external IDs
-func (r *clientUserRepository) FindByExternalIDs(externalIDs []string) ([]model.ClientUser, error) {
+func (r *clientUserRepository) FindByExternalIDs(externalIDs []uuid.UUID) ([]model.ClientUser, error) {
 	var users []model.ClientUser
 	err := r.db.Preload("Client").Preload("ClientCompany").
 		Where("external_id IN ?", externalIDs).Find(&users).Error

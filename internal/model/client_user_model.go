@@ -1,12 +1,16 @@
 package model
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type ClientUser struct {
 	ID              int64      `json:"id" gorm:"primaryKey"`
 	ClientID        int64      `json:"client_id"`
 	ClientCompanyID *int64     `json:"client_company_id"`
-	ExternalID      *string    `json:"external_id" gorm:"uniqueIndex"`
+	ExternalID      *uuid.UUID `json:"external_id" gorm:"type:uuid;uniqueIndex"`
 	NIK             *string    `json:"nik"`
 	Name            *string    `json:"name"`
 	Birthdate       *time.Time `json:"birthdate"`

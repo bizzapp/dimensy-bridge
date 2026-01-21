@@ -3,7 +3,10 @@ package service
 import (
 	"dimensy-bridge/internal/model"
 	"dimensy-bridge/internal/repository"
+
 	// "dimensy-bridge/internal/service"
+
+	"github.com/google/uuid"
 )
 
 type ClientCompanyService interface {
@@ -12,9 +15,9 @@ type ClientCompanyService interface {
 	Create(company *model.ClientCompany) error
 	Update(company *model.ClientCompany) error
 	Delete(id int64) error
-	UpdateExternalID(id int64, externalID string) error
+	UpdateExternalID(id int64, externalID uuid.UUID) error
 
-	GetByExternalID(externalID string) (*model.ClientCompany, error)
+	GetByExternalID(externalID uuid.UUID) (*model.ClientCompany, error)
 }
 
 type clientCompanyService struct {
@@ -26,7 +29,7 @@ func NewClientCompanyService(repo repository.ClientCompanyRepository, quotaClien
 	return &clientCompanyService{repo, quotaClientSvc}
 }
 
-func (s *clientCompanyService) GetByExternalID(externalID string) (*model.ClientCompany, error) {
+func (s *clientCompanyService) GetByExternalID(externalID uuid.UUID) (*model.ClientCompany, error) {
 	return s.repo.FindByExternalID(externalID)
 }
 
@@ -50,6 +53,6 @@ func (s *clientCompanyService) Delete(id int64) error {
 	return s.repo.Delete(id)
 }
 
-func (s *clientCompanyService) UpdateExternalID(id int64, externalID string) error {
+func (s *clientCompanyService) UpdateExternalID(id int64, externalID uuid.UUID) error {
 	return s.repo.UpdateExternalID(id, externalID)
 }

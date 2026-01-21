@@ -295,9 +295,6 @@ func (s *clientCompanyService) CreateClientCompany(
 		if err := json.Unmarshal(respBody, &resp); err != nil {
 			return fmt.Errorf("failed to parse PSrE response: %w", err)
 		}
-		if resp.CompanyID == "" {
-			return errors.New("invalid PSrE response: missing CompanyID")
-		}
 
 		// 🔹 update external id
 

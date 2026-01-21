@@ -3,6 +3,7 @@ package repository
 import (
 	"dimensy-bridge/internal/model"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -12,7 +13,7 @@ type ClientDocumentRepository interface {
 	Delete(id int64) error
 	FindByID(id int64) (*model.ClientDocument, error)
 	FindAll() ([]model.ClientDocument, error)
-	FindByExternalID(externalID string) (*model.ClientDocument, error)
+	FindByExternalID(externalID uuid.UUID) (*model.ClientDocument, error)
 }
 
 type clientDocumentRepository struct {
@@ -22,7 +23,7 @@ type clientDocumentRepository struct {
 func NewClientDocumentRepository(db *gorm.DB) ClientDocumentRepository {
 	return &clientDocumentRepository{db: db}
 }
-func (r *clientDocumentRepository) FindByExternalID(externalID string) (*model.ClientDocument, error) {
+func (r *clientDocumentRepository) FindByExternalID(externalID uuid.UUID) (*model.ClientDocument, error) {
 	var doc model.ClientDocument
 	if err := r.db.Where("external_id = ?", externalID).Or("group_external_id = ?", externalID).First(&doc).Error; err != nil {
 		return nil, err

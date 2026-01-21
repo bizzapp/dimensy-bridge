@@ -4,6 +4,7 @@ import (
 	"dimensy-bridge/internal/model"
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -16,8 +17,8 @@ type ClientKYCHistoryRepository interface {
 	FindAll() ([]model.ClientKYCHistory, error)
 	Delete(id int64) error
 	FindByClientUserID(clientUserID int64) ([]model.ClientKYCHistory, error)
-	FindByExternalUserID(externalUserID string) (*model.ClientKYCHistory, error)
-	FindByExternalUserIDAndSignature(externalUserID string, signature string) (*model.ClientKYCHistory, error)
+	FindByExternalUserID(externalUserID uuid.UUID) (*model.ClientKYCHistory, error)
+	FindByExternalUserIDAndSignature(externalUserID uuid.UUID, signature string) (*model.ClientKYCHistory, error)
 	UpdateIsRejectStatus(signatureID string, isReject bool) error
 	UpdateIsVerifyStatus(signatureID string, isVerify bool) error
 	GetBySignatureID(signatureID string) (*model.ClientKYCHistory, error)
@@ -81,7 +82,7 @@ func (r *clientKYCHistoryRepository) FindByClientUserID(clientUserID int64) ([]m
 	return results, nil
 }
 
-func (r *clientKYCHistoryRepository) FindByExternalUserID(externalUserID string) (*model.ClientKYCHistory, error) {
+func (r *clientKYCHistoryRepository) FindByExternalUserID(externalUserID uuid.UUID) (*model.ClientKYCHistory, error) {
 	var result model.ClientKYCHistory
 	if err := r.db.Where("external_user_id = ?", externalUserID).First(&result).Error; err != nil {
 		return nil, err
@@ -89,7 +90,7 @@ func (r *clientKYCHistoryRepository) FindByExternalUserID(externalUserID string)
 	return &result, nil
 }
 
-func (r *clientKYCHistoryRepository) FindByExternalUserIDAndSignature(externalUserID string, signature string) (*model.ClientKYCHistory, error) {
+func (r *clientKYCHistoryRepository) FindByExternalUserIDAndSignature(externalUserID uuid.UUID, signature string) (*model.ClientKYCHistory, error) {
 	var result model.ClientKYCHistory
 	if err := r.db.Where("external_user_id = ? AND signature = ?", externalUserID, signature).First(&result).Error; err != nil {
 		return nil, err

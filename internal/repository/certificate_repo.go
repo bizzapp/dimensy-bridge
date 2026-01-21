@@ -3,6 +3,7 @@ package repository
 import (
 	"dimensy-bridge/internal/model"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -14,7 +15,7 @@ type CertificateRepository interface {
 	FindByClientUserAndCompany(clientID int64, userID *int64, companyID *int64) (*model.Certificate, error)
 	Update(cert *model.Certificate) error
 	Delete(id uint64) error
-	FindByExternal(externalUserID, externalCompanyID *string) (*model.Certificate, error)
+	FindByExternal(externalUserID, externalCompanyID *uuid.UUID) (*model.Certificate, error)
 }
 
 type certificateRepository struct {
@@ -28,7 +29,7 @@ func NewCertificateRepository(db *gorm.DB) CertificateRepository {
 func (r *certificateRepository) Create(cert *model.Certificate) error {
 	return r.db.Create(cert).Error
 }
-func (r *certificateRepository) FindByExternal(externalUserID, externalCompanyID *string) (*model.Certificate, error) {
+func (r *certificateRepository) FindByExternal(externalUserID, externalCompanyID *uuid.UUID) (*model.Certificate, error) {
 	var cert model.Certificate
 	query := r.db.Model(&model.Certificate{})
 

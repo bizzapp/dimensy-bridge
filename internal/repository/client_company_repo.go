@@ -3,6 +3,7 @@ package repository
 import (
 	"dimensy-bridge/internal/model"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -12,10 +13,10 @@ type ClientCompanyRepository interface {
 	Create(company *model.ClientCompany) error
 	Update(company *model.ClientCompany) error
 	Delete(id int64) error
-	UpdateExternalID(id int64, externalID string) error
-	FindByExternalID(externalID string) (*model.ClientCompany, error)
+	UpdateExternalID(id int64, externalID uuid.UUID) error
+	FindByExternalID(externalID uuid.UUID) (*model.ClientCompany, error)
 	CreateTx(tx *gorm.DB, c *model.ClientCompany) error
-	UpdateExternalIDTx(tx *gorm.DB, id int64, externalID string) error
+	UpdateExternalIDTx(tx *gorm.DB, id int64, externalID uuid.UUID) error
 	UpdateTx(tx *gorm.DB, c *model.ClientCompany) error
 }
 
@@ -31,7 +32,7 @@ func (r *clientCompanyRepository) CreateTx(tx *gorm.DB, c *model.ClientCompany) 
 	return tx.Create(c).Error
 }
 
-func (r *clientCompanyRepository) UpdateExternalIDTx(tx *gorm.DB, id int64, externalID string) error {
+func (r *clientCompanyRepository) UpdateExternalIDTx(tx *gorm.DB, id int64, externalID uuid.UUID) error {
 	return tx.Model(&model.ClientCompany{}).Where("id = ?", id).Update("external_id", externalID).Error
 }
 
@@ -39,7 +40,7 @@ func (r *clientCompanyRepository) UpdateTx(tx *gorm.DB, c *model.ClientCompany) 
 	return tx.Save(c).Error
 }
 
-func (r *clientCompanyRepository) FindByExternalID(externalID string) (*model.ClientCompany, error) {
+func (r *clientCompanyRepository) FindByExternalID(externalID uuid.UUID) (*model.ClientCompany, error) {
 	var company model.ClientCompany
 	if err := r.db.Where("external_id = ?", externalID).First(&company).Error; err != nil {
 		return nil, err
@@ -75,7 +76,7 @@ func (r *clientCompanyRepository) Delete(id int64) error {
 	return r.db.Delete(&model.ClientCompany{}, id).Error
 }
 
-func (r *clientCompanyRepository) UpdateExternalID(id int64, externalID string) error {
+func (r *clientCompanyRepository) UpdateExternalID(id int64, externalID uuid.UUID) error {
 	return r.db.Model(&model.ClientCompany{}).
 		Where("id = ?", id).
 		Update("external_id", externalID).Error

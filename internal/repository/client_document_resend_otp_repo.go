@@ -3,6 +3,7 @@ package repository
 import (
 	"dimensy-bridge/internal/model"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -11,7 +12,7 @@ type ClientDocumentResendOtpRepository interface {
 	FindByID(id int64) (*model.ClientDocumentResendOtp, error)
 	FindAll() ([]model.ClientDocumentResendOtp, error)
 	Delete(id int64) error
-	FindByExternalID(externalID string) (*model.ClientDocumentResendOtp, error)
+	FindByExternalID(externalID uuid.UUID) (*model.ClientDocumentResendOtp, error)
 }
 
 type clientDocumentResendOtpRepository struct {
@@ -46,7 +47,7 @@ func (r *clientDocumentResendOtpRepository) Delete(id int64) error {
 	return r.db.Delete(&model.ClientDocumentResendOtp{}, id).Error
 }
 
-func (r *clientDocumentResendOtpRepository) FindByExternalID(externalID string) (*model.ClientDocumentResendOtp, error) {
+func (r *clientDocumentResendOtpRepository) FindByExternalID(externalID uuid.UUID) (*model.ClientDocumentResendOtp, error) {
 	var result model.ClientDocumentResendOtp
 	if err := r.db.Where("external_id = ?", externalID).First(&result).Error; err != nil {
 		return nil, err

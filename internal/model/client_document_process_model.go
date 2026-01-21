@@ -3,6 +3,7 @@ package model
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -25,10 +26,10 @@ type ClientDocumentProcess struct {
 	ClientDocumentID   int64      `gorm:"not null;index" json:"client_document_id"`
 	ClientID           int64      `gorm:"not null;index" json:"client_id"`
 	Type               string     `gorm:"size:50;not null;default:'SIGN_METERAI'" json:"type"`
-	ExternalID         string     `gorm:"size:255;not null" json:"external_id"`
-	ExternalUserID     *string    `gorm:"size:255" json:"external_user_id,omitempty"`
+	ExternalID         uuid.UUID  `gorm:"type:uuid;not null" json:"external_id"`
+	ExternalUserID     *uuid.UUID `gorm:"type:uuid" json:"external_user_id,omitempty"`
 	ClientUserID       *int64     `gorm:"index" json:"client_user_id,omitempty"`
-	ExternalCompanyID  *string    `gorm:"size:255" json:"external_company_id,omitempty"`
+	ExternalCompanyID  *uuid.UUID `gorm:"type:uuid" json:"external_company_id,omitempty"`
 	ClientCompanyID    *int64     `gorm:"index" json:"client_company_id,omitempty"`
 	Status             string     `gorm:"size:100;not null" json:"status"`
 	IsDone             bool       `gorm:"default:false" json:"is_done"`
