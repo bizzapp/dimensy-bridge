@@ -116,6 +116,8 @@ func (s *webhookService) updateDocumentStatus(clientDocument *model.ClientDocume
 		clientDocument.Status = model.DOCUMENT_STATUS_ON_PROCESS
 	case "WAITING":
 		clientDocument.Status = model.DOCUMENT_STATUS_WAITING
+	case "SUCCESS":
+		clientDocument.Status = model.DOCUMENT_STATUS_SUCCESS
 	default:
 		// Keep existing status if unknown status received
 		return
