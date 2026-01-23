@@ -8,22 +8,34 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
 // getRemoteIP mengambil IP address dari remote connection (bukan dari proxy headers)
 func getRemoteIP(c *gin.Context) string {
-	// RemoteAddr format: "IP:Port" atau "[IPv6]:Port"
-	remoteAddr := c.Request.RemoteAddr
-	if remoteAddr == "" {
-		return "unknown"
+	// 1. Cek header X-Forwarded-For (biasanya berisi list IP jika lewat banyak proxy)
+	xForwardedFor := c.GetHeader("X-Forwarded-For")
+	if xForwardedFor != "" {
+		// Ambil IP pertama dari list (IP asli user)
+		ips := strings.Split(xForwardedFor, ",")
+		realIP := strings.TrimSpace(ips[0])
+		if realIP != "" {
+			return realIP
+		}
 	}
 
-	// Split untuk mendapatkan IP saja
+	// 2. Cek header X-Real-IP (biasanya diset oleh Nginx)
+	xRealIP := c.GetHeader("X-Real-IP")
+	if xRealIP != "" {
+		return xRealIP
+	}
+
+	// 3. Fallback ke RemoteAddr jika tidak ada proxy
+	remoteAddr := c.Request.RemoteAddr
 	ip, _, err := net.SplitHostPort(remoteAddr)
 	if err != nil {
-		// Jika tidak ada port, return langsung
 		return remoteAddr
 	}
 	return ip
