@@ -12,6 +12,23 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// getRemoteIP mengambil IP address dari remote connection (bukan dari proxy headers)
+func getRemoteIP(c *gin.Context) string {
+	// RemoteAddr format: "IP:Port" atau "[IPv6]:Port"
+	remoteAddr := c.Request.RemoteAddr
+	if remoteAddr == "" {
+		return "unknown"
+	}
+
+	// Split untuk mendapatkan IP saja
+	ip, _, err := net.SplitHostPort(remoteAddr)
+	if err != nil {
+		// Jika tidak ada port, return langsung
+		return remoteAddr
+	}
+	return ip
+}
+
 // isIPEqual mengecek apakah dua IP address sama
 // Khusus mendukung localhost (IPv4: 127.0.0.1 dan IPv6: ::1 dianggap sama)
 func isIPEqual(ip1, ip2 string) bool {
@@ -48,7 +65,7 @@ func IPWhitelistMiddleware(ipWhitelistRepo repository.ClientIPWhitelistRepositor
 		}
 
 		if clientIDStr == "" {
-			ip := c.ClientIP()
+			ip := getRemoteIP(c)
 			log.Printf("[IP_WHITELIST_BLOCKED] client_id is required. IP: %s, Method: %s, Path: %s", ip, c.Request.Method, c.Request.URL.Path)
 			c.JSON(http.StatusBadRequest, gin.H{
 				"success": false,
@@ -60,7 +77,7 @@ func IPWhitelistMiddleware(ipWhitelistRepo repository.ClientIPWhitelistRepositor
 
 		clientID, err := strconv.ParseInt(clientIDStr, 10, 64)
 		if err != nil {
-			ip := c.ClientIP()
+			ip := getRemoteIP(c)
 			log.Printf("[IP_WHITELIST_BLOCKED] Invalid client_id format: %s. IP: %s, Method: %s, Path: %s", clientIDStr, ip, c.Request.Method, c.Request.URL.Path)
 			c.JSON(http.StatusBadRequest, gin.H{
 				"success": false,
@@ -70,7 +87,7 @@ func IPWhitelistMiddleware(ipWhitelistRepo repository.ClientIPWhitelistRepositor
 			return
 		}
 
-		ip := c.ClientIP()
+		ip := getRemoteIP(c)
 
 		// Check apakah IP di-whitelist
 		isWhitelisted, err := ipWhitelistRepo.IsIPWhitelisted(clientID, ip)
@@ -135,7 +152,7 @@ func OptionalIPWhitelistMiddleware(ipWhitelistRepo repository.ClientIPWhitelistR
 		}
 
 		// Check apakah current IP ada dalam whitelist
-		ip := c.ClientIP()
+		ip := getRemoteIP(c)
 		isWhitelisted := false
 
 		for _, whitelistedIP := range activeIPs {
@@ -196,7 +213,7 @@ func JWEIPWhitelistWithClientPsreMiddleware(
 		// 2. Decrypt JWE token
 		payload, err := utils.VerifyJWE(token)
 		if err != nil {
-			ip := c.ClientIP()
+			ip := getRemoteIP(c)
 			log.Printf("[JWE_IP_WHITELIST_BLOCKED] Invalid or expired token. IP: %s, Method: %s, Path: %s, Error: %v", ip, c.Request.Method, c.Request.URL.Path, err)
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,
@@ -210,7 +227,7 @@ func JWEIPWhitelistWithClientPsreMiddleware(
 		// 3. Extract data.id dari payload (client_psre external_id)
 		dataInterface, exists := payload["data"]
 		if !exists {
-			ip := c.ClientIP()
+			ip := getRemoteIP(c)
 			log.Printf("[JWE_IP_WHITELIST_BLOCKED] Data field not found in token. IP: %s, Method: %s, Path: %s", ip, c.Request.Method, c.Request.URL.Path)
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,
@@ -232,7 +249,7 @@ func JWEIPWhitelistWithClientPsreMiddleware(
 					}
 				}
 			} else {
-				ip := c.ClientIP()
+				ip := getRemoteIP(c)
 				log.Printf("[JWE_IP_WHITELIST_BLOCKED] Invalid data format in token (type: %T). IP: %s, Method: %s, Path: %s", dataInterface, ip, c.Request.Method, c.Request.URL.Path)
 				c.JSON(http.StatusUnauthorized, gin.H{
 					"success": false,
@@ -246,7 +263,7 @@ func JWEIPWhitelistWithClientPsreMiddleware(
 
 		externalID, exists := dataMap["id"]
 		if !exists {
-			ip := c.ClientIP()
+			ip := getRemoteIP(c)
 			log.Printf("[JWE_IP_WHITELIST_BLOCKED] Client ID not found in token. IP: %s, Method: %s, Path: %s", ip, c.Request.Method, c.Request.URL.Path)
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,
@@ -265,7 +282,7 @@ func JWEIPWhitelistWithClientPsreMiddleware(
 
 		externalIDStr, ok := externalID.(string)
 		if !ok {
-			ip := c.ClientIP()
+			ip := getRemoteIP(c)
 			log.Printf("[JWE_IP_WHITELIST_BLOCKED] Invalid client ID format in token (type: %T). IP: %s, Method: %s, Path: %s", externalID, ip, c.Request.Method, c.Request.URL.Path)
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,
@@ -277,7 +294,7 @@ func JWEIPWhitelistWithClientPsreMiddleware(
 
 		// 4. Query client_psre untuk dapatkan client_id
 		client, err := clientPsreRepo.FindByExternalID(externalIDStr)
-		ip := c.ClientIP()
+		ip := getRemoteIP(c)
 		if err != nil {
 			log.Printf("[JWE_IP_WHITELIST_BLOCKED] Client not found or invalid token. ExternalID: %s, IP: %s, Method: %s, Path: %s, Error: %v", externalIDStr, ip, c.Request.Method, c.Request.URL.Path, err)
 			c.JSON(http.StatusUnauthorized, gin.H{
