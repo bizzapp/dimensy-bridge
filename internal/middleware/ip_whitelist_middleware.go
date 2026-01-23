@@ -4,6 +4,7 @@ import (
 	"dimensy-bridge/internal/repository"
 	"dimensy-bridge/pkg/utils"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -47,6 +48,8 @@ func IPWhitelistMiddleware(ipWhitelistRepo repository.ClientIPWhitelistRepositor
 		}
 
 		if clientIDStr == "" {
+			ip := c.ClientIP()
+			log.Printf("[IP_WHITELIST_BLOCKED] client_id is required. IP: %s, Method: %s, Path: %s", ip, c.Request.Method, c.Request.URL.Path)
 			c.JSON(http.StatusBadRequest, gin.H{
 				"success": false,
 				"message": "client_id is required",
@@ -57,6 +60,8 @@ func IPWhitelistMiddleware(ipWhitelistRepo repository.ClientIPWhitelistRepositor
 
 		clientID, err := strconv.ParseInt(clientIDStr, 10, 64)
 		if err != nil {
+			ip := c.ClientIP()
+			log.Printf("[IP_WHITELIST_BLOCKED] Invalid client_id format: %s. IP: %s, Method: %s, Path: %s", clientIDStr, ip, c.Request.Method, c.Request.URL.Path)
 			c.JSON(http.StatusBadRequest, gin.H{
 				"success": false,
 				"message": "Invalid client_id",
@@ -70,6 +75,7 @@ func IPWhitelistMiddleware(ipWhitelistRepo repository.ClientIPWhitelistRepositor
 		// Check apakah IP di-whitelist
 		isWhitelisted, err := ipWhitelistRepo.IsIPWhitelisted(clientID, ip)
 		if err != nil {
+			log.Printf("[IP_WHITELIST_ERROR] Failed to verify IP whitelist. ClientID: %d, IP: %s, Error: %v", clientID, ip, err)
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
 				"message": "Failed to verify IP whitelist",
@@ -79,6 +85,7 @@ func IPWhitelistMiddleware(ipWhitelistRepo repository.ClientIPWhitelistRepositor
 		}
 
 		if !isWhitelisted {
+			log.Printf("[IP_WHITELIST_BLOCKED] IP not whitelisted. ClientID: %d, IP: %s, Method: %s, Path: %s", clientID, ip, c.Request.Method, c.Request.URL.Path)
 			c.JSON(http.StatusForbidden, gin.H{
 				"success": false,
 				"message": "Your IP address is not whitelisted",
@@ -115,6 +122,7 @@ func OptionalIPWhitelistMiddleware(ipWhitelistRepo repository.ClientIPWhitelistR
 		// Ambil semua active IPs untuk client
 		activeIPs, err := ipWhitelistRepo.GetActiveIPsByClientID(clientID)
 		if err != nil {
+			log.Printf("[IP_WHITELIST_ERROR] Failed to get active IPs for client. ClientID: %d, Error: %v", clientID, err)
 			// Jika error, skip validation
 			c.Next()
 			return
@@ -138,6 +146,7 @@ func OptionalIPWhitelistMiddleware(ipWhitelistRepo repository.ClientIPWhitelistR
 		}
 
 		if !isWhitelisted {
+			log.Printf("[IP_WHITELIST_BLOCKED] IP not whitelisted (optional mode). ClientID: %d, IP: %s, Method: %s, Path: %s", clientID, ip, c.Request.Method, c.Request.URL.Path)
 			c.JSON(http.StatusForbidden, gin.H{
 				"success": false,
 				"message": "Your IP address is not whitelisted",
@@ -187,6 +196,8 @@ func JWEIPWhitelistWithClientPsreMiddleware(
 		// 2. Decrypt JWE token
 		payload, err := utils.VerifyJWE(token)
 		if err != nil {
+			ip := c.ClientIP()
+			log.Printf("[JWE_IP_WHITELIST_BLOCKED] Invalid or expired token. IP: %s, Method: %s, Path: %s, Error: %v", ip, c.Request.Method, c.Request.URL.Path, err)
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,
 				"message": "Invalid or expired token",
@@ -199,6 +210,8 @@ func JWEIPWhitelistWithClientPsreMiddleware(
 		// 3. Extract data.id dari payload (client_psre external_id)
 		dataInterface, exists := payload["data"]
 		if !exists {
+			ip := c.ClientIP()
+			log.Printf("[JWE_IP_WHITELIST_BLOCKED] Data field not found in token. IP: %s, Method: %s, Path: %s", ip, c.Request.Method, c.Request.URL.Path)
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,
 				"message": "Data field not found in token",
@@ -219,6 +232,8 @@ func JWEIPWhitelistWithClientPsreMiddleware(
 					}
 				}
 			} else {
+				ip := c.ClientIP()
+				log.Printf("[JWE_IP_WHITELIST_BLOCKED] Invalid data format in token (type: %T). IP: %s, Method: %s, Path: %s", dataInterface, ip, c.Request.Method, c.Request.URL.Path)
 				c.JSON(http.StatusUnauthorized, gin.H{
 					"success": false,
 					"message": "Invalid data format in token",
@@ -231,6 +246,8 @@ func JWEIPWhitelistWithClientPsreMiddleware(
 
 		externalID, exists := dataMap["id"]
 		if !exists {
+			ip := c.ClientIP()
+			log.Printf("[JWE_IP_WHITELIST_BLOCKED] Client ID not found in token. IP: %s, Method: %s, Path: %s", ip, c.Request.Method, c.Request.URL.Path)
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,
 				"message": "Client ID not found in token",
@@ -248,6 +265,8 @@ func JWEIPWhitelistWithClientPsreMiddleware(
 
 		externalIDStr, ok := externalID.(string)
 		if !ok {
+			ip := c.ClientIP()
+			log.Printf("[JWE_IP_WHITELIST_BLOCKED] Invalid client ID format in token (type: %T). IP: %s, Method: %s, Path: %s", externalID, ip, c.Request.Method, c.Request.URL.Path)
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,
 				"message": "Invalid client ID format in token",
@@ -258,7 +277,9 @@ func JWEIPWhitelistWithClientPsreMiddleware(
 
 		// 4. Query client_psre untuk dapatkan client_id
 		client, err := clientPsreRepo.FindByExternalID(externalIDStr)
+		ip := c.ClientIP()
 		if err != nil {
+			log.Printf("[JWE_IP_WHITELIST_BLOCKED] Client not found or invalid token. ExternalID: %s, IP: %s, Method: %s, Path: %s, Error: %v", externalIDStr, ip, c.Request.Method, c.Request.URL.Path, err)
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,
 				"message": "Client not found or invalid token",
@@ -269,6 +290,7 @@ func JWEIPWhitelistWithClientPsreMiddleware(
 		}
 
 		if client == nil {
+			log.Printf("[JWE_IP_WHITELIST_BLOCKED] Client information not found. ExternalID: %s, IP: %s, Method: %s, Path: %s", externalIDStr, ip, c.Request.Method, c.Request.URL.Path)
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,
 				"message": "Client information not found",
@@ -279,12 +301,10 @@ func JWEIPWhitelistWithClientPsreMiddleware(
 
 		clientID := client.ID
 
-		// 5. Get request IP
-		ip := c.ClientIP()
-
 		// 6. Check apakah ada IP whitelist untuk client ini
 		activeIPs, err := ipWhitelistRepo.GetActiveIPsByClientID(clientID)
 		if err != nil {
+			log.Printf("[JWE_IP_WHITELIST_ERROR] Failed to verify IP whitelist. ClientID: %d, ExternalID: %s, IP: %s, Error: %v", clientID, externalIDStr, ip, err)
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
 				"message": "Failed to verify IP whitelist",
@@ -296,6 +316,7 @@ func JWEIPWhitelistWithClientPsreMiddleware(
 
 		// 7. STRICT MODE: Jika tidak ada IP yang registered, block akses
 		if len(activeIPs) == 0 {
+			log.Printf("[JWE_IP_WHITELIST_BLOCKED] No IP addresses registered for this account. ClientID: %d, ExternalID: %s, IP: %s, Method: %s, Path: %s", clientID, externalIDStr, ip, c.Request.Method, c.Request.URL.Path)
 			c.JSON(http.StatusForbidden, gin.H{
 				"success": false,
 				"message": "No IP addresses registered for this account. Please register your IP first.",
@@ -316,6 +337,7 @@ func JWEIPWhitelistWithClientPsreMiddleware(
 
 		// 9. Jika tidak whitelisted, block akses
 		if !isWhitelisted {
+			log.Printf("[JWE_IP_WHITELIST_BLOCKED] IP not whitelisted. ClientID: %d, ExternalID: %s, IP: %s, Method: %s, Path: %s", clientID, externalIDStr, ip, c.Request.Method, c.Request.URL.Path)
 			c.JSON(http.StatusForbidden, gin.H{
 				"success": false,
 				"message": "Your IP address is not whitelisted",
