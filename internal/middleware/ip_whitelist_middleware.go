@@ -13,9 +13,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// getRemoteIP mengambil IP address dari remote connection (bukan dari proxy headers)
+// getRemoteIP mengambil IP address dari remote connection dengan support Cloudflare
 func getRemoteIP(c *gin.Context) string {
-	// 1. Cek header X-Forwarded-For (biasanya berisi list IP jika lewat banyak proxy)
+	// 1. Cek header CF-Connecting-IP (Cloudflare header - IP asli user sebelum Cloudflare)
+	cfConnectingIP := c.GetHeader("CF-Connecting-IP")
+	if cfConnectingIP != "" {
+		return strings.TrimSpace(cfConnectingIP)
+	}
+
+	// 2. Cek header X-Forwarded-For (biasanya berisi list IP jika lewat banyak proxy)
 	xForwardedFor := c.GetHeader("X-Forwarded-For")
 	if xForwardedFor != "" {
 		// Ambil IP pertama dari list (IP asli user)
@@ -26,13 +32,13 @@ func getRemoteIP(c *gin.Context) string {
 		}
 	}
 
-	// 2. Cek header X-Real-IP (biasanya diset oleh Nginx)
+	// 3. Cek header X-Real-IP (biasanya diset oleh Nginx)
 	xRealIP := c.GetHeader("X-Real-IP")
 	if xRealIP != "" {
-		return xRealIP
+		return strings.TrimSpace(xRealIP)
 	}
 
-	// 3. Fallback ke RemoteAddr jika tidak ada proxy
+	// 4. Fallback ke RemoteAddr jika tidak ada proxy
 	remoteAddr := c.Request.RemoteAddr
 	ip, _, err := net.SplitHostPort(remoteAddr)
 	if err != nil {
