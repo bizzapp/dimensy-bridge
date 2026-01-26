@@ -209,5 +209,6 @@ func (h *PsreClientDocumentHandler) PreviewDocument(c *gin.Context) {
 		c.Data(status, "application/json", respBody)
 		return
 	}
-	c.Data(status, "application/json", respBody)
+	// c.Data(status, "application/json", respBody)
+	c.Data(status, "application/pdf", respBody)
 }
