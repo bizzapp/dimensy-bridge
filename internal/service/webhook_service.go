@@ -19,16 +19,18 @@ type WebhookService interface {
 }
 
 type webhookService struct {
-	db                   *gorm.DB
-	clientDocumentRepo   repository.ClientDocumentRepository
-	clientRequestLogRepo repository.ClientRequestLogRepository
+	db                        *gorm.DB
+	clientDocumentRepo        repository.ClientDocumentRepository
+	clientRequestLogRepo      repository.ClientRequestLogRepository
+	clientDocumentProcessRepo repository.ClientDocumentProcessRepository
 }
 
-func NewWebhookService(db *gorm.DB, clientDocumentRepo repository.ClientDocumentRepository, clientRequestLogRepo repository.ClientRequestLogRepository) WebhookService {
+func NewWebhookService(db *gorm.DB, clientDocumentRepo repository.ClientDocumentRepository, clientRequestLogRepo repository.ClientRequestLogRepository, clientDocumentProcessRepo repository.ClientDocumentProcessRepository) WebhookService {
 	return &webhookService{
-		db:                   db,
-		clientDocumentRepo:   clientDocumentRepo,
-		clientRequestLogRepo: clientRequestLogRepo,
+		db:                        db,
+		clientDocumentRepo:        clientDocumentRepo,
+		clientRequestLogRepo:      clientRequestLogRepo,
+		clientDocumentProcessRepo: clientDocumentProcessRepo,
 	}
 }
 
@@ -74,6 +76,19 @@ func (s *webhookService) SendDocumentNotification(req dto.WebhookDocumentNotific
 		return fmt.Errorf("failed to send webhook request: %w", err)
 	}
 	defer resp.Body.Close()
+
+	// Check Document client_document_processes
+	clientDocumentProcess, err := s.clientDocumentProcessRepo.FindByExternalIDExternalUserIDExternalCompanyID(req.DocumentID, req.UserID, req.CompanyID)
+	if err != nil {
+		return fmt.Errorf("failed to find client document process: %w", err)
+	}
+	if req.Status == "SUCCESS" {
+		clientDocumentProcess.Status = req.Status
+		clientDocumentProcess.IsDone = true
+		// clientDocumentProcess.ClientUserID = req.UserID
+		// clientDocumentProcess.ClientCompanyID = req.CompanyID
+		s.db.Save(clientDocumentProcess)
+	}
 
 	// Read response body
 	var responseBody bytes.Buffer
