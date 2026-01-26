@@ -178,7 +178,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	certificateSvc := service.NewCertificateService(certificateRepo)
 	clientKYCHistorySvc := service.NewClientKYCHistoryService(clientKYCHistoryRepo)
 	psreSvc := service.NewPsreService(clientRequestLogRepo, userRepo, clientCompanyRepo)
-	webhookSvc := service.NewWebhookService(db, clientDocumentRepo, clientRequestLogRepo)
+	webhookSvc := service.NewWebhookService(db, clientDocumentRepo, clientRequestLogRepo, clientDocumentProcessRepo)
 
 	// === PSRE SERVICES ===
 	psreClientSvc := psre_service.NewClientService(clientRequestLogRepo, userRepo, clientRepo, clientPsreRepo)
