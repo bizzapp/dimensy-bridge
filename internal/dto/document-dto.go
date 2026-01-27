@@ -90,5 +90,5 @@ type PsreDocumentOtpSignRequest struct {
 	DocumentOrGroupID uuid.UUID  `json:"documentOrGroupId" binding:"required"`
 	UserID            *uuid.UUID `json:"userId,omitempty"`    // boleh null
 	CompanyID         *uuid.UUID `json:"companyId,omitempty"` // boleh null
-	// DocumentType      string     `json:"documentType" binding:"required,oneof=SIGN STAMP"`
+	DocumentType      string     `json:"documentType" binding:"required,oneof=sign stamp"`
 }
