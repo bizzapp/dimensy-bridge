@@ -16,7 +16,7 @@ type QuotaClientService interface {
 	CreateQuota(quota *model.QuotaClient) error
 	UpdateQuota(quota *model.QuotaClient) error
 	DeleteQuota(id int64) error
-	GetHistory(clientID int64, limit int) ([]dto.QuotaHistoryItem, error)
+	GetHistory(clientID int64, page, limit int) ([]dto.QuotaHistoryItem, int64, error)
 	// UseQuota(dto.UseQuotaClientRequest) (*model.QuotaClient, error)
 	AddQuotaWithApprove(tx *gorm.DB, req dto.AddQuotaClientWithApproveRequest) (*model.QuotaClient, error)
 }
@@ -39,18 +39,26 @@ func NewQuotaClientService(db *gorm.DB, quotaClientRepo repository.QuotaClientRe
 	}
 }
 
-func (s *quotaClientService) GetHistory(clientID int64, limit int) ([]dto.QuotaHistoryItem, error) {
+func (s *quotaClientService) GetHistory(clientID int64, page, limit int) ([]dto.QuotaHistoryItem, int64, error) {
 	// Set default limit
 	if limit <= 0 {
 		limit = 20
 	}
 
+	// Set default page
+	if page <= 0 {
+		page = 1
+	}
+
+	// Calculate offset
+	offset := (page - 1) * limit
+
 	// ============================
 	// 📌 Fetch Addition History
 	// ============================
-	additions, err := s.quotaClientRepo.GetAdditionHistory(clientID, limit)
+	additions, err := s.quotaClientRepo.GetAdditionHistory(clientID, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	// Set direction for additions
@@ -61,9 +69,9 @@ func (s *quotaClientService) GetHistory(clientID int64, limit int) ([]dto.QuotaH
 	// ============================
 	// 📌 Fetch Reduction History
 	// ============================
-	reductions, err := s.quotaClientRepo.GetReductionHistory(clientID, limit)
+	reductions, err := s.quotaClientRepo.GetReductionHistory(clientID, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	// Set direction and negate quantity for reductions
@@ -71,6 +79,21 @@ func (s *quotaClientService) GetHistory(clientID int64, limit int) ([]dto.QuotaH
 		reductions[i].Direction = "REDUCTION"
 		reductions[i].Quantity = reductions[i].Quantity * -1
 	}
+
+	// ============================
+	// 📌 Get Total Count
+	// ============================
+	additionCount, err := s.quotaClientRepo.CountAdditionHistory(clientID)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	reductionCount, err := s.quotaClientRepo.CountReductionHistory(clientID)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	totalCount := additionCount + reductionCount
 
 	// ============================
 	// 📌 Merge & Sort DESC
@@ -86,7 +109,7 @@ func (s *quotaClientService) GetHistory(clientID int64, limit int) ([]dto.QuotaH
 		all = all[:limit]
 	}
 
-	return all, nil
+	return all, totalCount, nil
 }
 
 func (s *quotaClientService) GetQuotas(page, limit int, filters map[string]interface{}) ([]model.QuotaClient, int64, error) {

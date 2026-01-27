@@ -48,30 +48,32 @@ func (h *QuotaClientHandler) List(c *gin.Context) {
 
 func (h *QuotaClientHandler) GetHistory(c *gin.Context) {
 	clientIdStr := c.Query("client_id")
+	pageStr := c.DefaultQuery("page", "1")
 	limitStr := c.DefaultQuery("limit", "20")
 
 	clientID, err := strconv.ParseInt(clientIdStr, 10, 64)
 	if err != nil || clientID == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid client_id"})
+		response.Error(c, http.StatusBadRequest, "INVALID_CLIENT_ID", "client_id tidak valid", err.Error())
 		return
 	}
 
+	page, _ := strconv.Atoi(pageStr)
 	limit, _ := strconv.Atoi(limitStr)
 
-	data, err := h.service.GetHistory(clientID, limit)
+	data, total, err := h.service.GetHistory(clientID, page, limit)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": err.Error(),
-		})
+		response.Error(c, http.StatusInternalServerError, "QUOTA_HISTORY_ERROR", "Gagal mengambil data history quota", err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "success",
-		"data":    data,
-	})
+	meta := &response.Meta{
+		Page:       page,
+		Limit:      limit,
+		Total:      int(total),
+		TotalPages: int((total + int64(limit) - 1) / int64(limit)),
+	}
+
+	response.JSON(c, http.StatusOK, "History quota berhasil diambil", data, meta)
 }
 
 func (h *QuotaClientHandler) Get(c *gin.Context) {

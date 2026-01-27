@@ -15,8 +15,10 @@ type QuotaClientRepository interface {
 	Delete(id int64) error
 	FindByClientProduct(req dto.FindQuotaClientByClientProductRequest) (*model.QuotaClient, error)
 
-	GetAdditionHistory(clientID int64, limit int) ([]dto.QuotaHistoryItem, error)
-	GetReductionHistory(clientID int64, limit int) ([]dto.QuotaHistoryItem, error)
+	GetAdditionHistory(clientID int64, limit, offset int) ([]dto.QuotaHistoryItem, error)
+	GetReductionHistory(clientID int64, limit, offset int) ([]dto.QuotaHistoryItem, error)
+	CountAdditionHistory(clientID int64) (int64, error)
+	CountReductionHistory(clientID int64) (int64, error)
 }
 
 type quotaClientRepository struct {
@@ -27,7 +29,7 @@ func NewQuotaClientRepository(db *gorm.DB) QuotaClientRepository {
 	return &quotaClientRepository{db}
 }
 
-func (r *quotaClientRepository) GetAdditionHistory(clientID int64, limit int) ([]dto.QuotaHistoryItem, error) {
+func (r *quotaClientRepository) GetAdditionHistory(clientID int64, limit, offset int) ([]dto.QuotaHistoryItem, error) {
 	var additions []dto.QuotaHistoryItem
 
 	if err := r.db.Model(&model.QuotaClientAddition{}).
@@ -44,6 +46,7 @@ func (r *quotaClientRepository) GetAdditionHistory(clientID int64, limit int) ([
 		Where("quota_clients.client_id = ?", clientID).
 		Order("quota_client_additions.created_at DESC").
 		Limit(limit).
+		Offset(offset).
 		Find(&additions).Error; err != nil {
 		return nil, err
 	}
@@ -51,7 +54,7 @@ func (r *quotaClientRepository) GetAdditionHistory(clientID int64, limit int) ([
 	return additions, nil
 }
 
-func (r *quotaClientRepository) GetReductionHistory(clientID int64, limit int) ([]dto.QuotaHistoryItem, error) {
+func (r *quotaClientRepository) GetReductionHistory(clientID int64, limit, offset int) ([]dto.QuotaHistoryItem, error) {
 	var reductions []dto.QuotaHistoryItem
 
 	if err := r.db.Model(&model.QuotaClientReduction{}).
@@ -68,11 +71,34 @@ func (r *quotaClientRepository) GetReductionHistory(clientID int64, limit int) (
 		Where("quota_clients.client_id = ?", clientID).
 		Order("quota_client_reductions.created_at DESC").
 		Limit(limit).
+		Offset(offset).
 		Find(&reductions).Error; err != nil {
 		return nil, err
 	}
 
 	return reductions, nil
+}
+
+func (r *quotaClientRepository) CountAdditionHistory(clientID int64) (int64, error) {
+	var count int64
+	if err := r.db.Model(&model.QuotaClientAddition{}).
+		Joins("JOIN quota_clients ON quota_clients.id = quota_client_additions.quota_client_id").
+		Where("quota_clients.client_id = ?", clientID).
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (r *quotaClientRepository) CountReductionHistory(clientID int64) (int64, error) {
+	var count int64
+	if err := r.db.Model(&model.QuotaClientReduction{}).
+		Joins("JOIN quota_clients ON quota_clients.id = quota_client_reductions.quota_client_id").
+		Where("quota_clients.client_id = ?", clientID).
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 func (r *quotaClientRepository) FindAll(limit, offset int, filters map[string]interface{}) ([]model.QuotaClient, int64, error) {
