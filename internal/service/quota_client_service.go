@@ -5,6 +5,7 @@ import (
 	"dimensy-bridge/internal/model"
 	"dimensy-bridge/internal/repository"
 	"dimensy-bridge/pkg/utils"
+	"sort"
 
 	"gorm.io/gorm"
 )
@@ -39,10 +40,53 @@ func NewQuotaClientService(db *gorm.DB, quotaClientRepo repository.QuotaClientRe
 }
 
 func (s *quotaClientService) GetHistory(clientID int64, limit int) ([]dto.QuotaHistoryItem, error) {
+	// Set default limit
 	if limit <= 0 {
 		limit = 20
 	}
-	return s.quotaClientRepo.GetHistory(clientID, limit)
+
+	// ============================
+	// 📌 Fetch Addition History
+	// ============================
+	additions, err := s.quotaClientRepo.GetAdditionHistory(clientID, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set direction for additions
+	for i := range additions {
+		additions[i].Direction = "ADDITION"
+	}
+
+	// ============================
+	// 📌 Fetch Reduction History
+	// ============================
+	reductions, err := s.quotaClientRepo.GetReductionHistory(clientID, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set direction and negate quantity for reductions
+	for i := range reductions {
+		reductions[i].Direction = "REDUCTION"
+		reductions[i].Quantity = reductions[i].Quantity * -1
+	}
+
+	// ============================
+	// 📌 Merge & Sort DESC
+	// ============================
+	all := append(additions, reductions...)
+
+	sort.Slice(all, func(i, j int) bool {
+		return all[i].CreatedAt.After(*all[j].CreatedAt)
+	})
+
+	// Apply global limit
+	if len(all) > limit {
+		all = all[:limit]
+	}
+
+	return all, nil
 }
 
 func (s *quotaClientService) GetQuotas(page, limit int, filters map[string]interface{}) ([]model.QuotaClient, int64, error) {
