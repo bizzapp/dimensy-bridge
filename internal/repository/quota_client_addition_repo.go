@@ -26,7 +26,7 @@ func (r *quotaClientAdditionRepository) FindAll(limit, offset int, filters map[s
 	var additions []model.QuotaClientAddition
 	var total int64
 
-	query := r.db.Model(&model.QuotaClientAddition{}).Preload("QuotaClient")
+	query := r.db.Model(&model.QuotaClientAddition{}).Preload("QuotaClient").Preload("QuotaClient.MasterProduct")
 
 	// Handle client_id filter with JOIN
 	if clientID, ok := filters["client_id"]; ok {
