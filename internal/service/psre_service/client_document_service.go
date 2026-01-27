@@ -745,7 +745,7 @@ func (s *clientDocumentService) RequestOtpSign(token, externalID string, dto dto
 			ExternalID:        dto.DocumentOrGroupID,
 			ExternalUserID:    dto.UserID,
 			ExternalCompanyID: dto.CompanyID,
-			Type:              dto.DocumentType,
+			// Type:              dto.DocumentType,
 		}
 		if err := tx.Create(&clientDocumentResendOtp).Error; err != nil {
 			return fmt.Errorf("failed create client document process: %w", err)
