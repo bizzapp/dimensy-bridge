@@ -22,7 +22,14 @@ func (h *QuotaClientAdditionHandler) List(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 
-	additions, total, err := h.service.GetAdditions(page, limit, nil)
+	filters := map[string]interface{}{}
+	if clientID := c.Query("client_id"); clientID != "" {
+		if id, err := strconv.ParseInt(clientID, 10, 64); err == nil {
+			filters["client_id"] = id
+		}
+	}
+
+	additions, total, err := h.service.GetAdditions(page, limit, filters)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "ADDITION_LIST_ERROR", "Gagal mengambil data quota addition", err.Error())
 		return

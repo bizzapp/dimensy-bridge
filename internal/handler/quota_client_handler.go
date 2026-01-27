@@ -24,10 +24,14 @@ func (h *QuotaClientHandler) List(c *gin.Context) {
 
 	filters := map[string]interface{}{}
 	if clientID := c.Query("client_id"); clientID != "" {
-		filters["client_id"] = clientID
+		if id, err := strconv.ParseInt(clientID, 10, 64); err == nil {
+			filters["client_id"] = id
+		}
 	}
 	if mpID := c.Query("master_product_id"); mpID != "" {
-		filters["master_product_id"] = mpID
+		if id, err := strconv.ParseInt(mpID, 10, 64); err == nil {
+			filters["master_product_id"] = id
+		}
 	}
 
 	quotas, total, err := h.service.GetQuotas(page, limit, filters)

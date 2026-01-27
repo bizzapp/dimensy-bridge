@@ -28,6 +28,14 @@ func (r *quotaClientAdditionRepository) FindAll(limit, offset int, filters map[s
 
 	query := r.db.Model(&model.QuotaClientAddition{}).Preload("QuotaClient")
 
+	// Handle client_id filter with JOIN
+	if clientID, ok := filters["client_id"]; ok {
+		query = query.Joins("JOIN quota_clients ON quota_clients.id = quota_client_additions.quota_client_id").
+			Where("quota_clients.client_id = ?", clientID)
+		delete(filters, "client_id")
+	}
+
+	// Apply other filters
 	for key, value := range filters {
 		query = query.Where(key+" = ?", value)
 	}
