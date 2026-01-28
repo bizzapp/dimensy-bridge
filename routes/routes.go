@@ -129,6 +129,12 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		additions.DELETE("/:id", deps.QuotaClientAdditionHdl.Delete)
 	}
 
+	reductions := api.Group("/quota-reductions")
+	{
+		reductions.Use(middleware.JWTAuthMiddlewareWithBlacklist(deps.TokenBlacklistRepo))
+		reductions.GET("/chart", deps.QuotaClientReductionHdl.GetChart)
+	}
+
 	clientPsre := api.Group("/client-psre")
 	{
 		clientPsre.Use(middleware.JWTAuthMiddlewareWithBlacklist(deps.TokenBlacklistRepo))

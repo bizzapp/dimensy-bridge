@@ -64,15 +64,19 @@ type AppDependencies struct {
 	MasterProductHdl  *handler.MasterProductHandler
 
 	// Quota Client Module
-	QuotaClientRepo          repository.QuotaClientRepository
-	QuotaClientReductionRepo repository.QuotaClientReductionRepository
-	QuotaClientSvc           service.QuotaClientService
-	QuotaClientHdl           *handler.QuotaClientHandler
+	QuotaClientRepo repository.QuotaClientRepository
+	QuotaClientSvc  service.QuotaClientService
+	QuotaClientHdl  *handler.QuotaClientHandler
 
 	// Quota Client Addition Module
 	QuotaClientAdditionRepo repository.QuotaClientAdditionRepository
 	QuotaClientAdditionSvc  service.QuotaClientAdditionService
 	QuotaClientAdditionHdl  *handler.QuotaClientAdditionHandler
+
+	// Quota Client Reduction Module
+	QuotaClientReductionRepo repository.QuotaClientReductionRepository
+	QuotaClientReductionSvc  service.QuotaClientReductionService
+	QuotaClientReductionHdl  *handler.QuotaClientReductionHandler
 
 	ClientDocumentRepo repository.ClientDocumentRepository
 	ClientDocumentSvc  psre_service.ClientDocumentService
@@ -148,8 +152,8 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	clientUserRepo := repository.NewClientUserRepository(db)
 	masterProductRepo := repository.NewMasterProductRepository(db)
 	quotaClientRepo := repository.NewQuotaClientRepository(db)
-	quotaClientReductionRepo := repository.NewQuotaClientReductionRepository(db)
 	quotaClientAdditionRepo := repository.NewQuotaClientAdditionRepository(db)
+	quotaClientReductionRepo := repository.NewQuotaClientReductionRepository(db)
 	clientRequestLogRepo := repository.NewClientRequestLogRepository(db)
 	certificateRepo := repository.NewCertificateRepository(db)
 	clientDocumentRepo := repository.NewClientDocumentRepository(db)
@@ -170,6 +174,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	clientCompanyInviteSvc := service.NewClientCompanyInviteService(clientCompanyInviteRepo)
 
 	quotaClientAdditionSvc := service.NewQuotaClientAdditionService(db, quotaClientAdditionRepo, quotaClientRepo)
+	quotaClientReductionSvc := service.NewQuotaClientReductionService(quotaClientReductionRepo, masterProductRepo)
 	clientSvc := service.NewClientService(clientRepo, userRepo, quotaClientRepo, quotaClientAdditionRepo)
 	clientPsreSvc := service.NewClientPsreService(clientPsreRepo, clientRepo)
 	clientCompanySvc := service.NewClientCompanyService(clientCompanyRepo, quotaClientSvc)
@@ -201,6 +206,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	masterProductHdl := handler.NewMasterProductHandler(masterProductSvc)
 	quotaClientHdl := handler.NewQuotaClientHandler(quotaClientSvc)
 	quotaClientAdditionHdl := handler.NewQuotaClientAdditionHandler(quotaClientAdditionSvc)
+	quotaClientReductionHdl := handler.NewQuotaClientReductionHandler(quotaClientReductionSvc)
 	certificateHdl := handler.NewCertificateHandler(certificateSvc)
 	clientHasSubscriptionPlanHdl := handler.NewClientHasSubscriptionPlanHandler(clientHasSubscriptionPlanSvc)
 
@@ -240,14 +246,17 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 		MasterProductSvc:  masterProductSvc,
 		MasterProductHdl:  masterProductHdl,
 
-		QuotaClientRepo:          quotaClientRepo,
-		QuotaClientReductionRepo: quotaClientReductionRepo,
-		QuotaClientSvc:           quotaClientSvc,
-		QuotaClientHdl:           quotaClientHdl,
+		QuotaClientRepo: quotaClientRepo,
+		QuotaClientSvc:  quotaClientSvc,
+		QuotaClientHdl:  quotaClientHdl,
 
 		QuotaClientAdditionRepo: quotaClientAdditionRepo,
 		QuotaClientAdditionSvc:  quotaClientAdditionSvc,
 		QuotaClientAdditionHdl:  quotaClientAdditionHdl,
+
+		QuotaClientReductionRepo: quotaClientReductionRepo,
+		QuotaClientReductionSvc:  quotaClientReductionSvc,
+		QuotaClientReductionHdl:  quotaClientReductionHdl,
 
 		ClientPsreRepo: clientPsreRepo,
 		ClientPsreSvc:  clientPsreSvc,

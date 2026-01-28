@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"dimensy-bridge/internal/dto"
 	"dimensy-bridge/internal/model"
 	"sort"
@@ -15,6 +16,10 @@ type MasterProductRepository interface {
 	Update(product *model.MasterProduct) error
 	Delete(id int64) error
 	GetHistory(masterProductID *int64, limit int) ([]dto.MasterProductHistoryItem, error)
+	FindForChart(
+		ctx context.Context,
+		masterProductID *int64,
+	) ([]string, error)
 }
 
 type masterProductRepository struct {
@@ -121,4 +126,24 @@ func (r *masterProductRepository) Update(product *model.MasterProduct) error {
 
 func (r *masterProductRepository) Delete(id int64) error {
 	return r.db.Delete(&model.MasterProduct{}, id).Error
+}
+
+func (r *masterProductRepository) FindForChart(
+	ctx context.Context,
+	masterProductID *int64,
+) ([]string, error) {
+
+	var names []string
+
+	q := r.db.WithContext(ctx).
+		Model(&model.MasterProduct{}).
+		Select("name").
+		Where("deleted_at IS NULL")
+
+	if masterProductID != nil {
+		q = q.Where("id = ?", *masterProductID)
+	}
+
+	err := q.Order("name ASC").Pluck("name", &names).Error
+	return names, err
 }
