@@ -99,6 +99,7 @@ func (r *quotaClientReductionRepository) GetTimeSeries(
 		Joins("JOIN quota_clients qc ON qc.id = qcr.quota_client_id").
 		Joins("JOIN master_products mp ON mp.id = qc.master_product_id").
 		Where("qcr.created_at >= ?", startTime).
+		Where("mp.name NOT ILIKE ?", "%document%").
 		Group(timeGroupExpr + ", mp.name").
 		Order(timeGroupExpr + " ASC")
 

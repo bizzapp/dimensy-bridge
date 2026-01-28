@@ -138,7 +138,8 @@ func (r *masterProductRepository) FindForChart(
 	q := r.db.WithContext(ctx).
 		Model(&model.MasterProduct{}).
 		Select("name").
-		Where("deleted_at IS NULL")
+		Where("deleted_at IS NULL").
+		Where("name NOT ILIKE ?", "%document%")
 
 	if masterProductID != nil {
 		q = q.Where("id = ?", *masterProductID)
