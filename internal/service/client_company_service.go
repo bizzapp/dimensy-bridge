@@ -11,6 +11,7 @@ import (
 
 type ClientCompanyService interface {
 	GetAll() ([]model.ClientCompany, error)
+	GetCompanies(page, limit int, filters map[string]interface{}) ([]model.ClientCompany, int64, error)
 	GetByID(id int64) (*model.ClientCompany, error)
 	Create(company *model.ClientCompany) error
 	Update(company *model.ClientCompany) error
@@ -55,4 +56,9 @@ func (s *clientCompanyService) Delete(id int64) error {
 
 func (s *clientCompanyService) UpdateExternalID(id int64, externalID uuid.UUID) error {
 	return s.repo.UpdateExternalID(id, externalID)
+}
+
+func (s *clientCompanyService) GetCompanies(page, limit int, filters map[string]interface{}) ([]model.ClientCompany, int64, error) {
+	offset := (page - 1) * limit
+	return s.repo.FindCompanies(limit, offset, filters)
 }

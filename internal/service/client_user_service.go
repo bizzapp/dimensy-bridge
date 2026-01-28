@@ -12,6 +12,7 @@ import (
 
 type ClientUserService interface {
 	GetAll() ([]model.ClientUser, error)
+	GetUsers(page, limit int, filters map[string]interface{}) ([]model.ClientUser, int64, error)
 	GetByID(id uint) (*model.ClientUser, error)
 	Create(user *model.ClientUser) (*model.ClientUser, error)
 	Update(user *model.ClientUser) error
@@ -99,4 +100,9 @@ func (s *clientUserService) validateClientUser(user *model.ClientUser) error {
 	}
 
 	return nil
+}
+
+func (s *clientUserService) GetUsers(page, limit int, filters map[string]interface{}) ([]model.ClientUser, int64, error) {
+	offset := (page - 1) * limit
+	return s.repo.FindUsers(limit, offset, filters)
 }

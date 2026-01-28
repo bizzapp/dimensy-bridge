@@ -10,6 +10,7 @@ import (
 
 type ClientUserRepository interface {
 	FindAll() ([]model.ClientUser, error)
+	FindUsers(limit, offset int, filters map[string]interface{}) ([]model.ClientUser, int64, error)
 	FindByID(id uint) (*model.ClientUser, error)
 	Create(user *model.ClientUser) error
 	Update(user *model.ClientUser) error
@@ -100,4 +101,25 @@ func (r *clientUserRepository) FindByExternalIDs(externalIDs []uuid.UUID) ([]mod
 	err := r.db.Preload("Client").Preload("ClientCompany").
 		Where("external_id IN ?", externalIDs).Find(&users).Error
 	return users, err
+}
+
+func (r *clientUserRepository) FindUsers(limit, offset int, filters map[string]interface{}) ([]model.ClientUser, int64, error) {
+	var users []model.ClientUser
+	var total int64
+
+	query := r.db.Model(&model.ClientUser{})
+
+	for key, value := range filters {
+		query = query.Where(key+" = ?", value)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := query.Limit(limit).Offset(offset).Find(&users).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return users, total, nil
 }

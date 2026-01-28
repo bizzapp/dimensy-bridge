@@ -19,12 +19,31 @@ func NewClientUserHandler(s service.ClientUserService) *ClientUserHandler {
 }
 
 func (h *ClientUserHandler) GetAll(c *gin.Context) {
-	users, err := h.service.GetAll()
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+
+	filters := map[string]interface{}{}
+	if clientID := c.Query("client_id"); clientID != "" {
+		if id, err := strconv.ParseInt(clientID, 10, 64); err == nil {
+			filters["client_id"] = id
+		}
+	}
+
+	users, total, err := h.service.GetUsers(page, limit, filters)
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	response.JSON(c, http.StatusOK, "List user berhasil diambil", users, nil)
+
+	meta := &response.Meta{
+		Page:       page,
+		Limit:      limit,
+		Total:      int(total),
+		TotalPages: int((total + int64(limit) - 1) / int64(limit)),
+	}
+
+	response.JSON(c, http.StatusOK, "List user berhasil diambil", users, meta)
 }
 
 func (h *ClientUserHandler) GetByID(c *gin.Context) {

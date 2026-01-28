@@ -9,6 +9,7 @@ import (
 
 type ClientCompanyRepository interface {
 	FindAll() ([]model.ClientCompany, error)
+	FindCompanies(limit, offset int, filters map[string]interface{}) ([]model.ClientCompany, int64, error)
 	FindByID(id int64) (*model.ClientCompany, error)
 	Create(company *model.ClientCompany) error
 	Update(company *model.ClientCompany) error
@@ -80,4 +81,25 @@ func (r *clientCompanyRepository) UpdateExternalID(id int64, externalID uuid.UUI
 	return r.db.Model(&model.ClientCompany{}).
 		Where("id = ?", id).
 		Update("external_id", externalID).Error
+}
+
+func (r *clientCompanyRepository) FindCompanies(limit, offset int, filters map[string]interface{}) ([]model.ClientCompany, int64, error) {
+	var companies []model.ClientCompany
+	var total int64
+
+	query := r.db.Model(&model.ClientCompany{})
+
+	for key, value := range filters {
+		query = query.Where(key+" = ?", value)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := query.Limit(limit).Offset(offset).Find(&companies).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return companies, total, nil
 }

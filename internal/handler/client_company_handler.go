@@ -20,12 +20,30 @@ func NewClientCompanyHandler(s service.ClientCompanyService) *ClientCompanyHandl
 
 // GET /companies
 func (h *ClientCompanyHandler) List(c *gin.Context) {
-	companies, err := h.service.GetAll()
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+
+	filters := map[string]interface{}{}
+	if clientID := c.Query("client_id"); clientID != "" {
+		if id, err := strconv.ParseInt(clientID, 10, 64); err == nil {
+			filters["client_id"] = id
+		}
+	}
+
+	companies, total, err := h.service.GetCompanies(page, limit, filters)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "COMPANY_LIST_ERROR", "Gagal ambil data company", err.Error())
 		return
 	}
-	response.JSON(c, http.StatusOK, "List company berhasil diambil", companies, nil)
+
+	meta := &response.Meta{
+		Page:       page,
+		Limit:      limit,
+		Total:      int(total),
+		TotalPages: int((total + int64(limit) - 1) / int64(limit)),
+	}
+
+	response.JSON(c, http.StatusOK, "List company berhasil diambil", companies, meta)
 }
 
 // GET /companies/:id
