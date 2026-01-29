@@ -53,5 +53,6 @@ type QuotaHistoryItem struct {
 	Type              string     `json:"type"`
 	Quantity          int64      `json:"quantity"`
 	CreatedAt         *time.Time `json:"created_at"`
-	Direction         string     `json:"direction"` // ADDITION / REDUCTION
+	Direction         string     `json:"direction"`   // ADDITION / REDUCTION
+	ClientName        string     `json:"client_name"` // ADDITION / REDUCTION
 }

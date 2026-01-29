@@ -16,7 +16,7 @@ type QuotaClientService interface {
 	CreateQuota(quota *model.QuotaClient) error
 	UpdateQuota(quota *model.QuotaClient) error
 	DeleteQuota(id int64) error
-	GetHistory(clientID int64, page, limit int) ([]dto.QuotaHistoryItem, int64, error)
+	GetHistory(page, limit int, filters map[string]interface{}) ([]dto.QuotaHistoryItem, int64, error)
 	// UseQuota(dto.UseQuotaClientRequest) (*model.QuotaClient, error)
 	AddQuotaWithApprove(tx *gorm.DB, req dto.AddQuotaClientWithApproveRequest) (*model.QuotaClient, error)
 }
@@ -39,7 +39,7 @@ func NewQuotaClientService(db *gorm.DB, quotaClientRepo repository.QuotaClientRe
 	}
 }
 
-func (s *quotaClientService) GetHistory(clientID int64, page, limit int) ([]dto.QuotaHistoryItem, int64, error) {
+func (s *quotaClientService) GetHistory(page, limit int, filters map[string]interface{}) ([]dto.QuotaHistoryItem, int64, error) {
 	// Set default limit
 	if limit <= 0 {
 		limit = 20
@@ -56,7 +56,7 @@ func (s *quotaClientService) GetHistory(clientID int64, page, limit int) ([]dto.
 	// ============================
 	// 📌 Fetch Addition History
 	// ============================
-	additions, err := s.quotaClientRepo.GetAdditionHistory(clientID, limit, offset)
+	additions, err := s.quotaClientRepo.GetAdditionHistory(limit, offset, filters)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -69,7 +69,7 @@ func (s *quotaClientService) GetHistory(clientID int64, page, limit int) ([]dto.
 	// ============================
 	// 📌 Fetch Reduction History
 	// ============================
-	reductions, err := s.quotaClientRepo.GetReductionHistory(clientID, limit, offset)
+	reductions, err := s.quotaClientRepo.GetReductionHistory(limit, offset, filters)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -83,12 +83,12 @@ func (s *quotaClientService) GetHistory(clientID int64, page, limit int) ([]dto.
 	// ============================
 	// 📌 Get Total Count
 	// ============================
-	additionCount, err := s.quotaClientRepo.CountAdditionHistory(clientID)
+	additionCount, err := s.quotaClientRepo.CountAdditionHistory(filters)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	reductionCount, err := s.quotaClientRepo.CountReductionHistory(clientID)
+	reductionCount, err := s.quotaClientRepo.CountReductionHistory(filters)
 	if err != nil {
 		return nil, 0, err
 	}

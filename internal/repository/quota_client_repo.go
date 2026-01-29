@@ -15,10 +15,10 @@ type QuotaClientRepository interface {
 	Delete(id int64) error
 	FindByClientProduct(req dto.FindQuotaClientByClientProductRequest) (*model.QuotaClient, error)
 
-	GetAdditionHistory(clientID int64, limit, offset int) ([]dto.QuotaHistoryItem, error)
-	GetReductionHistory(clientID int64, limit, offset int) ([]dto.QuotaHistoryItem, error)
-	CountAdditionHistory(clientID int64) (int64, error)
-	CountReductionHistory(clientID int64) (int64, error)
+	GetAdditionHistory(limit, offset int, filters map[string]interface{}) ([]dto.QuotaHistoryItem, error)
+	GetReductionHistory(limit, offset int, filters map[string]interface{}) ([]dto.QuotaHistoryItem, error)
+	CountAdditionHistory(filters map[string]interface{}) (int64, error)
+	CountReductionHistory(filters map[string]interface{}) (int64, error)
 }
 
 type quotaClientRepository struct {
@@ -29,75 +29,99 @@ func NewQuotaClientRepository(db *gorm.DB) QuotaClientRepository {
 	return &quotaClientRepository{db}
 }
 
-func (r *quotaClientRepository) GetAdditionHistory(clientID int64, limit, offset int) ([]dto.QuotaHistoryItem, error) {
+func (r *quotaClientRepository) GetAdditionHistory(limit, offset int, filters map[string]interface{}) ([]dto.QuotaHistoryItem, error) {
 	var additions []dto.QuotaHistoryItem
 
-	if err := r.db.Model(&model.QuotaClientAddition{}).
+	query := r.db.Model(&model.QuotaClientAddition{}).
 		Select(`
-			quota_client_additions.id,
-			quota_clients.master_product_id,
-			master_products.name AS master_product_name,
-			quota_client_additions.type,
-			quota_client_additions.quantity,
-			quota_client_additions.created_at
-		`).
+        quota_client_additions.id,
+        quota_clients.master_product_id,
+        master_products.name AS master_product_name,
+        quota_client_additions.type,
+        quota_client_additions.quantity,
+        quota_client_additions.created_at,
+		clients.company_name as client_name
+    `).
 		Joins("JOIN quota_clients ON quota_clients.id = quota_client_additions.quota_client_id").
 		Joins("JOIN master_products ON master_products.id = quota_clients.master_product_id").
-		Where("quota_clients.client_id = ?", clientID).
 		Order("quota_client_additions.created_at DESC").
+		Joins("JOIN clients ON quota_clients.client_id = clients.id").
 		Limit(limit).
-		Offset(offset).
-		Find(&additions).Error; err != nil {
+		Offset(offset)
+
+	if clientID, ok := filters["client_id"]; ok {
+		query = query.Where("quota_clients.client_id = ?", clientID)
+	}
+
+	if err := query.Find(&additions).Error; err != nil {
 		return nil, err
 	}
 
 	return additions, nil
 }
 
-func (r *quotaClientRepository) GetReductionHistory(clientID int64, limit, offset int) ([]dto.QuotaHistoryItem, error) {
+func (r *quotaClientRepository) GetReductionHistory(limit, offset int, filters map[string]interface{}) ([]dto.QuotaHistoryItem, error) {
 	var reductions []dto.QuotaHistoryItem
 
-	if err := r.db.Model(&model.QuotaClientReduction{}).
+	query := r.db.Model(&model.QuotaClientReduction{}).
 		Select(`
 			quota_client_reductions.id,
 			quota_clients.master_product_id,
 			master_products.name AS master_product_name,
 			quota_client_reductions.type,
 			quota_client_reductions.quantity,
-			quota_client_reductions.created_at
+			quota_client_reductions.created_at,
+			clients.company_name as client_name
 		`).
 		Joins("JOIN quota_clients ON quota_clients.id = quota_client_reductions.quota_client_id").
 		Joins("JOIN master_products ON master_products.id = quota_clients.master_product_id").
-		Where("quota_clients.client_id = ?", clientID).
+		Joins("JOIN clients ON clients.id = quota_clients.client_id").
 		Order("quota_client_reductions.created_at DESC").
 		Limit(limit).
-		Offset(offset).
-		Find(&reductions).Error; err != nil {
+		Offset(offset)
+
+	if clientID, ok := filters["client_id"]; ok {
+		query = query.Where("quota_clients.client_id = ?", clientID)
+	}
+
+	if err := query.Find(&reductions).Error; err != nil {
 		return nil, err
 	}
 
 	return reductions, nil
 }
 
-func (r *quotaClientRepository) CountAdditionHistory(clientID int64) (int64, error) {
+func (r *quotaClientRepository) CountAdditionHistory(filters map[string]interface{}) (int64, error) {
 	var count int64
-	if err := r.db.Model(&model.QuotaClientAddition{}).
-		Joins("JOIN quota_clients ON quota_clients.id = quota_client_additions.quota_client_id").
-		Where("quota_clients.client_id = ?", clientID).
-		Count(&count).Error; err != nil {
+
+	query := r.db.Model(&model.QuotaClientAddition{}).
+		Joins("JOIN quota_clients ON quota_clients.id = quota_client_additions.quota_client_id")
+
+	if clientID, ok := filters["client_id"]; ok {
+		query = query.Where("quota_clients.client_id = ?", clientID)
+	}
+
+	if err := query.Count(&count).Error; err != nil {
 		return 0, err
 	}
+
 	return count, nil
 }
 
-func (r *quotaClientRepository) CountReductionHistory(clientID int64) (int64, error) {
+func (r *quotaClientRepository) CountReductionHistory(filters map[string]interface{}) (int64, error) {
 	var count int64
-	if err := r.db.Model(&model.QuotaClientReduction{}).
-		Joins("JOIN quota_clients ON quota_clients.id = quota_client_reductions.quota_client_id").
-		Where("quota_clients.client_id = ?", clientID).
-		Count(&count).Error; err != nil {
+
+	query := r.db.Model(&model.QuotaClientReduction{}).
+		Joins("JOIN quota_clients ON quota_clients.id = quota_client_reductions.quota_client_id")
+
+	if clientID, ok := filters["client_id"]; ok {
+		query = query.Where("quota_clients.client_id = ?", clientID)
+	}
+
+	if err := query.Count(&count).Error; err != nil {
 		return 0, err
 	}
+
 	return count, nil
 }
 
