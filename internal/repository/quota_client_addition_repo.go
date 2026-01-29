@@ -40,6 +40,8 @@ func (r *quotaClientAdditionRepository) FindAll(limit, offset int, filters map[s
 		query = query.Where(key+" = ?", value)
 	}
 
+	query = query.Order("quota_client_additions.created_at DESC")
+
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
