@@ -82,7 +82,8 @@ func (r *inventoryMasterProductLogRepository) FindInventoryLogs(
 
 	query := r.db.WithContext(ctx).
 		Model(&model.InventoryMasterProductLog{}).
-		Preload("MasterProduct")
+		Preload("MasterProduct").
+		Preload("InventoryMasterProduct")
 
 	if inventoryID != nil {
 		query = query.Where("inventory_master_product_id = ?", *inventoryID)
