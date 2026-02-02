@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -35,6 +36,7 @@ func NewWebhookService(db *gorm.DB, clientDocumentRepo repository.ClientDocument
 }
 
 func (s *webhookService) SendDocumentNotification(req dto.WebhookDocumentNotificationRequest) error {
+
 	clientDocument, err := s.clientDocumentRepo.FindByExternalID(req.DocumentID)
 	if err != nil {
 		return fmt.Errorf("failed to find client document: %w", err)
@@ -77,8 +79,23 @@ func (s *webhookService) SendDocumentNotification(req dto.WebhookDocumentNotific
 	}
 	defer resp.Body.Close()
 
+	// Convert string IDs to UUID pointers
+	var userID *uuid.UUID
+	if req.UserID != nil && *req.UserID != "" {
+		if parsed, err := uuid.Parse(*req.UserID); err == nil {
+			userID = &parsed
+		}
+	}
+
+	var companyID *uuid.UUID
+	if req.CompanyID != nil && *req.CompanyID != "" {
+		if parsed, err := uuid.Parse(*req.CompanyID); err == nil {
+			companyID = &parsed
+		}
+	}
+
 	// Check Document client_document_processes
-	clientDocumentProcess, err := s.clientDocumentProcessRepo.FindByExternalIDExternalUserIDExternalCompanyID(req.DocumentID, req.UserID, req.CompanyID)
+	clientDocumentProcess, err := s.clientDocumentProcessRepo.FindByExternalIDExternalUserIDExternalCompanyID(req.DocumentID, userID, companyID)
 	if err != nil {
 		return fmt.Errorf("failed to find client document process: %w", err)
 	}

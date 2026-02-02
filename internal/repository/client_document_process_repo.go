@@ -29,7 +29,23 @@ func (r *clientDocumentProcessRepository) Create(data *model.ClientDocumentProce
 }
 func (r *clientDocumentProcessRepository) FindByExternalIDExternalUserIDExternalCompanyID(externalID uuid.UUID, userID *uuid.UUID, companyID *uuid.UUID) (*model.ClientDocumentProcess, error) {
 	var process model.ClientDocumentProcess
-	if err := r.db.Where("external_id = ? AND external_user_id = ? AND external_company_id = ?", externalID, userID, companyID).First(&process).Error; err != nil {
+	query := r.db.Where("external_id = ?", externalID)
+
+	// Handle userID: if nil, check IS NULL; otherwise check equality
+	if userID == nil {
+		query = query.Where("external_user_id IS NULL")
+	} else {
+		query = query.Where("external_user_id = ?", userID)
+	}
+
+	// Handle companyID: if nil, check IS NULL; otherwise check equality
+	if companyID == nil {
+		query = query.Where("external_company_id IS NULL")
+	} else {
+		query = query.Where("external_company_id = ?", companyID)
+	}
+
+	if err := query.First(&process).Error; err != nil {
 		return nil, err
 	}
 	return &process, nil

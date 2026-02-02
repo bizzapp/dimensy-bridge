@@ -25,6 +25,7 @@ func (h *WebhookHandler) HandlePSRENotification(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
 			"message": "invalid request payload",
+			"error":   err.Error(),
 		})
 		return
 	}
