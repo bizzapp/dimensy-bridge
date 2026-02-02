@@ -183,7 +183,7 @@ func (s *clientDocumentService) UploadSingle(token, externalID string, req dto.P
 }
 
 func (s *clientDocumentService) Preview(token, externalID, documentID string) ([]byte, int, error) {
-	path := fmt.Sprintf("/document/preview/%s", documentID)
+	path := fmt.Sprintf("/document/preview/%s?option=LATEST", documentID)
 	data, status, err := utils.PsreRequest("GET", path, nil, token, nil)
 	if err != nil {
 		return data, status, fmt.Errorf("failed call psre api: %w", err)
