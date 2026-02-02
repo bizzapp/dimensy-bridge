@@ -51,6 +51,13 @@ func runSpecificSeeder(db *gorm.DB, seederName string) {
 		}
 		log.Println("✅ Subscription plans seeder completed")
 
+	case "client-users":
+		log.Println("🌱 Running client users seeder...")
+		if err := config.SeedClientUsersFromUserActivations(db); err != nil {
+			log.Fatalf("failed to seed client users: %v", err)
+		}
+		log.Println("✅ Client users seeder completed")
+
 	default:
 		fmt.Printf("❌ Unknown seeder: %s\n", seederName)
 		fmt.Println("\nAvailable seeders:")
@@ -59,6 +66,7 @@ func runSpecificSeeder(db *gorm.DB, seederName string) {
 		fmt.Println("  products           - Alias for master-products")
 		fmt.Println("  subscription-plans - Seed subscription plans")
 		fmt.Println("  plans              - Alias for subscription-plans")
+		fmt.Println("  client-users       - Seed client users from user activations")
 		fmt.Println("\nUsage:")
 		fmt.Println("  go run cmd/seeder/main.go [seeder-name]")
 		fmt.Println("  go run cmd/seeder/main.go                    # Run all seeders")
@@ -84,6 +92,11 @@ func runAllSeeders(db *gorm.DB) {
 		log.Fatalf("failed to seed subscription plans: %v", err)
 	}
 	log.Println("✅ Subscription plans seeded")
+
+	if err := config.SeedClientUsersFromUserActivations(db); err != nil {
+		log.Fatalf("failed to seed client users: %v", err)
+	}
+	log.Println("✅ Client users seeded")
 
 	log.Println("🌱 All seeders completed successfully!")
 }
