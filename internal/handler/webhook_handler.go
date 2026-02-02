@@ -37,8 +37,5 @@ func (h *WebhookHandler) HandlePSRENotification(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"status":  "success",
-		"message": "webhook received",
-	})
+	c.Status(http.StatusOK)
 }
