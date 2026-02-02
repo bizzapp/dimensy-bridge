@@ -4,6 +4,7 @@ import (
 	"context"
 	"dimensy-bridge/internal/dto"
 	"dimensy-bridge/internal/model"
+	"fmt"
 	"sort"
 
 	"gorm.io/gorm"
@@ -94,7 +95,7 @@ func (r *masterProductRepository) FindAll(limit, offset int, filters map[string]
 	query := r.db.Model(&model.MasterProduct{})
 
 	for key, value := range filters {
-		query = query.Where(key+" = ?", value)
+		query = query.Where(key+" ILIKE ?", "%"+fmt.Sprint(value)+"%")
 	}
 
 	if err := query.Count(&total).Error; err != nil {
