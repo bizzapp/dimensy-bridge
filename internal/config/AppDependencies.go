@@ -6,6 +6,7 @@ import (
 	"dimensy-bridge/internal/repository"
 	"dimensy-bridge/internal/service"
 	psre_service "dimensy-bridge/internal/service/psre_service"
+	"dimensy-bridge/pkg/utils"
 
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
@@ -140,6 +141,9 @@ type AppDependencies struct {
 }
 
 func NewAppDependencies(db *gorm.DB) *AppDependencies {
+	// Set PSRE Log Database
+	utils.SetPsreLogDB(db)
+
 	// Initialize Redis client
 	redisClient := InitRedis()
 

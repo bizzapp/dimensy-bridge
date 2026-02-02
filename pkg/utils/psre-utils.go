@@ -3,7 +3,6 @@ package utils
 import (
 	"bytes"
 	"dimensy-bridge/internal/model"
-	"dimensy-bridge/internal/repository"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 // ====== Token Cache ======
@@ -24,12 +25,12 @@ var (
 	mu             sync.Mutex
 )
 
-// ====== PSRE Log Repository ======
-var psreLogRepo repository.PsreLogRepository
+// ====== PSRE Log Database ======
+var psreLogDB *gorm.DB
 
-// SetPsreLogRepository sets the repository for logging PSRE requests
-func SetPsreLogRepository(repo repository.PsreLogRepository) {
-	psreLogRepo = repo
+// SetPsreLogDB sets the database connection for logging PSRE requests
+func SetPsreLogDB(db *gorm.DB) {
+	psreLogDB = db
 }
 
 // ====== Structs ======
@@ -132,8 +133,10 @@ func PsreRequest(method, path string, payload any, token string, queryParams map
 
 	// Extract headers for logging
 	headerJSON, _ := json.Marshal(req.Header)
-	if psreLogRepo != nil {
-		logDescription := path + " Request"
+
+	// Log request to database
+	if psreLogDB != nil {
+		logDescription := "Request " + path
 		headerStr := string(headerJSON)
 		fullURL := reqURL.String()
 
@@ -144,8 +147,9 @@ func PsreRequest(method, path string, payload any, token string, queryParams map
 			FullURL:     &fullURL,
 		}
 
-		_ = psreLogRepo.Create(psreLog)
+		_ = psreLogDB.Create(psreLog)
 	}
+
 	client := &http.Client{Timeout: 15 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -155,15 +159,15 @@ func PsreRequest(method, path string, payload any, token string, queryParams map
 
 	respBody, _ := io.ReadAll(resp.Body)
 
-	// Log the request and response to database
-	if psreLogRepo != nil {
+	// Log response to database
+	if psreLogDB != nil {
 		respLog := map[string]interface{}{
 			"status_code": resp.StatusCode,
 			"body":        string(respBody),
 		}
 		respLogJSON, _ := json.Marshal(respLog)
 
-		logDescription := path + " Response"
+		logDescription := "Response " + path
 		headerStr := string(headerJSON)
 		fullURL := reqURL.String()
 
@@ -174,7 +178,7 @@ func PsreRequest(method, path string, payload any, token string, queryParams map
 			FullURL:     &fullURL,
 		}
 
-		_ = psreLogRepo.Create(psreLog)
+		_ = psreLogDB.Create(psreLog)
 	}
 
 	// Jika error dari PSRE
