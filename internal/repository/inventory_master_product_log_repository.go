@@ -14,6 +14,11 @@ type InventoryMasterProductLogRepository interface {
 	FindByInventoryID(ctx context.Context, inventoryID int64, page, pageSize int) ([]*model.InventoryMasterProductLog, int64, error)
 	FindByMasterProductID(ctx context.Context, masterProductID int64, page, pageSize int) ([]*model.InventoryMasterProductLog, int64, error)
 	GetLogsInRange(ctx context.Context, startTime, endTime time.Time) ([]*model.InventoryMasterProductLog, error)
+	FindInventoryLogs(
+		ctx context.Context,
+		inventoryID *int64,
+		page, pageSize int,
+	) ([]*model.InventoryMasterProductLog, int64, error)
 }
 
 type inventoryMasterProductLogRepository struct {
@@ -45,6 +50,45 @@ func (r *inventoryMasterProductLogRepository) FindByInventoryID(ctx context.Cont
 		Where("inventory_master_product_id = ?", inventoryID).
 		Preload("MasterProduct").
 		Model(&model.InventoryMasterProductLog{}).
+		Count(&total).
+		Offset(offset).
+		Limit(pageSize).
+		Order("created_at DESC").
+		Find(&logs).Error
+
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return logs, total, nil
+}
+
+func (r *inventoryMasterProductLogRepository) FindInventoryLogs(
+	ctx context.Context,
+	inventoryID *int64,
+	page, pageSize int,
+) ([]*model.InventoryMasterProductLog, int64, error) {
+	var logs []*model.InventoryMasterProductLog
+	var total int64
+
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+
+	offset := (page - 1) * pageSize
+
+	query := r.db.WithContext(ctx).
+		Model(&model.InventoryMasterProductLog{}).
+		Preload("MasterProduct")
+
+	if inventoryID != nil {
+		query = query.Where("inventory_master_product_id = ?", *inventoryID)
+	}
+
+	err := query.
 		Count(&total).
 		Offset(offset).
 		Limit(pageSize).

@@ -182,7 +182,7 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 		inventory.GET("/:id/show", deps.InventoryMasterProductHdl.Show)
 		inventory.POST("/:id/mark_processed", deps.InventoryMasterProductHdl.MarkAsProcessed)
 		inventory.POST("/:id/adjust_stock", deps.InventoryMasterProductHdl.AdjustStock)
-		inventory.GET("/:id/logs", deps.InventoryMasterProductHdl.GetLogs)
+		inventory.GET("/logs", deps.InventoryMasterProductHdl.GetLogs)
 		inventory.POST("/:id/toggle_priority", deps.InventoryMasterProductHdl.TogglePriority)
 		inventory.DELETE("/:id/delete", deps.InventoryMasterProductHdl.Delete)
 		inventory.GET("/low_stock/items", deps.InventoryMasterProductHdl.GetLowStockItems)

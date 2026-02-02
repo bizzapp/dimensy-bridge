@@ -156,11 +156,15 @@ func (h *InventoryMasterProductHandler) AdjustStock(c *gin.Context) {
 // GetLogs - Get inventory transaction logs
 // GET /inventory_master_product/{id}/logs
 func (h *InventoryMasterProductHandler) GetLogs(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, response.ErrorResponse("Invalid inventory ID", err.Error()))
-		return
+	var inventoryID *int64
+
+	if idStr := c.Query("id"); idStr != "" {
+		id, err := strconv.ParseInt(idStr, 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, response.ErrorResponse("Invalid inventory ID", err.Error()))
+			return
+		}
+		inventoryID = &id
 	}
 
 	page := 1
@@ -178,13 +182,16 @@ func (h *InventoryMasterProductHandler) GetLogs(c *gin.Context) {
 		}
 	}
 
-	logs, total, err := h.inventoryService.GetInventoryLogs(c.Request.Context(), id, page, pageSize)
+	logs, total, err := h.inventoryService.GetInventoryLogs(
+		c.Request.Context(),
+		inventoryID,
+		page,
+		pageSize,
+	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, response.ErrorResponse("Failed to fetch logs", err.Error()))
 		return
 	}
-
-	// c.JSON(http.StatusOK,)
 
 	response.JSON(c, http.StatusOK, "Logs fetched successfully", logs, &response.Meta{
 		Page:       page,

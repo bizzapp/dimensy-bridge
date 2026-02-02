@@ -18,11 +18,15 @@ type InventoryMasterProductService interface {
 	GetAllInventories(ctx context.Context, page, pageSize int) ([]*model.InventoryMasterProduct, int64, error)
 	DeleteInventory(ctx context.Context, id int64) error
 	AdjustStock(ctx context.Context, id int64, req *dto.AdjustStockRequest) (*model.InventoryMasterProduct, error)
-	GetInventoryLogs(ctx context.Context, id int64, page, pageSize int) ([]*model.InventoryMasterProductLog, int64, error)
 	MarkAsProcessed(ctx context.Context, id int64) (*model.InventoryMasterProduct, error)
 	TogglePriority(ctx context.Context, id int64) (*model.InventoryMasterProduct, error)
 	GetLowStockItems(ctx context.Context, threshold int) ([]*model.InventoryMasterProduct, error)
 	GetTotalInventoryValue(ctx context.Context) (float64, error)
+	GetInventoryLogs(
+		ctx context.Context,
+		inventoryID *int64,
+		page, pageSize int,
+	) ([]*model.InventoryMasterProductLog, int64, error)
 }
 
 type inventoryMasterProductService struct {
@@ -151,8 +155,12 @@ func (s *inventoryMasterProductService) AdjustStock(ctx context.Context, id int6
 	return inventory, nil
 }
 
-func (s *inventoryMasterProductService) GetInventoryLogs(ctx context.Context, id int64, page, pageSize int) ([]*model.InventoryMasterProductLog, int64, error) {
-	return s.logRepo.FindByInventoryID(ctx, id, page, pageSize)
+func (s *inventoryMasterProductService) GetInventoryLogs(
+	ctx context.Context,
+	inventoryID *int64,
+	page, pageSize int,
+) ([]*model.InventoryMasterProductLog, int64, error) {
+	return s.logRepo.FindInventoryLogs(ctx, inventoryID, page, pageSize)
 }
 
 func (s *inventoryMasterProductService) MarkAsProcessed(ctx context.Context, id int64) (*model.InventoryMasterProduct, error) {
