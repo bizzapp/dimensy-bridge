@@ -14,6 +14,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -395,7 +396,20 @@ func (s *clientDocumentService) RequestSign(token, externalID string, req dto.Ps
 			return fmt.Errorf("failed to find client document by external id: %w", err)
 		}
 
-		clientDocuentProcess, err := s.clientDocumentProcessRepo.FindByExternalIDAndExternalUserID(req.DocumentOrGroupID, req.UserID)
+		var userID *uuid.UUID
+		if req.UserID != nil && *req.UserID != "" {
+			if parsed, err := uuid.Parse(*req.UserID); err == nil {
+				userID = &parsed
+			}
+		}
+		var companyID *uuid.UUID
+		if req.CompanyID != nil && *req.CompanyID != "" {
+			if parsed, err := uuid.Parse(*req.CompanyID); err == nil {
+				companyID = &parsed
+			}
+		}
+
+		clientDocuentProcess, err := s.clientDocumentProcessRepo.FindByExternalIDAndExternalUserID(req.DocumentOrGroupID, userID)
 		if err == nil && clientDocuentProcess != nil {
 			status = 400
 			message := "This user already requested to this document. create new document or using other user"
@@ -420,8 +434,8 @@ func (s *clientDocumentService) RequestSign(token, externalID string, req dto.Ps
 			ClientID:          client.ID,
 			ClientDocumentID:  clientDocument.ID,
 			ExternalID:        req.DocumentOrGroupID,
-			ExternalUserID:    req.UserID,
-			ExternalCompanyID: req.CompanyID,
+			ExternalUserID:    userID,
+			ExternalCompanyID: companyID,
 			Status:            model.ClientDocumentProcessStatusWaiting,
 			ExpireTime:        &expireTime,
 			Type:              model.TypeSignMeterai,
@@ -729,7 +743,7 @@ func (s *clientDocumentService) ProcessStamp(token, externalID string, req dto.P
 	return respBody, status, nil
 }
 
-func (s *clientDocumentService) RequestOtpSign(token, externalID string, dto dto.PsreDocumentOtpSignRequest) ([]byte, int, error) {
+func (s *clientDocumentService) RequestOtpSign(token, externalID string, req dto.PsreDocumentOtpSignRequest) ([]byte, int, error) {
 
 	client, err := s.clientPsreSvc.GetByExternalID(externalID)
 	if err != nil {
@@ -740,18 +754,33 @@ func (s *clientDocumentService) RequestOtpSign(token, externalID string, dto dto
 		status   int
 	)
 	txErr := s.db.Transaction(func(tx *gorm.DB) error {
+		// Convert string IDs to UUID pointers
+
+		var userID *uuid.UUID
+		if req.UserID != nil {
+			if parsed, err := uuid.Parse(*req.UserID); err == nil {
+				userID = &parsed
+			}
+		}
+		var companyID *uuid.UUID
+		if req.CompanyID != nil {
+			if parsed, err := uuid.Parse(*req.CompanyID); err == nil {
+				companyID = &parsed
+			}
+		}
+
 		clientDocumentResendOtp := &model.ClientDocumentResendOtp{
 			ClientID:          client.ID,
-			ExternalID:        dto.DocumentOrGroupID,
-			ExternalUserID:    dto.UserID,
-			ExternalCompanyID: dto.CompanyID,
+			ExternalID:        req.DocumentOrGroupID,
+			ExternalUserID:    userID,
+			ExternalCompanyID: companyID,
 			// Type:              dto.DocumentType,
 		}
 		if err := tx.Create(&clientDocumentResendOtp).Error; err != nil {
 			return fmt.Errorf("failed create client document process: %w", err)
 		}
 
-		data, st, err := utils.PsreRequest("POST", "/document/request-otp-sign", dto, token, nil)
+		data, st, err := utils.PsreRequest("POST", "/document/request-otp-sign", req, token, nil)
 		respBody, status = data, st
 		if err != nil {
 			return fmt.Errorf("failed call psre api: %w", err)

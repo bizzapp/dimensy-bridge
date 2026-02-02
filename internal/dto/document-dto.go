@@ -31,8 +31,8 @@ type PsreDocumentFileRequest struct {
 
 type PsreDocumentSignRequest struct {
 	DocumentOrGroupID uuid.UUID                  `json:"documentOrGroupId" binding:"required"`
-	UserID            *uuid.UUID                 `json:"userId,omitempty"`
-	CompanyID         *uuid.UUID                 `json:"companyId,omitempty"`
+	UserID            *string                    `json:"userId,omitempty"`
+	CompanyID         *string                    `json:"companyId,omitempty"`
 	Positions         []PsreDocumentSignPosition `json:"positions" binding:"required,min=1,dive"`
 }
 
@@ -87,8 +87,8 @@ type PsreDocumentProcessStampRequest struct {
 
 // PsreDocumentOtpSignRequest untuk request OTP untuk signing
 type PsreDocumentOtpSignRequest struct {
-	DocumentOrGroupID uuid.UUID  `json:"documentOrGroupId" binding:"required"`
-	UserID            *uuid.UUID `json:"userId,omitempty"`    // boleh null
-	CompanyID         *uuid.UUID `json:"companyId,omitempty"` // boleh null
-	DocumentType      string     `json:"documentType" binding:"required,oneof=sign stamp"`
+	DocumentOrGroupID uuid.UUID `json:"documentOrGroupId" binding:"required"`
+	UserID            *string   `json:"userId,omitempty"`    // boleh null
+	CompanyID         *string   `json:"companyId,omitempty"` // boleh null
+	DocumentType      string    `json:"documentType" binding:"required,oneof=sign stamp"`
 }
