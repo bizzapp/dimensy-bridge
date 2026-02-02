@@ -22,6 +22,11 @@ var (
 	mu             sync.Mutex
 )
 
+// ====== PSRE Log Repository ======
+var psreLogRepo interface {
+	Create(data interface{}) error
+}
+
 // ====== Structs ======
 type loginResponse struct {
 	Code int `json:"code,omitempty"`
@@ -73,8 +78,23 @@ func ExtractExternalID(authData any) (string, error) {
 	return id, nil
 }
 
+// SetPsreLogRepository sets the repository for logging PSRE requests
+func SetPsreLogRepository(repo interface {
+	Create(data interface{}) error
+}) {
+	psreLogRepo = repo
+}
+
 // ====== Core HTTP Utility ======
+// LogCallback is a function type for logging PSRE requests and responses
+type LogCallback func(description, jsonHeader, jsonContent, fullURL string)
+
 func PsreRequest(method, path string, payload any, token string, queryParams map[string]string) ([]byte, int, error) {
+	return PsreRequestWithLogging(method, path, payload, token, queryParams, nil)
+}
+
+// PsreRequestWithLogging sends a request to PSRE and logs it using the provided callback
+func PsreRequestWithLogging(method, path string, payload any, token string, queryParams map[string]string, logCallback LogCallback) ([]byte, int, error) {
 	// Base URL
 	baseURL := os.Getenv("PSRE_BACKEND_URL")
 	if baseURL == "" {
@@ -99,12 +119,14 @@ func PsreRequest(method, path string, payload any, token string, queryParams map
 
 	// Siapkan payload
 	var body io.Reader
+	var payloadBytes []byte
 	if payload != nil {
-		data, err := json.Marshal(payload)
+		var err error
+		payloadBytes, err = json.Marshal(payload)
 		if err != nil {
 			return nil, http.StatusInternalServerError, fmt.Errorf("failed to marshal payload: %w", err)
 		}
-		body = bytes.NewBuffer(data)
+		body = bytes.NewBuffer(payloadBytes)
 	}
 
 	// Buat request
@@ -118,14 +140,71 @@ func PsreRequest(method, path string, payload any, token string, queryParams map
 		req.Header.Set("Authorization", token)
 	}
 
+	// Extract headers for logging
+	headerJSON, _ := json.Marshal(req.Header)
+
 	client := &http.Client{Timeout: 15 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
+		// Log failed request to database
+		if psreLogRepo != nil {
+			logDescription := "PSRE Request Failed"
+			logFullURL := reqURL.String()
+			headerJSONStr := string(headerJSON)
+
+			logEntry := map[string]interface{}{
+				"description":  logDescription,
+				"json_header":  &headerJSONStr,
+				"json_content": string(payloadBytes),
+				"full_url":     &logFullURL,
+			}
+
+			_ = psreLogRepo.Create(logEntry)
+		}
+
+		// Log failed request via callback
+		if logCallback != nil {
+			logCallback("PSRE Request Failed", string(headerJSON), string(payloadBytes), reqURL.String())
+		}
 		return nil, http.StatusBadGateway, fmt.Errorf("request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	respBody, _ := io.ReadAll(resp.Body)
+
+	// Auto-log the request and response to database
+	if psreLogRepo != nil {
+		respLog := map[string]interface{}{
+			"status_code": resp.StatusCode,
+			"body":        string(respBody),
+		}
+		respLogJSON, _ := json.Marshal(respLog)
+
+		// Create log entry
+		logDescription := "PSRE Request"
+		logFullURL := reqURL.String()
+		headerJSONStr := string(headerJSON)
+
+		logEntry := map[string]interface{}{
+			"description":  logDescription,
+			"json_header":  &headerJSONStr,
+			"json_content": string(respLogJSON),
+			"full_url":     &logFullURL,
+		}
+
+		// Ignore logging errors - don't let them affect the main request
+		_ = psreLogRepo.Create(logEntry)
+	}
+
+	// Log the request and response (if callback provided)
+	if logCallback != nil {
+		respLog := map[string]interface{}{
+			"status_code": resp.StatusCode,
+			"body":        string(respBody),
+		}
+		respLogJSON, _ := json.Marshal(respLog)
+		logCallback("PSRE Request", string(headerJSON), string(respLogJSON), reqURL.String())
+	}
 
 	// Jika error dari PSRE
 	if resp.StatusCode >= 400 {
