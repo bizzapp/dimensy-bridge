@@ -51,8 +51,12 @@ func (s *webhookService) StoreWebhookRequestLog(url, requestType, body, response
 }
 
 func (s *webhookService) SendDocumentNotification(req dto.WebhookDocumentNotificationRequest) error {
+	externalID := req.DocumentID
+	if req.GroupID != nil {
+		externalID = *req.GroupID
+	}
 
-	clientDocument, err := s.clientDocumentRepo.FindByExternalID(req.GroupID)
+	clientDocument, err := s.clientDocumentRepo.FindByExternalID(externalID)
 	if err != nil {
 		return fmt.Errorf("failed to find client document: %w", err)
 	}
@@ -109,12 +113,12 @@ func (s *webhookService) SendDocumentNotification(req dto.WebhookDocumentNotific
 		}
 	}
 
-	var documentID *uuid.UUID
-	if req.DocumentID == req.GroupID {
-		documentID = &req.DocumentID
+	documentID := req.DocumentID
+	if req.GroupID != nil {
+		documentID = *req.GroupID
 	}
 	// Check Document client_document_processes
-	clientDocumentProcess, err := s.clientDocumentProcessRepo.FindByExternalIDExternalUserIDExternalCompanyID(documentID, &req.GroupID, userID, companyID)
+	clientDocumentProcess, err := s.clientDocumentProcessRepo.FindByExternalIDExternalUserIDExternalCompanyID(&documentID, req.GroupID, userID, companyID)
 	if err != nil {
 		return fmt.Errorf("failed to find client document process: %w", err)
 	}
