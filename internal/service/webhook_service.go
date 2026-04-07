@@ -17,6 +17,7 @@ import (
 type WebhookService interface {
 	// Define webhook-related service methods here
 	SendDocumentNotification(req dto.WebhookDocumentNotificationRequest) error
+	StoreWebhookRequestLog(url, requestType, body, response, status string)
 }
 
 type webhookService struct {
@@ -33,6 +34,20 @@ func NewWebhookService(db *gorm.DB, clientDocumentRepo repository.ClientDocument
 		clientRequestLogRepo:      clientRequestLogRepo,
 		clientDocumentProcessRepo: clientDocumentProcessRepo,
 	}
+}
+
+// store all webhook recieved to clientrequestlog
+func (s *webhookService) StoreWebhookRequestLog(url, requestType, body, response, status string) {
+	requestLog := &model.ClientRequestLog{
+		URL:      url,
+		Type:     requestType,
+		Body:     body,
+		Header:   "Content-Type: application/json",
+		Response: fmt.Sprintf("%s | %s", status, response),
+	}
+
+	// Save log to database (ignore errors for logging)
+	s.clientRequestLogRepo.Create(requestLog)
 }
 
 func (s *webhookService) SendDocumentNotification(req dto.WebhookDocumentNotificationRequest) error {
