@@ -52,7 +52,7 @@ func (s *webhookService) StoreWebhookRequestLog(url, requestType, body, response
 
 func (s *webhookService) SendDocumentNotification(req dto.WebhookDocumentNotificationRequest) error {
 
-	clientDocument, err := s.clientDocumentRepo.FindByExternalID(req.DocumentID)
+	clientDocument, err := s.clientDocumentRepo.FindByExternalID(req.GroupID)
 	if err != nil {
 		return fmt.Errorf("failed to find client document: %w", err)
 	}

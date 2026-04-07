@@ -14,6 +14,7 @@ type ClientDocumentRepository interface {
 	FindByID(id int64) (*model.ClientDocument, error)
 	FindAll() ([]model.ClientDocument, error)
 	FindByExternalID(externalID uuid.UUID) (*model.ClientDocument, error)
+	FindByGroupExternalID(groupExternalID uuid.UUID) ([]model.ClientDocument, error)
 }
 
 type clientDocumentRepository struct {
@@ -22,6 +23,13 @@ type clientDocumentRepository struct {
 
 func NewClientDocumentRepository(db *gorm.DB) ClientDocumentRepository {
 	return &clientDocumentRepository{db: db}
+}
+func (r *clientDocumentRepository) FindByGroupExternalID(groupExternalID uuid.UUID) ([]model.ClientDocument, error) {
+	var docs []model.ClientDocument
+	if err := r.db.Where("group_external_id = ?", groupExternalID).Find(&docs).Error; err != nil {
+		return nil, err
+	}
+	return docs, nil
 }
 func (r *clientDocumentRepository) FindByExternalID(externalID uuid.UUID) (*model.ClientDocument, error) {
 	var doc model.ClientDocument
