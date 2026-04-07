@@ -109,8 +109,12 @@ func (s *webhookService) SendDocumentNotification(req dto.WebhookDocumentNotific
 		}
 	}
 
+	var documentID *uuid.UUID
+	if req.DocumentID == req.GroupID {
+		documentID = &req.DocumentID
+	}
 	// Check Document client_document_processes
-	clientDocumentProcess, err := s.clientDocumentProcessRepo.FindByExternalIDExternalUserIDExternalCompanyID(req.DocumentID, userID, companyID)
+	clientDocumentProcess, err := s.clientDocumentProcessRepo.FindByExternalIDExternalUserIDExternalCompanyID(documentID, &req.GroupID, userID, companyID)
 	if err != nil {
 		return fmt.Errorf("failed to find client document process: %w", err)
 	}

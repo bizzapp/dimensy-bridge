@@ -434,6 +434,7 @@ func (s *clientDocumentService) RequestSign(token, externalID string, req dto.Ps
 			ClientID:          client.ID,
 			ClientDocumentID:  clientDocument.ID,
 			ExternalID:        req.DocumentOrGroupID,
+			ExternalGroupID:   &req.DocumentOrGroupID,
 			ExternalUserID:    userID,
 			ExternalCompanyID: companyID,
 			Status:            model.ClientDocumentProcessStatusWaiting,

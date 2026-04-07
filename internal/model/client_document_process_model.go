@@ -27,6 +27,7 @@ type ClientDocumentProcess struct {
 	ClientID           int64      `gorm:"not null;index" json:"client_id"`
 	Type               string     `gorm:"size:50;not null;default:'SIGN_METERAI'" json:"type"`
 	ExternalID         uuid.UUID  `gorm:"type:uuid;not null" json:"external_id"`
+	ExternalGroupID    *uuid.UUID `gorm:"type:uuid" json:"group_id,omitempty"`
 	ExternalUserID     *uuid.UUID `gorm:"type:uuid" json:"external_user_id,omitempty"`
 	ClientUserID       *int64     `gorm:"index" json:"client_user_id,omitempty"`
 	ExternalCompanyID  *uuid.UUID `gorm:"type:uuid" json:"external_company_id,omitempty"`

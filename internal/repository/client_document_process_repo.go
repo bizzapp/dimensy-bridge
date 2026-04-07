@@ -11,7 +11,7 @@ type ClientDocumentProcessRepository interface {
 	Create(data *model.ClientDocumentProcess) error
 	FindByExternalID(externalID uuid.UUID) (*model.ClientDocumentProcess, error)
 	FindByExternalIDAndExternalUserID(externalID uuid.UUID, userID *uuid.UUID) (*model.ClientDocumentProcess, error)
-	FindByExternalIDExternalUserIDExternalCompanyID(externalID uuid.UUID, userID *uuid.UUID, companyID *uuid.UUID) (*model.ClientDocumentProcess, error)
+	FindByExternalIDExternalUserIDExternalCompanyID(externalID *uuid.UUID, groupID *uuid.UUID, userID *uuid.UUID, companyID *uuid.UUID) (*model.ClientDocumentProcess, error)
 	UpdateStatus(externalID uuid.UUID, status string) error
 	DeleteByExternalID(externalID uuid.UUID) error
 }
@@ -27,22 +27,26 @@ func NewClientDocumentProcessRepository(db *gorm.DB) ClientDocumentProcessReposi
 func (r *clientDocumentProcessRepository) Create(data *model.ClientDocumentProcess) error {
 	return r.db.Create(data).Error
 }
-func (r *clientDocumentProcessRepository) FindByExternalIDExternalUserIDExternalCompanyID(externalID uuid.UUID, userID *uuid.UUID, companyID *uuid.UUID) (*model.ClientDocumentProcess, error) {
+func (r *clientDocumentProcessRepository) FindByExternalIDExternalUserIDExternalCompanyID(externalID *uuid.UUID, groupID *uuid.UUID, userID *uuid.UUID, companyID *uuid.UUID) (*model.ClientDocumentProcess, error) {
 	var process model.ClientDocumentProcess
-	query := r.db.Where("external_id = ?", externalID)
+	query := r.db
+	if externalID != nil {
+		query = query.Where("external_id = ?", *externalID)
+	}
+
+	// Handle groupID: if nil, check IS NULL; otherwise check equality
+	if groupID != nil {
+		query = query.Where("external_group_id = ?", *groupID)
+	}
 
 	// Handle userID: if nil, check IS NULL; otherwise check equality
-	if userID == nil {
-		query = query.Where("external_user_id IS NULL")
-	} else {
-		query = query.Where("external_user_id = ?", userID)
+	if userID != nil {
+		query = query.Where("external_user_id = ?", *userID)
 	}
 
 	// Handle companyID: if nil, check IS NULL; otherwise check equality
-	if companyID == nil {
-		query = query.Where("external_company_id IS NULL")
-	} else {
-		query = query.Where("external_company_id = ?", companyID)
+	if companyID != nil {
+		query = query.Where("external_company_id = ?", *companyID)
 	}
 
 	if err := query.First(&process).Error; err != nil {
