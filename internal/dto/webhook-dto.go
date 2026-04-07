@@ -7,6 +7,6 @@ type WebhookDocumentNotificationRequest struct {
 	UserID       *string   `json:"userId" binding:"omitempty"`
 	CompanyID    *string   `json:"companyId" binding:"omitempty"`
 	ErrorMessage string    `json:"errorMessage,omitempty"`
-	Status       string    `json:"status" binding:"required"`
-	SignedAT     string    `json:"signedAt,omitempty"`
+	Status       *string   `json:"status"`
+	SignedAT     *string   `json:"signedAt,omitempty"`
 }

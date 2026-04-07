@@ -114,8 +114,10 @@ func (s *webhookService) SendDocumentNotification(req dto.WebhookDocumentNotific
 	if err != nil {
 		return fmt.Errorf("failed to find client document process: %w", err)
 	}
-	if req.Status == "SUCCESS" {
-		clientDocumentProcess.Status = req.Status
+	status := "FAILED"
+	if req.Status != nil && *req.Status == "SUCCESS" {
+		status = *req.Status
+		clientDocumentProcess.Status = status
 		clientDocumentProcess.IsDone = true
 		// clientDocumentProcess.ClientUserID = req.UserID
 		// clientDocumentProcess.ClientCompanyID = req.CompanyID
@@ -132,7 +134,7 @@ func (s *webhookService) SendDocumentNotification(req dto.WebhookDocumentNotific
 	// Update document status if needed
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		// Update document status based on webhook status
-		s.updateDocumentStatus(clientDocument, req.Status)
+		s.updateDocumentStatus(clientDocument, status)
 		return nil
 	}
 
