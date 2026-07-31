@@ -28,10 +28,19 @@ type ClientUserPhoneActivationRequest struct {
 	OTP    string `json:"otp" binding:"required"`
 }
 
+type LivenessCoreRequest struct {
+	SuccessURL string `json:"successUrl" binding:"required,url"`
+	FailedURL  string `json:"failedUrl" binding:"required,url"`
+}
 type ClientUserKYCRequest struct {
-	UserID     uuid.UUID `json:"userId" binding:"required"`
-	SuccessURL string    `json:"successUrl" binding:"required,url"`
-	FailedURL  string    `json:"failedUrl" binding:"required,url"`
+	LivenessCoreRequest
+	UserID uuid.UUID `json:"userId" binding:"required"`
+}
+
+type UserCompanyPicDTO struct {
+	UserID    *uuid.UUID `json:"userId,omitempty" binding:"required_without=CompanyID"`
+	CompanyID *uuid.UUID `json:"companyId,omitempty" binding:"required_without=UserID"`
+	UserPicID *uuid.UUID `json:"userPicId,omitempty"` // Note: Custom validation logic for userPIC can be implemented in the handler/service or via custom validator
 }
 
 type ClientUserVerifyKYCRequest struct {

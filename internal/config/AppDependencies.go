@@ -5,7 +5,7 @@ import (
 	psre_handler "dimensy-bridge/internal/handler/psre_handler"
 	"dimensy-bridge/internal/repository"
 	"dimensy-bridge/internal/service"
-	psre_service "dimensy-bridge/internal/service/psre_service"
+	psreservice "dimensy-bridge/internal/service/psre_service"
 	"dimensy-bridge/pkg/utils"
 
 	"github.com/redis/go-redis/v9"
@@ -80,7 +80,7 @@ type AppDependencies struct {
 	QuotaClientReductionHdl  *handler.QuotaClientReductionHandler
 
 	ClientDocumentRepo repository.ClientDocumentRepository
-	ClientDocumentSvc  psre_service.ClientDocumentService
+	ClientDocumentSvc  psreservice.ClientDocumentService
 
 	// Certificate Module
 	CertificateHdl *handler.CertificateHandler
@@ -96,27 +96,27 @@ type AppDependencies struct {
 
 	// PSRE Company Module
 	PsreCompanyHdl       *psre_handler.PsreCompanyHandler
-	PsreClientCompanySvc psre_service.ClientCompanyService
+	PsreClientCompanySvc psreservice.ClientCompanyService
 
 	// PSRE User Module
 	PsreClientUserHdl *psre_handler.PsreClientUserHandler
-	PsreClientUserSvc psre_service.ClientUserService
+	PsreClientUserSvc psreservice.ClientUserService
 
 	// PSRE Certificate Module
 	PsreCertificateHdl *psre_handler.PsreCertificateHandler
-	PsreCertificateSvc psre_service.CertificateService
+	PsreCertificateSvc psreservice.CertificateService
 
 	// PSRE Document Module
 	PsreClientDocumentHdl *psre_handler.PsreClientDocumentHandler
-	PsreDocumentSvc       psre_service.ClientDocumentService
+	PsreDocumentSvc       psreservice.ClientDocumentService
 
 	// PSRE Dashboard Module
 	PsreDashboardHdl *psre_handler.PsreDashboardHandler
-	PsreDashboardSvc psre_service.DashboardService
+	PsreDashboardSvc psreservice.DashboardService
 
 	// PSRE Backend Module
 	PsreBackendHdl *psre_handler.PsreBackendHandler
-	PsreBackendSvc psre_service.BackendService
+	PsreBackendSvc psreservice.BackendService
 
 	WebhookHdl *handler.WebhookHandler // 👈 tambahkan ini
 	WebhookSvc service.WebhookService  // 👈 tambahkan ini
@@ -190,13 +190,14 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	webhookSvc := service.NewWebhookService(db, clientDocumentRepo, clientRequestLogRepo, clientDocumentProcessRepo)
 
 	// === PSRE SERVICES ===
-	psreClientSvc := psre_service.NewClientService(clientRequestLogRepo, userRepo, clientRepo, clientPsreRepo)
-	psreClientCompanySvc := psre_service.NewClientCompanyService(db, clientSvc, clientCompanyRepo, quotaClientSvc, clientCompanyInviteSvc, clientCompanyInviteRepo, clientUserRepo)
-	psreClientUserSvc := psre_service.NewClientUserService(db, clientPsreSvc, clientCompanySvc, clientUserSvc, clientUserRepo, clientKYCHistorySvc, clientSvc, clientKYCHistoryRepo)
-	psreCertificateSvc := psre_service.NewCertificateService(db, certificateRepo, clientSvc, userSvc, clientCompanySvc, clientUserSvc)
-	psreClientDocumentSvc := psre_service.NewClientDocumentService(db, clientPsreSvc, clientDocumentRepo, clientDocumentProcessRepo)
-	psreDashboardSvc := psre_service.NewDashboardService()
-	psreBackendSvc := psre_service.NewBackendService()
+	psreClientSvc := psreservice.NewClientService(clientRequestLogRepo, userRepo, clientRepo, clientPsreRepo)
+	psreClientCompanySvc := psreservice.NewClientCompanyService(db, clientSvc, clientCompanyRepo, quotaClientSvc, clientCompanyInviteSvc, clientCompanyInviteRepo, clientUserRepo)
+	psreClientUserSvc := psreservice.NewClientUserService(db, clientPsreSvc, clientCompanySvc, clientUserSvc, clientUserRepo, clientKYCHistorySvc, clientSvc, clientKYCHistoryRepo)
+	psreCertificateSvc := psreservice.NewCertificateService(db, certificateRepo, clientSvc, userSvc, clientCompanySvc, clientUserSvc)
+	psreCertificateV2Svc := psreservice.NewCertificateV2Service(db, certificateRepo, clientSvc, userSvc, clientCompanySvc, clientUserSvc, clientKYCHistoryRepo, psreCertificateSvc)
+	psreClientDocumentSvc := psreservice.NewClientDocumentService(db, clientPsreSvc, clientDocumentRepo, clientDocumentProcessRepo)
+	psreDashboardSvc := psreservice.NewDashboardService()
+	psreBackendSvc := psreservice.NewBackendService()
 	clientIPWhitelistSvc := service.NewClientIPWhitelistService(clientIPWhitelistRepo)
 
 	// === C
@@ -224,7 +225,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	psreClientHdl := psre_handler.NewPsreClientHandler(psreClientSvc)
 	psreCompanyHdl := psre_handler.NewPsreCompanyHandler(clientSvc, clientCompanySvc, psreClientCompanySvc)
 	psreClientUserHdl := psre_handler.NewPsreClientUserHandler(clientUserSvc, clientPsreSvc, clientCompanySvc, psreClientUserSvc)
-	psreCertificateHdl := psre_handler.NewPsreCertificateHandler(psreCertificateSvc)
+	psreCertificateHdl := psre_handler.NewPsreCertificateHandler(psreCertificateSvc, psreCertificateV2Svc)
 	psreClientDocumentHdl := psre_handler.NewPsreClientDocumentHandler(psreClientDocumentSvc)
 	clientIPWhitelistHdl := handler.NewClientIPWhitelistHandler(clientIPWhitelistSvc)
 	psreDashboardHdl := psre_handler.NewPsreDashboardHandler(psreDashboardSvc)

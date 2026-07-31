@@ -20,6 +20,8 @@ type CertificateService interface {
 	Active(token, externalID string, req *dto.CertificateIssueActiveRequest) ([]byte, int, error)
 	RevokeRequest(token, externalID string, req *dto.CertificateRevokeRequest) ([]byte, int, error)
 	Revoke(token, externalID string, req *dto.CertificateRevokeValidateRequest) ([]byte, int, error)
+	CreateOrUpdateCertificateWithTx(tx *gorm.DB, clientID int64, userID *int64, companyID *int64, req *dto.CertificateIssueActiveRequest, dataResp dto.CertificateActiveResponseData) error
+	HandleActiveAsFallbackWithResponse(tx *gorm.DB, token string, req *dto.CertificateIssueActiveRequest, clientID int64) ([]byte, int, error)
 }
 
 type certificateService struct {
@@ -64,7 +66,7 @@ func (s *certificateService) Issue(token, externalID string, req *dto.Certificat
 
 		if err != nil {
 			// Try Active as fallback
-			fallbackData, fallbackStatus, fallbackErr := s.handleActiveAsFallbackWithResponse(tx, token, req, client.ID)
+			fallbackData, fallbackStatus, fallbackErr := s.HandleActiveAsFallbackWithResponse(tx, token, req, client.ID)
 			if fallbackErr != nil {
 				return fallbackErr
 			}
@@ -115,7 +117,7 @@ func (s *certificateService) Issue(token, externalID string, req *dto.Certificat
 			}
 
 			// CreateOrUpdate certificate within transaction
-			if err := s.createOrUpdateCertificateWithTx(tx, client.ID, userID, companyID, req, dataResp); err != nil {
+			if err := s.CreateOrUpdateCertificateWithTx(tx, client.ID, userID, companyID, req, dataResp); err != nil {
 				return fmt.Errorf("failed to create or update certificate: %w", err)
 			}
 		}
@@ -188,7 +190,7 @@ func (s *certificateService) Active(token, externalID string, req *dto.Certifica
 			}
 
 			// CreateOrUpdate certificate within transaction
-			if err := s.createOrUpdateCertificateWithTx(tx, client.ID, userID, companyID, req, resp.Data); err != nil {
+			if err := s.CreateOrUpdateCertificateWithTx(tx, client.ID, userID, companyID, req, resp.Data); err != nil {
 				return fmt.Errorf("failed to create or update certificate: %w", err)
 			}
 		}
@@ -276,8 +278,8 @@ func (s *certificateService) Revoke(token, externalID string, req *dto.Certifica
 	return respBody, status, nil
 }
 
-// createOrUpdateCertificateWithTx implements create or update logic within a transaction
-func (s *certificateService) createOrUpdateCertificateWithTx(tx *gorm.DB, clientID int64, userID *int64, companyID *int64, req *dto.CertificateIssueActiveRequest, dataResp dto.CertificateActiveResponseData) error {
+// CreateOrUpdateCertificateWithTx implements create or update logic within a transaction
+func (s *certificateService) CreateOrUpdateCertificateWithTx(tx *gorm.DB, clientID int64, userID *int64, companyID *int64, req *dto.CertificateIssueActiveRequest, dataResp dto.CertificateActiveResponseData) error {
 	// Try to find existing certificate
 	existingCert, err := s.certificateRepo.FindByClientUserAndCompany(clientID, userID, companyID)
 
@@ -334,8 +336,8 @@ func (s *certificateService) createOrUpdateCertificateWithTx(tx *gorm.DB, client
 	return tx.Save(existingCert).Error
 }
 
-// handleActiveAsFallbackWithResponse handles fallback to Active when Issue fails and returns response
-func (s *certificateService) handleActiveAsFallbackWithResponse(tx *gorm.DB, token string, req *dto.CertificateIssueActiveRequest, clientID int64) ([]byte, int, error) {
+// HandleActiveAsFallbackWithResponse handles fallback to Active when Issue fails and returns response
+func (s *certificateService) HandleActiveAsFallbackWithResponse(tx *gorm.DB, token string, req *dto.CertificateIssueActiveRequest, clientID int64) ([]byte, int, error) {
 	// Call PSrE Active API
 	data, psreStatus, err := utils.PsreRequest("POST", "/certificate/active", req, token, nil)
 	if err != nil {
@@ -373,7 +375,7 @@ func (s *certificateService) handleActiveAsFallbackWithResponse(tx *gorm.DB, tok
 		}
 
 		// CreateOrUpdate certificate within transaction
-		if err := s.createOrUpdateCertificateWithTx(tx, clientID, userID, companyID, req, resp.Data); err != nil {
+		if err := s.CreateOrUpdateCertificateWithTx(tx, clientID, userID, companyID, req, resp.Data); err != nil {
 			return data, psreStatus, fmt.Errorf("failed to create or update certificate in fallback: %w", err)
 		}
 	}

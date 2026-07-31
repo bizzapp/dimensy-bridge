@@ -16,6 +16,7 @@ type ClientCompany struct {
 	NIB        string     `gorm:"size:100" json:"nib"`
 	PICName    string     `gorm:"size:255" json:"pic_name"`
 	PICEmail   string     `gorm:"size:255" json:"pic_email"`
+	PICPhone   *string    `gorm:"size:100" json:"pic_phone,omitempty"`
 	ExternalID *uuid.UUID `gorm:"type:uuid" json:"external_id,omitempty"`
 
 	CreatedAt *time.Time `json:"created_at,omitempty"`

@@ -11,6 +11,19 @@ type CertificateIssueActiveRequest struct {
 	CompanyID *uuid.UUID `json:"companyId" binding:"required_without=UserID"`
 }
 
+type CertificateRequestIssueV2Request struct {
+	UserCompanyPicDTO
+	LivenessCoreRequest
+}
+
+
+type CertificateIssueV2Request struct {
+	SignatureID string `json:"signatureId" binding:"required"`
+	Status      string `json:"status" binding:"required"`
+	CallbackURL string `json:"callbackUrl" binding:"required"`
+}
+
+
 type CertificateRevokeRequest struct {
 	UserID    *uuid.UUID `json:"userId" binding:"omitempty" validate:"required_without=CompanyID"`
 	CompanyID *uuid.UUID `json:"companyId" binding:"omitempty" validate:"required_without=UserID"`

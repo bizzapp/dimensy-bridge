@@ -8,7 +8,7 @@ type PsreCreateClientCompanyRequest struct {
 	CompanyIndustry string `json:"companyIndustry" validate:"required"`
 	NPWP            string `json:"npwp" validate:"required"`
 	NIB             string `json:"nib" validate:"required"`
-	PICPhone        string `json:"picPhone" validate:"required,e164"`
+	PICPhone        string `json:"picPhone" validate:"required"`
 	PICName         string `json:"picName" validate:"required"`
 	PICEmail        string `json:"picEmail" validate:"required,email"`
 }

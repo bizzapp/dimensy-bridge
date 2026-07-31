@@ -20,15 +20,12 @@ func NewPsreClientDocumentHandler(clientDocumentSvc psreservice.ClientDocumentSe
 }
 
 func (h *PsreClientDocumentHandler) Upload(c *gin.Context) {
-	authData, _ := c.Get("authData")
-	token := c.Request.Header.Get("Authorization")
-
-	externalID, err := utils.ExtractExternalID(authData)
+	externalID, token, err := utils.ValidateExternalID(c)
 	if err != nil {
-		message := utils.ResponseError(err.Error(), http.StatusUnauthorized)
-		c.Data(http.StatusUnauthorized, "application/json", message)
+		c.JSON(http.StatusUnauthorized, err.Error())
 		return
 	}
+
 	var req dto.PsreDocumentSingleFileRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		message := utils.ResponseError(err.Error(), http.StatusBadRequest)

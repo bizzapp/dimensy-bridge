@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -63,6 +64,21 @@ func ExpireDate() time.Time {
 		return exp.AddDate(years, 0, 0)
 	}
 	return exp.AddDate(1, 0, 0) // default 1 tahun
+}
+
+func ValidateExternalID(c *gin.Context) (externalID string, token string, err error) {
+	authData, exists := c.Get("authData")
+	token = c.Request.Header.Get("Authorization")
+	if !exists {
+		return "", "", errors.New("authData tidak ditemukan di context")
+	}
+
+	externalID, err = ExtractExternalID(authData)
+	if err != nil {
+		return "", "", fmt.Errorf("gagal extract external ID: %v", err)
+	}
+
+	return externalID, token, nil
 }
 
 func ExtractExternalID(authData any) (string, error) {

@@ -33,10 +33,8 @@ func NewPsreClientUserHandler(
 }
 
 func (h *PsreClientUserHandler) Activate(c *gin.Context) {
-	authData, _ := c.Get("authData")
-	token := c.Request.Header.Get("Authorization")
 
-	externalID, err := utils.ExtractExternalID(authData)
+	externalID, token, err := utils.ValidateExternalID(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, err.Error())
 		return
@@ -55,10 +53,8 @@ func (h *PsreClientUserHandler) Activate(c *gin.Context) {
 	c.Data(status, "application/json", respBody)
 }
 func (h *PsreClientUserHandler) ResendActivationUser(c *gin.Context) {
-	authData, _ := c.Get("authData")
-	token := c.Request.Header.Get("Authorization")
 
-	externalID, err := utils.ExtractExternalID(authData)
+	externalID, token, err := utils.ValidateExternalID(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, err.Error())
 		return
@@ -79,10 +75,7 @@ func (h *PsreClientUserHandler) ResendActivationUser(c *gin.Context) {
 
 func (h *PsreClientUserHandler) RequestPhoneActivation(c *gin.Context) {
 
-	authData, _ := c.Get("authData")
-	token := c.Request.Header.Get("Authorization")
-
-	externalID, err := utils.ExtractExternalID(authData)
+	externalID, token, err := utils.ValidateExternalID(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, err.Error())
 		return
@@ -103,10 +96,8 @@ func (h *PsreClientUserHandler) RequestPhoneActivation(c *gin.Context) {
 }
 
 func (h *PsreClientUserHandler) PhoneActivation(c *gin.Context) {
-	authData, _ := c.Get("authData")
-	token := c.Request.Header.Get("Authorization")
 
-	externalID, err := utils.ExtractExternalID(authData)
+	externalID, token, err := utils.ValidateExternalID(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, err.Error())
 		return
@@ -126,10 +117,8 @@ func (h *PsreClientUserHandler) PhoneActivation(c *gin.Context) {
 }
 
 func (h *PsreClientUserHandler) List(c *gin.Context) {
-	authData, _ := c.Get("authData")
-	token := c.Request.Header.Get("Authorization")
 
-	externalID, err := utils.ExtractExternalID(authData)
+	externalID, token, err := utils.ValidateExternalID(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, err.Error())
 		return
@@ -147,12 +136,9 @@ func (h *PsreClientUserHandler) List(c *gin.Context) {
 	c.Data(status, "application/json", data)
 }
 func (h *PsreClientUserHandler) Sync(c *gin.Context) {
-	authData, _ := c.Get("authData")
-	token := c.Request.Header.Get("Authorization")
-
-	externalID, err := utils.ExtractExternalID(authData)
+	externalID, token, err := utils.ValidateExternalID(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(http.StatusUnauthorized, err.Error())
 		return
 	}
 
@@ -164,15 +150,11 @@ func (h *PsreClientUserHandler) Sync(c *gin.Context) {
 	c.Data(status, "application/json", respBody)
 }
 func (h *PsreClientUserHandler) Detail(c *gin.Context) {
-	token := c.GetHeader("Authorization")
-	authData, _ := c.Get("authData")
-
-	externalID, err := utils.ExtractExternalID(authData)
+	externalID, token, err := utils.ValidateExternalID(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, err.Error())
 		return
 	}
-
 	id := c.Param("id")
 
 	data, status, err := h.psreClientUserSvc.GetUserDetail(token, externalID, id)
@@ -184,12 +166,10 @@ func (h *PsreClientUserHandler) Detail(c *gin.Context) {
 }
 
 func (h *PsreClientUserHandler) Register(c *gin.Context) {
-	authData, _ := c.Get("authData")
-	token := c.Request.Header.Get("Authorization")
 
-	externalID, err := utils.ExtractExternalID(authData)
+	externalID, token, err := utils.ValidateExternalID(c)
 	if err != nil {
-		response.JSON(c, http.StatusUnauthorized, err.Error(), nil, nil)
+		c.JSON(http.StatusUnauthorized, err.Error())
 		return
 	}
 
@@ -208,15 +188,12 @@ func (h *PsreClientUserHandler) Register(c *gin.Context) {
 }
 
 func (h *PsreClientUserHandler) RequestKYC(c *gin.Context) {
-	authData, _ := c.Get("authData")
-	token := c.Request.Header.Get("Authorization")
 
-	externalID, err := utils.ExtractExternalID(authData)
+	externalID, token, err := utils.ValidateExternalID(c)
 	if err != nil {
-		response.JSON(c, http.StatusUnauthorized, err.Error(), nil, nil)
+		c.JSON(http.StatusUnauthorized, err.Error())
 		return
 	}
-
 	var req dto.ClientUserKYCRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.JSON(c, http.StatusBadRequest, err.Error(), nil, nil)
@@ -232,15 +209,12 @@ func (h *PsreClientUserHandler) RequestKYC(c *gin.Context) {
 }
 
 func (h *PsreClientUserHandler) VerifyKYC(c *gin.Context) {
-	authData, _ := c.Get("authData")
-	token := c.Request.Header.Get("Authorization")
 
-	externalID, err := utils.ExtractExternalID(authData)
+	externalID, token, err := utils.ValidateExternalID(c)
 	if err != nil {
-		response.JSON(c, http.StatusUnauthorized, err.Error(), nil, nil)
+		c.JSON(http.StatusUnauthorized, err.Error())
 		return
 	}
-
 	var req dto.ClientUserVerifyKYCRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.JSON(c, http.StatusBadRequest, err.Error(), nil, nil)

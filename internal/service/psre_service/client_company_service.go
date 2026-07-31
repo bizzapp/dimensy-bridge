@@ -271,6 +271,7 @@ func (s *clientCompanyService) CreateClientCompany(
 			NIB:      req.NIB,
 			PICName:  req.PICName,
 			PICEmail: req.PICEmail,
+			PICPhone: &req.PICPhone,
 			// Status:   "PENDING",
 		}
 
