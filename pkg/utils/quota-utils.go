@@ -3,6 +3,7 @@ package utils
 import (
 	"dimensy-bridge/internal/dto"
 	"dimensy-bridge/internal/model"
+	"dimensy-bridge/internal/model/seeder"
 	"fmt"
 
 	"gorm.io/gorm"
@@ -133,6 +134,12 @@ func (qu *QuotaUtils) UseQuota(tx *gorm.DB, req dto.UseQuotaClientRequest) (*mod
 	}
 
 	return &quota, nil
+}
+
+// UseQuotaEkyc reduces E-KYC quota specifically
+func (qu *QuotaUtils) UseQuotaEkyc(tx *gorm.DB, req dto.UseQuotaClientRequest) (*model.QuotaClient, error) {
+	req.MasterProductID = seeder.ID_PRODUCT_KYC
+	return qu.UseQuota(tx, req)
 }
 
 func (qu *QuotaUtils) QuotaLimit(tx *gorm.DB, clientID int64, masterProductID int64) (*model.QuotaClient, error) {

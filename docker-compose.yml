@@ -1,0 +1,24 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    # Menyesuaikan port yang mungkin digunakan oleh framework Gin
+    ports:
+      - "1111:1111"
+    # Mount direktori saat ini ke /app di dalam container untuk hot reload (air)
+    volumes:
+      - .:/app
+    # Menggunakan env_file sesuai permintaan
+    env_file:
+      - .env
+    # Menjalankan di network r17_network
+    networks:
+      - r17_network
+    restart: unless-stopped
+
+networks:
+  r17_network:
+    name: r17_network
+    # Uncomment jika r17_network adalah external network yang dibuat di luar docker-compose ini
+    external: true
