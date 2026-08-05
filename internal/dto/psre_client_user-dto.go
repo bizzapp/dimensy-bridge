@@ -34,7 +34,7 @@ type LivenessCoreRequest struct {
 }
 type ClientUserKYCRequest struct {
 	LivenessCoreRequest
-	UserID uuid.UUID `json:"userId" binding:"required"`
+	UserCompanyPicDTO
 }
 
 type UserCompanyPicDTO struct {
@@ -45,6 +45,7 @@ type UserCompanyPicDTO struct {
 
 type ClientUserVerifyKYCRequest struct {
 	SignatureID string `json:"signatureId" binding:"required"`
+	Status      string `json:"status" binding:"required"`
 }
 type ClientUserRequest struct {
 	NIK       string     `json:"nik" binding:"required"`
