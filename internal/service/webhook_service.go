@@ -17,6 +17,7 @@ import (
 type WebhookService interface {
 	// Define webhook-related service methods here
 	SendDocumentNotification(req dto.WebhookDocumentNotificationRequest) error
+	SendCertificateNotification(req dto.WebhookCertificateNotificationRequest) error
 	StoreWebhookRequestLog(url, requestType, body, response, status string)
 }
 
@@ -25,14 +26,21 @@ type webhookService struct {
 	clientDocumentRepo        repository.ClientDocumentRepository
 	clientRequestLogRepo      repository.ClientRequestLogRepository
 	clientDocumentProcessRepo repository.ClientDocumentProcessRepository
+	clientKycHistoryRepo      repository.ClientKYCHistoryRepository
 }
 
-func NewWebhookService(db *gorm.DB, clientDocumentRepo repository.ClientDocumentRepository, clientRequestLogRepo repository.ClientRequestLogRepository, clientDocumentProcessRepo repository.ClientDocumentProcessRepository) WebhookService {
+func NewWebhookService(db *gorm.DB,
+	clientDocumentRepo repository.ClientDocumentRepository,
+	clientRequestLogRepo repository.ClientRequestLogRepository,
+	clientDocumentProcessRepo repository.ClientDocumentProcessRepository,
+	clientKycHistoryRepo repository.ClientKYCHistoryRepository,
+) WebhookService {
 	return &webhookService{
 		db:                        db,
 		clientDocumentRepo:        clientDocumentRepo,
 		clientRequestLogRepo:      clientRequestLogRepo,
 		clientDocumentProcessRepo: clientDocumentProcessRepo,
+		clientKycHistoryRepo:      clientKycHistoryRepo,
 	}
 }
 
@@ -48,6 +56,60 @@ func (s *webhookService) StoreWebhookRequestLog(url, requestType, body, response
 
 	// Save log to database (ignore errors for logging)
 	s.clientRequestLogRepo.Create(requestLog)
+}
+
+func (s *webhookService) SendCertificateNotification(req dto.WebhookCertificateNotificationRequest) error {
+	signatureID := req.SignatureID
+
+	kycHistory, err := s.clientKycHistoryRepo.GetBySignatureID(signatureID)
+	if err != nil {
+		return fmt.Errorf("failed to find client document: %w", err)
+	}
+
+	if kycHistory.ClientCallbackURL == nil || *kycHistory.ClientCallbackURL == "" {
+		return fmt.Errorf("client callback URL is not set for document ID: %s", req.SignatureID)
+	}
+
+	clientCallbackURL := *kycHistory.ClientCallbackURL
+
+	payload, err := json.Marshal(req)
+	if err != nil {
+		return fmt.Errorf("failed to marshal webhook payload: %w", err)
+	}
+	httpReq, err := http.NewRequest("POST", clientCallbackURL, bytes.NewBuffer(payload))
+	if err != nil {
+		return fmt.Errorf("failed to create HTTP request: %w", err)
+	}
+	// Set headers
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("User-Agent", "Dimensy-Bridge-Webhook/1.0")
+
+	// Create HTTP client with timeout
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	// Send the request
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		// Log failed request
+		s.logRequest(kycHistory.ClientID, clientCallbackURL, "WEBHOOK_NOTIFICATION", string(payload), "", fmt.Sprintf("HTTP Error: %v", err))
+		return fmt.Errorf("failed to send webhook request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if req.Status == "SUCCESS" {
+		kycHistory.IsVerify = true
+		s.db.Save(kycHistory)
+	}
+
+	// Read response body
+	var responseBody bytes.Buffer
+	responseBody.ReadFrom(resp.Body)
+
+	// Log the request and response
+	s.logRequest(kycHistory.ClientID, clientCallbackURL, "WEBHOOK_NOTIFICATION", string(payload), responseBody.String(), fmt.Sprintf("Status: %d", resp.StatusCode))
+	return nil
 }
 
 func (s *webhookService) SendDocumentNotification(req dto.WebhookDocumentNotificationRequest) error {
@@ -127,8 +189,6 @@ func (s *webhookService) SendDocumentNotification(req dto.WebhookDocumentNotific
 		status = *req.Status
 		clientDocumentProcess.Status = status
 		clientDocumentProcess.IsDone = true
-		// clientDocumentProcess.ClientUserID = req.UserID
-		// clientDocumentProcess.ClientCompanyID = req.CompanyID
 		s.db.Save(clientDocumentProcess)
 	}
 

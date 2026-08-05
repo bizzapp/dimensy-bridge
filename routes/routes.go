@@ -34,6 +34,7 @@ func SetupRoutes(deps *config.AppDependencies) *gin.Engine {
 	})
 
 	r.POST("/api/v1/webhook-notification-document", deps.WebhookHdl.HandlePSRENotification)
+	r.POST("/api/v1/webhook-notification-certificate", deps.WebhookHdl.HandlePSRENotification)
 	// =======================
 
 	clientOriginsRaw := strings.Split(os.Getenv("CLIENT_ORIGIN"), ",")

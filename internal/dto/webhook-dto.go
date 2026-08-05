@@ -11,3 +11,8 @@ type WebhookDocumentNotificationRequest struct {
 	Status       *string    `json:"status"`
 	SignedAT     *string    `json:"signedAt,omitempty"`
 }
+
+type WebhookCertificateNotificationRequest struct {
+	SignatureID string `json:"signatureId" binding:"required"`
+	Status      string `json:"status"`
+}
