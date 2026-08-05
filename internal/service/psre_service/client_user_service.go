@@ -238,9 +238,13 @@ func (s *clientUserService) RequestKYC(token, externalID string, req *dto.Client
 			status = 400
 			return fmt.Errorf("unauthorized client: %w", err)
 		}
+		userID := req.UserID
+		if userID == nil {
+			userID = req.UserPicID
+		}
 
 		// Get client user info
-		clientUser, err := s.clientUserSvc.GetByExternalID(req.UserID)
+		clientUser, err := s.clientUserSvc.GetByExternalID(*userID)
 		if err != nil {
 			message := fmt.Sprintf("Unauthorized client user: %v", err)
 			respBody = utils.ResponseError(message, 400)
@@ -273,7 +277,7 @@ func (s *clientUserService) RequestKYC(token, externalID string, req *dto.Client
 
 		if resp.Code == 0 {
 			kycHistory := model.ClientKYCHistory{
-				ExternalUserID: req.UserID,
+				ExternalUserID: *userID,
 				Signature:      resp.Data.SignatureID,
 				IsVerify:       false,
 				ClientID:       client.ID,
