@@ -46,6 +46,7 @@ type UserCompanyPicDTO struct {
 type ClientUserVerifyKYCRequest struct {
 	SignatureID string `json:"signatureId" binding:"required"`
 	Status      string `json:"status" binding:"required"`
+	CallbackURL string `json:"callbackUrl" binding:"required"`
 }
 type ClientUserRequest struct {
 	NIK       string     `json:"nik" binding:"required"`
