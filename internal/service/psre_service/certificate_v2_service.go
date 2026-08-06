@@ -104,7 +104,7 @@ func (s *certificateV2Service) RequestIssueV2(token, externalID string, req *dto
 
 		if resp.Code == 0 {
 
-			clientUser, err := s.clientUserSvc.GetByExternalID(*req.UserID)
+			clientUser, err := s.clientUserSvc.GetByExternalID(*userID)
 			if err != nil {
 				return fmt.Errorf("failed to get client user by id: %w", err)
 			}
