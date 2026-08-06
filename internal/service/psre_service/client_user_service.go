@@ -395,7 +395,6 @@ func (s *clientUserService) VerifyKYC(token, externalID string, req *dto.ClientU
 	if err := json.Unmarshal(data, &resp); err != nil {
 		return data, status, fmt.Errorf("failed to parse psre response: %w", err)
 	}
-
 	// Is Verify
 	if resp.Code == 0 {
 		clientKycUser, err := s.clientKYCHistoryRepo.GetBySignatureID(req.SignatureID)
