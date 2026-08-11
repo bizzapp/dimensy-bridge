@@ -85,8 +85,7 @@ func IPWhitelistMiddleware(ipWhitelistRepo repository.ClientIPWhitelistRepositor
 		if clientIDStr == "" {
 			ip := getRemoteIP(c)
 			log.Printf("[IP_WHITELIST_BLOCKED] client_id is required. IP: %s, Method: %s, Path: %s", ip, c.Request.Method, c.Request.URL.Path)
-			c.Data(http.StatusForbidden, "application/json", utils.ResponseError("client_id is required", http.StatusForbidden))
-			c.Abort()
+			c.AbortWithStatus(http.StatusForbidden)
 			return
 		}
 
@@ -94,8 +93,7 @@ func IPWhitelistMiddleware(ipWhitelistRepo repository.ClientIPWhitelistRepositor
 		if err != nil {
 			ip := getRemoteIP(c)
 			log.Printf("[IP_WHITELIST_BLOCKED] Invalid client_id format: %s. IP: %s, Method: %s, Path: %s", clientIDStr, ip, c.Request.Method, c.Request.URL.Path)
-			c.Data(http.StatusForbidden, "application/json", utils.ResponseError("Invalid client_id", http.StatusForbidden))
-			c.Abort()
+			c.AbortWithStatus(http.StatusForbidden)
 			return
 		}
 
@@ -105,15 +103,13 @@ func IPWhitelistMiddleware(ipWhitelistRepo repository.ClientIPWhitelistRepositor
 		isWhitelisted, err := ipWhitelistRepo.IsIPWhitelisted(clientID, ip)
 		if err != nil {
 			log.Printf("[IP_WHITELIST_ERROR] Failed to verify IP whitelist. ClientID: %d, IP: %s, Error: %v", clientID, ip, err)
-			c.Data(http.StatusForbidden, "application/json", utils.ResponseError("Failed to verify IP whitelist", http.StatusForbidden))
-			c.Abort()
+			c.AbortWithStatus(http.StatusForbidden)
 			return
 		}
 
 		if !isWhitelisted {
 			log.Printf("[IP_WHITELIST_BLOCKED] IP not whitelisted. ClientID: %d, IP: %s, Method: %s, Path: %s", clientID, ip, c.Request.Method, c.Request.URL.Path)
-			c.Data(http.StatusForbidden, "application/json", utils.ResponseError("Your IP address is not whitelisted", http.StatusForbidden))
-			c.Abort()
+			c.AbortWithStatus(http.StatusForbidden)
 			return
 		}
 
