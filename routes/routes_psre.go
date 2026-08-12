@@ -43,6 +43,7 @@ func SetupPsreRoutes(api *gin.RouterGroup, deps *config.AppDependencies, rl *mid
 		certificate.POST("/active", deps.PsreCertificateHdl.Active)
 		certificate.POST("/revoke-request", deps.PsreCertificateHdl.RevokeRequest)
 		certificate.POST("/revoke", deps.PsreCertificateHdl.Revoke)
+		certificate.POST("/resync-certificates", deps.PsreCertificateHdl.ResyncCertificates)
 
 		certificateV2 := certificate.Group("/v2")
 		certificateV2.POST("/request-issue", deps.PsreCertificateHdl.RequestIssueV2)

@@ -35,6 +35,10 @@ type CertificateRevokeValidateRequest struct {
 	OTP       string     `json:"otp" binding:"required"`
 }
 
+type CertificateResyncRequest struct {
+	SN string `json:"sn" binding:"required"`
+}
+
 type CertificateRevokeValidateResponse struct {
 	Code    int    `json:"code" binding:"required"`
 	Message string `json:"message" binding:"required"`

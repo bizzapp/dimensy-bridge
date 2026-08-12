@@ -20,6 +20,7 @@ type CertificateService interface {
 	Active(token, externalID string, req *dto.CertificateIssueActiveRequest) ([]byte, int, error)
 	RevokeRequest(token, externalID string, req *dto.CertificateRevokeRequest) ([]byte, int, error)
 	Revoke(token, externalID string, req *dto.CertificateRevokeValidateRequest) ([]byte, int, error)
+	ResyncCertificate(token, externalID string, req *dto.CertificateResyncRequest) ([]byte, int, error)
 	CreateOrUpdateCertificateWithTx(tx *gorm.DB, clientID int64, userID *int64, companyID *int64, req *dto.CertificateIssueActiveRequest, dataResp dto.CertificateActiveResponseData) error
 	HandleActiveAsFallbackWithResponse(tx *gorm.DB, token string, req *dto.CertificateIssueActiveRequest, clientID int64) ([]byte, int, error)
 }
@@ -276,6 +277,26 @@ func (s *certificateService) Revoke(token, externalID string, req *dto.Certifica
 	}
 
 	return respBody, status, nil
+}
+
+func (s *certificateService) ResyncCertificate(token, externalID string, req *dto.CertificateResyncRequest) ([]byte, int, error) {
+	data, status, err := utils.PsreRequest("POST", "/certificate/resync-certificates", req, token, nil)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+
+	if status >= 400 {
+		return data, status, fmt.Errorf("psre certificate resync failed: %s", string(data))
+	}
+
+	if req != nil && req.SN != "" {
+		if _, err := s.certificateRepo.FindBySerialNumber(req.SN); err == nil {
+			// Keep local status synchronized as the external provider is the source of truth.
+			return data, status, nil
+		}
+	}
+
+	return data, status, nil
 }
 
 // CreateOrUpdateCertificateWithTx implements create or update logic within a transaction
