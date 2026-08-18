@@ -36,6 +36,12 @@ type PsreDocumentSignRequest struct {
 	Positions         []PsreDocumentSignPosition `json:"positions" binding:"required,min=1,dive"`
 }
 
+type PsreDocumentRetryProcess struct {
+	DocumentOrGroupID uuid.UUID `json:"documentOrGroupId" binding:"required"`
+	UserID            *string   `json:"userId,omitempty"`
+	CompanyID         *string   `json:"companyId,omitempty"`
+}
+
 type PsreDocumentSignPosition struct {
 	StampType string   `json:"stampType" binding:"required"` // SIGN / EMETERAI
 	Reason    string   `json:"reason" binding:"required"`
