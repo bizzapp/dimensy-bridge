@@ -7,6 +7,7 @@ type PsreDocumentSingleFileRequest struct {
 	CallbackURL string `json:"callbackUrl" binding:"required,url"`
 	FileName    string `json:"fileName" binding:"required"`
 	Document    string `json:"document" binding:"required,base64"` // Base64 encoded document
+	UserID      string `json:"userId" binding:"required"`
 }
 
 // PsreDocumentBulkFileRequest untuk upload multiple documents
@@ -14,6 +15,7 @@ type PsreDocumentSingleFileRequest struct {
 type PsreDocumentBulkFileRequest struct {
 	CallbackURL string                     `json:"callbackUrl" binding:"required,url"`
 	Documents   []PsreDocumentBulkFileItem `json:"documents" binding:"required,min=1,dive"`
+	UserID      string                     `json:"userId" binding:"required"`
 }
 
 type PsreDocumentBulkFileItem struct {

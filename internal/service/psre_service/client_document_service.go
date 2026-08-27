@@ -141,6 +141,7 @@ func (s *clientDocumentService) UploadSingle(token, externalID string, req dto.P
 			FileName:    req.FileName,
 			Document:    req.Document,
 			CallbackURL: callbackURL,
+			UserID:      req.UserID,
 		}
 		data, st, err := utils.PsreRequest("POST", "/document/upload", dtoSingleFile, token, nil)
 		respBody, status = data, st
@@ -328,6 +329,7 @@ func (s *clientDocumentService) UploadBulk(token, externalID string, req dto.Psr
 		}
 
 		req.CallbackURL = callbackURL
+		req.UserID = req.UserID
 		// Call PSRE API
 		data, st, err := utils.PsreRequest("POST", "/document/upload-bulk", req, token, nil)
 		respBody, status = data, st
