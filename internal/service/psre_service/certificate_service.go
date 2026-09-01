@@ -23,6 +23,7 @@ type CertificateService interface {
 	ResyncCertificate(token, externalID string, req *dto.CertificateResyncRequest) ([]byte, int, error)
 	CreateOrUpdateCertificateWithTx(tx *gorm.DB, clientID int64, userID *int64, companyID *int64, req *dto.CertificateIssueActiveRequest, dataResp dto.CertificateActiveResponseData) error
 	HandleActiveAsFallbackWithResponse(tx *gorm.DB, token string, req *dto.CertificateIssueActiveRequest, clientID int64) ([]byte, int, error)
+	RevokeRA(token, externalID string, req *dto.UserCompanyPicDTO) ([]byte, int, error)
 }
 
 type certificateService struct {
@@ -402,4 +403,38 @@ func (s *certificateService) HandleActiveAsFallbackWithResponse(tx *gorm.DB, tok
 	}
 
 	return data, psreStatus, nil
+}
+
+func (s *certificateService) RevokeRA(token, externalID string, req *dto.UserCompanyPicDTO) ([]byte, int, error) {
+
+	var (
+		respBody []byte
+		status   int
+	)
+
+	txErr := s.db.Transaction(func(tx *gorm.DB) error {
+		// Get client info
+		_, err := s.clientSvc.GetClientByExternalId(externalID)
+		if err != nil {
+			message := fmt.Sprintf("Unauthorized: %v", err)
+			respBody = utils.ResponseError(message, 400)
+			status = 400
+			return fmt.Errorf("unauthorized client: %w", err)
+		}
+
+		// Call PSrE API
+		data, psreStatus, err := utils.PsreRequest("POST", "/certificate/revoke-ra", req, token, nil)
+		respBody, status = data, psreStatus
+
+		return err
+	})
+
+	if txErr != nil {
+		if respBody != nil {
+			return respBody, status, txErr
+		}
+		return nil, http.StatusBadRequest, txErr
+	}
+
+	return respBody, status, nil
 }
