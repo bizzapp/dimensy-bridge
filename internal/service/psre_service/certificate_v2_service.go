@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -302,7 +303,15 @@ func (s *certificateV2Service) RevokeRequestV2(token, externalID string, req *dt
 
 		if resp.Code == 0 {
 
-			clientUser, err := s.clientUserSvc.GetByExternalID(*req.UserID)
+			var userIdToUse uuid.UUID
+
+			if req.UserID != nil {
+				userIdToUse = *req.UserID
+			} else if req.UserPicID != nil {
+				userIdToUse = *req.UserPicID
+			}
+
+			clientUser, err := s.clientUserSvc.GetByExternalID(userIdToUse)
 			if err != nil {
 				return fmt.Errorf("failed to get client user by id: %w", err)
 			}

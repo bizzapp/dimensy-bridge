@@ -63,6 +63,7 @@ func SetupPsreRoutes(api *gin.RouterGroup, deps *config.AppDependencies, rl *mid
 		document.POST("/proccess-stamp", deps.PsreClientDocumentHdl.ProcessStamp)
 		document.POST("/request-otp-sign", deps.PsreClientDocumentHdl.RequestOtpSign)
 		document.GET("/preview/:id", deps.PsreClientDocumentHdl.PreviewDocument)
+		document.POST("/retry-process", deps.PsreClientDocumentHdl.RetryProcess)
 
 		client := psre.Group("/client")
 		client.POST("/login", deps.PsreClientHdl.Login) // Login tanpa IP whitelist

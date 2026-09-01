@@ -209,3 +209,27 @@ func (h *PsreClientDocumentHandler) PreviewDocument(c *gin.Context) {
 	// c.Data(status, "application/json", respBody)
 	c.Data(status, "application/pdf", respBody)
 }
+func (h *PsreClientDocumentHandler) RetryProcess(c *gin.Context) {
+	authData, _ := c.Get("authData")
+	token := c.Request.Header.Get("Authorization")
+
+	externalID, err := utils.ExtractExternalID(authData)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	var req dto.PsreDocumentRetryProcess
+	if err := c.ShouldBindJSON(&req); err != nil {
+		message := utils.ResponseError(err.Error(), http.StatusBadRequest)
+		c.Data(http.StatusBadRequest, "application/json", message)
+		return
+	}
+
+	respBody, status, err := h.clientDocumentSvc.RetryProcess(token, externalID, req)
+	if err != nil {
+		c.Data(status, "application/json", respBody)
+		return
+	}
+	c.Data(status, "application/json", respBody)
+}
