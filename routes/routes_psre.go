@@ -44,13 +44,13 @@ func SetupPsreRoutes(api *gin.RouterGroup, deps *config.AppDependencies, rl *mid
 		certificate.POST("/revoke-request", deps.PsreCertificateHdl.RevokeRequest)
 		certificate.POST("/revoke", deps.PsreCertificateHdl.Revoke)
 		certificate.POST("/resync-certificates", deps.PsreCertificateHdl.ResyncCertificates)
+		certificate.POST("/revoke-ra", deps.PsreCertificateHdl.RevokeRA)
 
 		certificateV2 := certificate.Group("/v2")
 		certificateV2.POST("/request-issue", deps.PsreCertificateHdl.RequestIssueV2)
 		certificateV2.POST("/issue", deps.PsreCertificateHdl.IssueV2)
 		certificateV2.POST("/revoke-request", deps.PsreCertificateHdl.RevokeRequestV2)
 		certificateV2.POST("/revoke", deps.PsreCertificateHdl.RevokeV2)
-		certificateV2.POST("/revoke-ra", deps.PsreCertificateHdl.RevokeRA)
 
 		document := psre.Group("/document")
 		document.Use(middleware.AuthJWE())
