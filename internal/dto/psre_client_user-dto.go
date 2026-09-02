@@ -45,7 +45,7 @@ type UserCompanyPicDTO struct {
 
 type RevokeRADTO struct {
 	UserCompanyPicDTO
-	RevokeType int8 `json:"revokeType" binding:"required"`
+	RevokeType *int8 `json:"revokeType" binding:"required"`
 }
 
 type ClientUserVerifyKYCRequest struct {
