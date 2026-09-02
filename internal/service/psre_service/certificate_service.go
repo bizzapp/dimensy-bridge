@@ -23,7 +23,7 @@ type CertificateService interface {
 	ResyncCertificate(token, externalID string, req *dto.CertificateResyncRequest) ([]byte, int, error)
 	CreateOrUpdateCertificateWithTx(tx *gorm.DB, clientID int64, userID *int64, companyID *int64, req *dto.CertificateIssueActiveRequest, dataResp dto.CertificateActiveResponseData) error
 	HandleActiveAsFallbackWithResponse(tx *gorm.DB, token string, req *dto.CertificateIssueActiveRequest, clientID int64) ([]byte, int, error)
-	RevokeRA(token, externalID string, req *dto.UserCompanyPicDTO) ([]byte, int, error)
+	RevokeRA(token, externalID string, req *dto.RevokeRADTO) ([]byte, int, error)
 }
 
 type certificateService struct {
@@ -405,7 +405,7 @@ func (s *certificateService) HandleActiveAsFallbackWithResponse(tx *gorm.DB, tok
 	return data, psreStatus, nil
 }
 
-func (s *certificateService) RevokeRA(token, externalID string, req *dto.UserCompanyPicDTO) ([]byte, int, error) {
+func (s *certificateService) RevokeRA(token, externalID string, req *dto.RevokeRADTO) ([]byte, int, error) {
 
 	var (
 		respBody []byte

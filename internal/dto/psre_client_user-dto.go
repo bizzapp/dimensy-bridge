@@ -43,6 +43,11 @@ type UserCompanyPicDTO struct {
 	UserPicID *uuid.UUID `json:"userPicId,omitempty"` // Note: Custom validation logic for userPIC can be implemented in the handler/service or via custom validator
 }
 
+type RevokeRADTO struct {
+	UserCompanyPicDTO
+	RevokeType int8 `json:"revokeType" binding:"required"`
+}
+
 type ClientUserVerifyKYCRequest struct {
 	SignatureID string `json:"signatureId" binding:"required"`
 	Status      string `json:"status" binding:"required"`

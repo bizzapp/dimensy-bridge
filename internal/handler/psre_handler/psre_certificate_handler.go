@@ -218,7 +218,7 @@ func (h *PsreCertificateHandler) RevokeRA(c *gin.Context) {
 		return
 	}
 
-	var req dto.UserCompanyPicDTO
+	var req dto.RevokeRADTO
 	if err := c.ShouldBindJSON(&req); err != nil {
 		message := utils.ResponseError(err.Error(), http.StatusBadRequest)
 		c.Data(http.StatusBadRequest, "application/json", message)
