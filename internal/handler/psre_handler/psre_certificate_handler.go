@@ -196,7 +196,7 @@ func (h *PsreCertificateHandler) RevokeV2(c *gin.Context) {
 		return
 	}
 
-	var req dto.CertificateIssueV2Request
+	var req dto.CertificateRevokeV2Request
 	if err := c.ShouldBindJSON(&req); err != nil {
 		message := utils.ResponseError(err.Error(), http.StatusBadRequest)
 		c.Data(http.StatusBadRequest, "application/json", message)

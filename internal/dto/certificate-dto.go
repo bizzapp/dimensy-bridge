@@ -20,7 +20,11 @@ type CertificateIssueV2Request struct {
 	SignatureID string `json:"signatureId" binding:"required"`
 	Status      string `json:"status" binding:"required"`
 	CallbackURL string `json:"callbackUrl" binding:"required"`
-	RevokeType  int8   `json:"revokeType" binding:"required"`
+}
+
+type CertificateRevokeV2Request struct {
+	CertificateIssueV2Request
+	RevokeType int8 `json:"revokeType" binding:"required"`
 }
 
 type CertificateRevokeRequest struct {
