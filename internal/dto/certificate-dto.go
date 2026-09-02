@@ -24,7 +24,7 @@ type CertificateIssueV2Request struct {
 
 type CertificateRevokeV2Request struct {
 	CertificateIssueV2Request
-	RevokeType int8 `json:"revokeType" binding:"required"`
+	RevokeType *int8 `json:"revokeType" binding:"omitempty"`
 }
 
 type CertificateRevokeRequest struct {
