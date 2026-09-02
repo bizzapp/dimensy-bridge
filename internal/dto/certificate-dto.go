@@ -14,15 +14,14 @@ type CertificateIssueActiveRequest struct {
 type CertificateRequestIssueV2Request struct {
 	UserCompanyPicDTO
 	LivenessCoreRequest
+	RevokeType int8 `json:"revokeType" binding:"required"`
 }
-
 
 type CertificateIssueV2Request struct {
 	SignatureID string `json:"signatureId" binding:"required"`
 	Status      string `json:"status" binding:"required"`
 	CallbackURL string `json:"callbackUrl" binding:"required"`
 }
-
 
 type CertificateRevokeRequest struct {
 	UserID    *uuid.UUID `json:"userId" binding:"omitempty" validate:"required_without=CompanyID"`
