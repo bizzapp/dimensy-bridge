@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"os"
@@ -258,4 +259,115 @@ func GetAdministratorToken() (string, error) {
 	tokenCache = token
 	tokenExpiresAt = time.Now().Add(55 * time.Minute)
 	return tokenCache, nil
+}
+
+// ====== Core HTTP Utility for Multipart ======
+func PsreMultipartRequest(method, path string, file io.Reader, filename string, token string, queryParams map[string]string) ([]byte, int, error) {
+	// Base URL
+	baseURL := os.Getenv("PSRE_BACKEND_URL")
+	if baseURL == "" {
+		baseURL = "http://10.100.20.14:2000"
+	}
+	baseURL = strings.TrimSuffix(baseURL, "/")
+
+	// Buat URL lengkap
+	reqURL, err := url.Parse(baseURL + path)
+	if err != nil {
+		return nil, http.StatusInternalServerError, fmt.Errorf("invalid PSRE URL: %w", err)
+	}
+
+	// Tambahkan query params jika ada
+	if len(queryParams) > 0 {
+		q := reqURL.Query()
+		for k, v := range queryParams {
+			q.Set(k, v)
+		}
+		reqURL.RawQuery = q.Encode()
+	}
+
+	// Siapkan multipart payload
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	
+	// Tambahkan file document
+	part, err := writer.CreateFormFile("document", filename)
+	if err != nil {
+		return nil, http.StatusInternalServerError, fmt.Errorf("failed to create form file: %w", err)
+	}
+	if _, err := io.Copy(part, file); err != nil {
+		return nil, http.StatusInternalServerError, fmt.Errorf("failed to copy file to part: %w", err)
+	}
+	
+	err = writer.Close()
+	if err != nil {
+		return nil, http.StatusInternalServerError, fmt.Errorf("failed to close multipart writer: %w", err)
+	}
+
+	// Buat request
+	req, err := http.NewRequest(method, reqURL.String(), body)
+	if err != nil {
+		return nil, http.StatusInternalServerError, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	if token != "" {
+		req.Header.Set("Authorization", token)
+	}
+
+	// Extract headers for logging
+	headerJSON, _ := json.Marshal(req.Header)
+
+	// Log request to database
+	if psreLogDB != nil {
+		logDescription := "Request Multipart " + path
+		headerStr := string(headerJSON)
+		fullURL := reqURL.String()
+
+		psreLog := &model.PsreLog{
+			Description: &logDescription,
+			JsonHeader:  &headerStr,
+			JsonContent: "Multipart request with file: " + filename,
+			FullURL:     &fullURL,
+		}
+
+		_ = psreLogDB.Create(psreLog)
+	}
+
+	client := &http.Client{Timeout: 30 * time.Second} // Multipart uploads might take longer
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, http.StatusBadGateway, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, _ := io.ReadAll(resp.Body)
+
+	// Log response to database
+	if psreLogDB != nil {
+		respLog := map[string]interface{}{
+			"status_code": resp.StatusCode,
+			"body":        string(respBody),
+		}
+		respLogJSON, _ := json.Marshal(respLog)
+
+		logDescription := "Response Multipart " + path
+		headerStr := string(headerJSON)
+		fullURL := reqURL.String()
+
+		psreLog := &model.PsreLog{
+			Description: &logDescription,
+			JsonHeader:  &headerStr,
+			JsonContent: string(respLogJSON),
+			FullURL:     &fullURL,
+		}
+
+		_ = psreLogDB.Create(psreLog)
+	}
+
+	// Jika error dari PSRE
+	if resp.StatusCode >= 400 {
+		return respBody, resp.StatusCode, fmt.Errorf("PSRE error %d: %s", resp.StatusCode, string(respBody))
+	}
+
+	return respBody, resp.StatusCode, nil
 }

@@ -233,3 +233,30 @@ func (h *PsreClientDocumentHandler) RetryProcess(c *gin.Context) {
 	}
 	c.Data(status, "application/json", respBody)
 }
+
+func (h *PsreClientDocumentHandler) VerifyDocument(c *gin.Context) {
+	authData, _ := c.Get("authData")
+	token := c.Request.Header.Get("Authorization")
+
+	externalID, err := utils.ExtractExternalID(authData)
+	if err != nil {
+		message := utils.ResponseError(err.Error(), http.StatusUnauthorized)
+		c.Data(http.StatusUnauthorized, "application/json", message)
+		return
+	}
+
+	file, header, err := c.Request.FormFile("document")
+	if err != nil {
+		message := utils.ResponseError(err.Error(), http.StatusBadRequest)
+		c.Data(http.StatusBadRequest, "application/json", message)
+		return
+	}
+	defer file.Close()
+
+	respBody, status, err := h.clientDocumentSvc.VerifyDocument(token, externalID, file, header.Filename)
+	if err != nil {
+		c.Data(status, "application/json", respBody)
+		return
+	}
+	c.Data(status, "application/json", respBody)
+}
