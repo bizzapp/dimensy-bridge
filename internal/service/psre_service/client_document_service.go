@@ -29,7 +29,7 @@ type ClientDocumentService interface {
 	ProcessStamp(token, externalID string, dto dto.PsreDocumentProcessStampRequest) ([]byte, int, error)
 	RequestOtpSign(token, externalID string, dto dto.PsreDocumentOtpSignRequest) ([]byte, int, error)
 	RetryProcess(token, externalID string, dto dto.PsreDocumentRetryProcess) ([]byte, int, error)
-	VerifyDocument(token, externalID string, file io.Reader, filename string) ([]byte, int, error)
+	VerifyDocument(file io.Reader, filename string) ([]byte, int, error)
 }
 
 type clientDocumentService struct {
@@ -882,16 +882,11 @@ func (s *clientDocumentService) RetryProcess(token, externalID string, req dto.P
 	return respBody, status, nil
 }
 
-func (s *clientDocumentService) VerifyDocument(token, externalID string, file io.Reader, filename string) ([]byte, int, error) {
-	_, err := s.clientPsreSvc.GetByExternalID(externalID)
-	if err != nil {
-		return nil, http.StatusBadRequest, fmt.Errorf("failed get client psre: %w", err)
-	}
-
-	data, status, err := utils.PsreMultipartRequest("POST", "/document/verify", file, filename, token, nil)
+func (s *clientDocumentService) VerifyDocument(file io.Reader, filename string) ([]byte, int, error) {
+	data, status, err := utils.PsreMultipartRequest("POST", "/document/verify", file, filename, "", nil)
 	if err != nil {
 		return data, status, fmt.Errorf("failed call psre api: %w", err)
 	}
-	
+
 	return data, status, nil
 }

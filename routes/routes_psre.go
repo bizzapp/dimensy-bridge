@@ -18,6 +18,7 @@ func SetupPsreRoutes(api *gin.RouterGroup, deps *config.AppDependencies, rl *mid
 			deps.ClientPsreRepo,
 		))
 
+		psre.POST("/document/verify", deps.PsreClientDocumentHdl.VerifyDocument)
 		company := psre.Group("/company")
 		company.Use(middleware.AuthJWE())
 		company.Use(middleware.JWEIPWhitelistWithClientPsreMiddleware(deps.ClientIPWhitelistRepo, deps.ClientPsreRepo)) // Strict IP whitelist
@@ -63,7 +64,6 @@ func SetupPsreRoutes(api *gin.RouterGroup, deps *config.AppDependencies, rl *mid
 		document.POST("/proccess-stamp", deps.PsreClientDocumentHdl.ProcessStamp)
 		document.POST("/request-otp-sign", deps.PsreClientDocumentHdl.RequestOtpSign)
 		document.GET("/preview/:id", deps.PsreClientDocumentHdl.PreviewDocument)
-		document.POST("/verify", deps.PsreClientDocumentHdl.VerifyDocument)
 		document.POST("/retry-process", deps.PsreClientDocumentHdl.RetryProcess)
 
 		client := psre.Group("/client")
