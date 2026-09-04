@@ -4,6 +4,7 @@ import (
 	"dimensy-bridge/internal/dto"
 	psreservice "dimensy-bridge/internal/service/psre_service"
 	"dimensy-bridge/pkg/utils"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -243,8 +244,21 @@ func (h *PsreClientDocumentHandler) VerifyDocument(c *gin.Context) {
 	}
 	defer file.Close()
 
-	respBody, status, err := h.clientDocumentSvc.VerifyDocument(file, header.Filename)
+	queryParams := make(map[string]string)
+	for k, v := range c.Request.URL.Query() {
+		if len(v) > 0 {
+			queryParams[k] = v[0]
+		}
+	}
+
+	respBody, status, err := h.clientDocumentSvc.VerifyDocument(file, header.Filename, queryParams)
 	if err != nil {
+		fmt.Printf("[VerifyDocument Error] status: %d, err: %v\n", status, err)
+		if len(respBody) == 0 {
+			message := utils.ResponseError(err.Error(), status)
+			c.Data(status, "application/json", message)
+			return
+		}
 		c.Data(status, "application/json", respBody)
 		return
 	}

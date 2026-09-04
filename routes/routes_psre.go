@@ -12,13 +12,13 @@ func SetupPsreRoutes(api *gin.RouterGroup, deps *config.AppDependencies, rl *mid
 	{
 		psre.Use(rl.Middleware()) // pasang rate limiter di group ini
 
+		psre.POST("/document/verify", deps.PsreClientDocumentHdl.VerifyDocument)
 		// Apply JWE-based IP whitelist middleware untuk PSRE routes
 		psre.Use(middleware.JWEIPWhitelistWithClientPsreMiddleware(
 			deps.ClientIPWhitelistRepo,
 			deps.ClientPsreRepo,
 		))
 
-		psre.POST("/document/verify", deps.PsreClientDocumentHdl.VerifyDocument)
 		company := psre.Group("/company")
 		company.Use(middleware.AuthJWE())
 		company.Use(middleware.JWEIPWhitelistWithClientPsreMiddleware(deps.ClientIPWhitelistRepo, deps.ClientPsreRepo)) // Strict IP whitelist
