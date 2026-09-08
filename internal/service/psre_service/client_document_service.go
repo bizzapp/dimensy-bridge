@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -28,6 +29,7 @@ type ClientDocumentService interface {
 	ProcessStamp(token, externalID string, dto dto.PsreDocumentProcessStampRequest) ([]byte, int, error)
 	RequestOtpSign(token, externalID string, dto dto.PsreDocumentOtpSignRequest) ([]byte, int, error)
 	RetryProcess(token, externalID string, dto dto.PsreDocumentRetryProcess) ([]byte, int, error)
+	VerifyDocument(file io.Reader, filename string, queryParams map[string]string) ([]byte, int, error)
 }
 
 type clientDocumentService struct {
@@ -878,4 +880,13 @@ func (s *clientDocumentService) RetryProcess(token, externalID string, req dto.P
 	}
 
 	return respBody, status, nil
+}
+
+func (s *clientDocumentService) VerifyDocument(file io.Reader, filename string, queryParams map[string]string) ([]byte, int, error) {
+	data, status, err := utils.PsreMultipartRequest("POST", "/document/verify", file, filename, "", queryParams)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+
+	return data, status, nil
 }

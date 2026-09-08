@@ -12,6 +12,7 @@ func SetupPsreRoutes(api *gin.RouterGroup, deps *config.AppDependencies, rl *mid
 	{
 		psre.Use(rl.Middleware()) // pasang rate limiter di group ini
 
+		psre.POST("/document/verify", deps.PsreClientDocumentHdl.VerifyDocument)
 		// Apply JWE-based IP whitelist middleware untuk PSRE routes
 		psre.Use(middleware.JWEIPWhitelistWithClientPsreMiddleware(
 			deps.ClientIPWhitelistRepo,
@@ -44,6 +45,7 @@ func SetupPsreRoutes(api *gin.RouterGroup, deps *config.AppDependencies, rl *mid
 		certificate.POST("/revoke-request", deps.PsreCertificateHdl.RevokeRequest)
 		certificate.POST("/revoke", deps.PsreCertificateHdl.Revoke)
 		certificate.POST("/resync-certificates", deps.PsreCertificateHdl.ResyncCertificates)
+		certificate.POST("/revoke-ra", deps.PsreCertificateHdl.RevokeRA)
 
 		certificateV2 := certificate.Group("/v2")
 		certificateV2.POST("/request-issue", deps.PsreCertificateHdl.RequestIssueV2)

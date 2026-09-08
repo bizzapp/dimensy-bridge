@@ -16,13 +16,16 @@ type CertificateRequestIssueV2Request struct {
 	LivenessCoreRequest
 }
 
-
 type CertificateIssueV2Request struct {
 	SignatureID string `json:"signatureId" binding:"required"`
 	Status      string `json:"status" binding:"required"`
 	CallbackURL string `json:"callbackUrl" binding:"required"`
 }
 
+type CertificateRevokeV2Request struct {
+	CertificateIssueV2Request
+	RevokeType *int8 `json:"revokeType" binding:"omitempty"`
+}
 
 type CertificateRevokeRequest struct {
 	UserID    *uuid.UUID `json:"userId" binding:"omitempty" validate:"required_without=CompanyID"`

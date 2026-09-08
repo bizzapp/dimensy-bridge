@@ -20,7 +20,7 @@ type CertificateV2Service interface {
 	RequestIssueV2(token, externalID string, req *dto.CertificateRequestIssueV2Request) ([]byte, int, error)
 	RevokeRequestV2(token, externalID string, req *dto.CertificateRequestIssueV2Request) ([]byte, int, error)
 	IssueV2(token, externalID string, req *dto.CertificateIssueV2Request) ([]byte, int, error)
-	RevokeV2(token, externalID string, req *dto.CertificateIssueV2Request) ([]byte, int, error)
+	RevokeV2(token, externalID string, req *dto.CertificateRevokeV2Request) ([]byte, int, error)
 }
 
 type certificateV2Service struct {
@@ -400,7 +400,7 @@ func (s *certificateV2Service) RevokeRequestV2(token, externalID string, req *dt
 	return respBody, status, nil
 }
 
-func (s *certificateV2Service) RevokeV2(token, externalID string, req *dto.CertificateIssueV2Request) ([]byte, int, error) {
+func (s *certificateV2Service) RevokeV2(token, externalID string, req *dto.CertificateRevokeV2Request) ([]byte, int, error) {
 
 	var (
 		respBody []byte
