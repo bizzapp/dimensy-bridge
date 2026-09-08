@@ -412,7 +412,7 @@ func (s *clientDocumentService) RequestSign(token, externalID string, req dto.Ps
 			}
 		}
 
-		clientDocuentProcess, err := s.clientDocumentProcessRepo.FindByExternalIDAndExternalUserID(req.DocumentOrGroupID, userID)
+		clientDocuentProcess, err := s.clientDocumentProcessRepo.FindByExternalIDAndExternalUserID(req.DocumentOrGroupID, userID, "SIGN")
 		if err == nil && clientDocuentProcess != nil {
 			status = 400
 			message := "This user already requested to this document. create new document or using other user"
@@ -599,7 +599,7 @@ func (s *clientDocumentService) RequestStamp(token, externalID string, req dto.P
 			return fmt.Errorf("failed to find client document by external id: %w", err)
 		}
 
-		clientDocuentProcess, err := s.clientDocumentProcessRepo.FindByExternalIDAndExternalUserID(req.DocumentOrGroupID, &req.UserID)
+		clientDocuentProcess, err := s.clientDocumentProcessRepo.FindByExternalIDAndExternalUserID(req.DocumentOrGroupID, &req.UserID, "STAMP")
 		if err == nil && clientDocuentProcess != nil {
 			status = 400
 			message := "This user already requested to this document. create new document or using other user"

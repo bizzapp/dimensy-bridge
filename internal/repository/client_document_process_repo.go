@@ -10,7 +10,7 @@ import (
 type ClientDocumentProcessRepository interface {
 	Create(data *model.ClientDocumentProcess) error
 	FindByExternalID(externalID uuid.UUID) (*model.ClientDocumentProcess, error)
-	FindByExternalIDAndExternalUserID(externalID uuid.UUID, userID *uuid.UUID) (*model.ClientDocumentProcess, error)
+	FindByExternalIDAndExternalUserID(externalID uuid.UUID, userID *uuid.UUID, transType string) (*model.ClientDocumentProcess, error)
 	FindByExternalIDExternalUserIDExternalCompanyID(externalID *uuid.UUID, groupID *uuid.UUID, userID *uuid.UUID, companyID *uuid.UUID) (*model.ClientDocumentProcess, error)
 	UpdateStatus(externalID uuid.UUID, status string) error
 	DeleteByExternalID(externalID uuid.UUID) error
@@ -55,11 +55,18 @@ func (r *clientDocumentProcessRepository) FindByExternalIDExternalUserIDExternal
 	return &process, nil
 }
 
-func (r *clientDocumentProcessRepository) FindByExternalIDAndExternalUserID(externalID uuid.UUID, userID *uuid.UUID) (*model.ClientDocumentProcess, error) {
+func (r *clientDocumentProcessRepository) FindByExternalIDAndExternalUserID(externalID uuid.UUID, userID *uuid.UUID, transType string) (*model.ClientDocumentProcess, error) {
 	var process model.ClientDocumentProcess
-	if err := r.db.Where("external_id = ? AND external_user_id = ?", externalID, userID).First(&process).Error; err != nil {
+
+	processType := "STAMP"
+	if transType == "SIGN" {
+		processType = "SIGN_METERAI"
+	}
+
+	if err := r.db.Where("external_id = ? AND external_user_id = ? AND type = ?", externalID, userID, processType).First(&process).Error; err != nil {
 		return nil, err
 	}
+
 	return &process, nil
 }
 func (r *clientDocumentProcessRepository) FindByExternalID(externalID uuid.UUID) (*model.ClientDocumentProcess, error) {
