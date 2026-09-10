@@ -105,6 +105,9 @@ func (qu *QuotaUtils) UseQuota(tx *gorm.DB, req dto.UseQuotaClientRequest) (*mod
 	if err := tx.Where("client_id = ? AND master_product_id = ?", req.ClientID, req.MasterProductID).First(&quota).Error; err != nil {
 		return nil, fmt.Errorf("quota not found: %w", err)
 	}
+	if quota.IsUnlimited {
+		return &quota, nil
+	}
 
 	if quota.CurrentQuota < req.Quantity {
 		return nil, fmt.Errorf("insufficient quota")
