@@ -232,3 +232,30 @@ func (h *PsreCertificateHandler) RevokeRA(c *gin.Context) {
 	}
 	c.Data(status, "application/json", respBody)
 }
+
+func (h *PsreCertificateHandler) DownloadPublicKeys(c *gin.Context) {
+	authData, _ := c.Get("authData")
+	token := c.Request.Header.Get("Authorization")
+
+	_, err := utils.ExtractExternalID(authData)
+	if err != nil {
+		message := utils.ResponseError(err.Error(), http.StatusUnauthorized)
+		c.Data(http.StatusUnauthorized, "application/json", message)
+		return
+	}
+
+	params := make(map[string]string)
+	for key, values := range c.Request.URL.Query() {
+		if len(values) > 0 {
+			params[key] = values[0]
+		}
+	}
+
+	respBody, status, err := h.certificateService.DownloadPublicKeys(token, params)
+	if err != nil {
+		c.Data(status, "application/json", respBody)
+		return
+	}
+	// c.Data(status, "application/json", respBody)
+	c.Data(status, "application/pdf", respBody)
+}
