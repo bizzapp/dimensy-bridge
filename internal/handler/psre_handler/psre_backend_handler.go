@@ -98,3 +98,50 @@ func (h *PsreBackendHandler) UpdateClientStatus(c *gin.Context) {
 	c.Data(status, "application/json", respBody)
 	// Implementation for updating client status in PSRE backend
 }
+
+func (h *PsreBackendHandler) MailLog(c *gin.Context) {
+	token := c.Request.Header.Get("Authorization")
+
+	filter := c.Query("filter")
+	page := c.Query("page")
+	limit := c.Query("limit")
+	logType := c.Query("type")
+
+	var payload map[string]interface{}
+	if c.Request.ContentLength > 0 {
+		if err := c.ShouldBindJSON(&payload); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+	}
+
+	data, status, err := h.backendSvc.MailLog(token, page, limit, filter, logType, payload)
+	if err != nil {
+		c.Data(status, "application/json", data)
+		return
+	}
+	c.Data(status, "application/json", data)
+}
+
+func (h *PsreBackendHandler) MailLogDownload(c *gin.Context) {
+	token := c.Request.Header.Get("Authorization")
+
+	page := c.Query("page")
+	limit := c.Query("limit")
+	logType := c.Query("type")
+
+	var payload map[string]interface{}
+	if c.Request.ContentLength > 0 {
+		if err := c.ShouldBindJSON(&payload); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+	}
+
+	data, status, err := h.backendSvc.MailLogDownload(token, page, limit, logType, payload)
+	if err != nil {
+		c.Data(status, "application/json", data)
+		return
+	}
+	c.Data(status, "application/json", data)
+}

@@ -13,6 +13,8 @@ type BackendService interface {
 	ListClient(token string, filter, page, limit string) ([]byte, int, error)
 	UpdateClient(id, token string, req *dto.PsreBackendCreateClientRequest) ([]byte, int, error)
 	UpdateClientStatus(id, token string, req *dto.PsreBackendUpdateClientStatusRequest) ([]byte, int, error)
+	MailLog(token string, page, limit, filter, logType string, payload map[string]interface{}) ([]byte, int, error)
+	MailLogDownload(token string, page, limit, logType string, payload map[string]interface{}) ([]byte, int, error)
 }
 
 type backendService struct {
@@ -87,5 +89,44 @@ func (s *backendService) LoginBackend(req dto.PsreBackendLoginRequest) ([]byte, 
 	if status >= 400 {
 		return data, status, fmt.Errorf("psre login failed: %s", string(data))
 	}
+	return data, status, nil
+}
+
+func (s *backendService) MailLog(token string, page, limit, filter, logType string, payload map[string]interface{}) ([]byte, int, error) {
+	query := fmt.Sprintf("/backend/mail-log?page=%s&limit=%s", page, limit)
+	if filter != "" {
+		query += "&filter=" + url.QueryEscape(filter)
+	}
+	if logType != "" {
+		query += "&type=" + url.QueryEscape(logType)
+	}
+
+	data, status, err := utils.PsreRequest("GET", query, payload, token, nil)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+
+	if status >= 400 {
+		return data, status, fmt.Errorf("psre get mail log failed: %s", string(data))
+	}
+
+	return data, status, nil
+}
+
+func (s *backendService) MailLogDownload(token string, page, limit, logType string, payload map[string]interface{}) ([]byte, int, error) {
+	query := fmt.Sprintf("/backend/mail-log/download?page=%s&limit=%s", page, limit)
+	if logType != "" {
+		query += "&type=" + url.QueryEscape(logType)
+	}
+
+	data, status, err := utils.PsreRequest("GET", query, payload, token, nil)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+
+	if status >= 400 {
+		return data, status, fmt.Errorf("psre get mail log download failed: %s", string(data))
+	}
+
 	return data, status, nil
 }

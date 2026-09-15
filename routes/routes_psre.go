@@ -81,6 +81,8 @@ func SetupPsreRoutes(api *gin.RouterGroup, deps *config.AppDependencies, rl *mid
 
 		backend := psre.Group("/backend")
 		backend.POST("/login", deps.PsreBackendHdl.Login) // Login tanpa IP whitelist
+		backend.GET("/mail-log", deps.PsreBackendHdl.MailLog)
+		backend.GET("/mail-log/download", deps.PsreBackendHdl.MailLogDownload)
 		backend.Use(middleware.AuthJWE())
 		backend.Use(middleware.JWEIPWhitelistWithClientPsreMiddleware(deps.ClientIPWhitelistRepo, deps.ClientPsreRepo)) // Strict IP whitelist untuk endpoint setelah login
 		backend.POST("/client/create", deps.PsreBackendHdl.CreateClient)
