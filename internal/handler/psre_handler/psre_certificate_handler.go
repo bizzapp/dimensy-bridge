@@ -259,3 +259,22 @@ func (h *PsreCertificateHandler) DownloadPublicKeys(c *gin.Context) {
 	// c.Data(status, "application/json", respBody)
 	c.Data(status, "application/pdf", respBody)
 }
+
+func (h *PsreCertificateHandler) EjbcaCount(c *gin.Context) {
+	authData, _ := c.Get("authData")
+	token := c.Request.Header.Get("Authorization")
+
+	_, err := utils.ExtractExternalID(authData)
+	if err != nil {
+		message := utils.ResponseError(err.Error(), http.StatusUnauthorized)
+		c.Data(http.StatusUnauthorized, "application/json", message)
+		return
+	}
+
+	respBody, status, err := h.certificateService.EjbcaCount(token)
+	if err != nil {
+		c.Data(status, "application/json", respBody)
+		return
+	}
+	c.Data(status, "application/json", respBody)
+}

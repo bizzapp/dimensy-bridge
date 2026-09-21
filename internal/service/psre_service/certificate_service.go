@@ -25,6 +25,7 @@ type CertificateService interface {
 	HandleActiveAsFallbackWithResponse(tx *gorm.DB, token string, req *dto.CertificateIssueActiveRequest, clientID int64) ([]byte, int, error)
 	RevokeRA(token, externalID string, req *dto.RevokeRADTO) ([]byte, int, error)
 	DownloadPublicKeys(token string, params map[string]string) ([]byte, int, error)
+	EjbcaCount(token string) ([]byte, int, error)
 }
 
 type certificateService struct {
@@ -447,6 +448,17 @@ func (s *certificateService) DownloadPublicKeys(token string, params map[string]
 	}
 	if status >= 400 {
 		return data, status, fmt.Errorf("psre download public keys failed: %s", string(data))
+	}
+	return data, status, nil
+}
+
+func (s *certificateService) EjbcaCount(token string) ([]byte, int, error) {
+	data, status, err := utils.PsreRequest("GET", "/certificate/ejbca_count", nil, token, nil)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+	if status >= 400 {
+		return data, status, fmt.Errorf("psre ejbca count failed: %s", string(data))
 	}
 	return data, status, nil
 }
