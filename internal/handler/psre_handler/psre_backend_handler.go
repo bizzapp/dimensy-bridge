@@ -106,6 +106,9 @@ func (h *PsreBackendHandler) MailLog(c *gin.Context) {
 	page := c.Query("page")
 	limit := c.Query("limit")
 	logType := c.Query("type")
+	to := c.Query("to")
+	startDate := c.Query("startDate")
+	endDate := c.Query("endDate")
 
 	var payload map[string]interface{}
 	if c.Request.ContentLength > 0 {
@@ -115,7 +118,7 @@ func (h *PsreBackendHandler) MailLog(c *gin.Context) {
 		}
 	}
 
-	data, status, err := h.backendSvc.MailLog(token, page, limit, filter, logType, payload)
+	data, status, err := h.backendSvc.MailLog(token, page, limit, filter, logType, to, startDate, endDate, payload)
 	if err != nil {
 		c.Data(status, "application/json", data)
 		return
@@ -129,6 +132,9 @@ func (h *PsreBackendHandler) MailLogDownload(c *gin.Context) {
 	page := c.Query("page")
 	limit := c.Query("limit")
 	logType := c.Query("type")
+	to := c.Query("to")
+	startDate := c.Query("startDate")
+	endDate := c.Query("endDate")
 
 	var payload map[string]interface{}
 	if c.Request.ContentLength > 0 {
@@ -138,7 +144,7 @@ func (h *PsreBackendHandler) MailLogDownload(c *gin.Context) {
 		}
 	}
 
-	data, status, err := h.backendSvc.MailLogDownload(token, page, limit, logType, payload)
+	data, status, err := h.backendSvc.MailLogDownload(token, page, limit, logType, to, startDate, endDate, payload)
 	if err != nil {
 		c.Data(status, "application/json", data)
 		return
