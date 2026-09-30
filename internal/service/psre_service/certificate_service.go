@@ -26,6 +26,7 @@ type CertificateService interface {
 	RevokeRA(token, externalID string, req *dto.RevokeRADTO) ([]byte, int, error)
 	DownloadPublicKeys(token string, params map[string]string) ([]byte, int, error)
 	EjbcaCount(token string) ([]byte, int, error)
+	Rekey(token, externalID string, req *dto.RekeyCertificateDto) ([]byte, int, error)
 }
 
 type certificateService struct {
@@ -461,4 +462,49 @@ func (s *certificateService) EjbcaCount(token string) ([]byte, int, error) {
 		return data, status, fmt.Errorf("psre ejbca count failed: %s", string(data))
 	}
 	return data, status, nil
+}
+
+func (s *certificateService) Rekey(token, externalID string, req *dto.RekeyCertificateDto) ([]byte, int, error) {
+	var (
+		respBody []byte
+		status   int
+	)
+
+	txErr := s.db.Transaction(func(tx *gorm.DB) error {
+		// Get client info
+		_, err := s.clientSvc.GetClientByExternalId(externalID)
+		if err != nil {
+			message := fmt.Sprintf("Unauthorized: %v", err)
+			respBody = utils.ResponseError(message, 400)
+			status = 400
+			return fmt.Errorf("unauthorized client: %w", err)
+		}
+
+		// Call PSrE API
+		data, psreStatus, err := utils.PsreRequest("POST", "/certificate/rekey", req, token, nil)
+		respBody, status = data, psreStatus
+
+		if psreStatus >= 400 {
+			return fmt.Errorf("PSrE returned HTTP %d: %s", psreStatus, string(data))
+		}
+
+		var resp struct {
+			Code    int    `json:"code"`
+			Message string `json:"message"`
+		}
+		if err := json.Unmarshal(data, &resp); err != nil {
+			return fmt.Errorf("failed to parse psre response: %w", err)
+		}
+
+		return nil
+	})
+
+	if txErr != nil {
+		if respBody != nil {
+			return respBody, status, txErr
+		}
+		return nil, http.StatusBadRequest, txErr
+	}
+
+	return respBody, status, nil
 }

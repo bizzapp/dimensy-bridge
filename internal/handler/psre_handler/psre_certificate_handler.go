@@ -278,3 +278,25 @@ func (h *PsreCertificateHandler) EjbcaCount(c *gin.Context) {
 	}
 	c.Data(status, "application/json", respBody)
 }
+
+func (h *PsreCertificateHandler) Rekey(c *gin.Context) {
+	externalID, token, err := utils.ValidateExternalID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	var req dto.RekeyCertificateDto
+	if err := c.ShouldBindJSON(&req); err != nil {
+		message := utils.ResponseError(err.Error(), http.StatusBadRequest)
+		c.Data(http.StatusBadRequest, "application/json", message)
+		return
+	}
+
+	respBody, status, err := h.certificateService.Rekey(token, externalID, &req)
+	if err != nil {
+		c.Data(status, "application/json", respBody)
+		return
+	}
+	c.Data(status, "application/json", respBody)
+}

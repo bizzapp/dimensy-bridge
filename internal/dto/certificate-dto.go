@@ -66,3 +66,9 @@ type CertificateActiveResponseData struct {
 	UserID             *string    `json:"userId"`
 	CompanyID          *string    `json:"companyId"`
 }
+
+type RekeyCertificateDto struct {
+	DocumentID    string `json:"documentId" binding:"required"`
+	CertificateID string `json:"certificateId" binding:"required"`
+	CallbackURL   string `json:"callbackUrl" binding:"required,url"`
+}
