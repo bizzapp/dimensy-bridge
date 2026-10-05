@@ -586,7 +586,6 @@ func (s *clientUserService) RegisterOtp(token, externalID string, req *dto.Clien
 			Name:      &req.FullName,
 			Birthdate: &req.BirthDate.Time,
 			Email:     &req.Email,
-			Phone:     &req.Phone,
 			IsWNI:     &req.IsWNI,
 			ClientID:  client.ID,
 		}
@@ -679,7 +678,7 @@ func (s *clientUserService) RegisterOtpVerify(token, externalID string, req *dto
 		if userIDStr == "" {
 			userIDStr = req.UserID
 		}
-		
+
 		externalUUID, err := uuid.Parse(userIDStr)
 		if err != nil {
 			return data, status, fmt.Errorf("failed to parse user id as uuid: %w", err)

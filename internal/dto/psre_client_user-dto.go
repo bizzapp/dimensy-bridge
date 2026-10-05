@@ -122,7 +122,6 @@ type ClientUserRegisterOtpRequest struct {
 	FullName  string     `json:"fullName" binding:"required"`
 	BirthDate CustomDate `json:"birthDate" binding:"required"`
 	Email     string     `json:"email" binding:"required,email"`
-	Phone     string     `json:"phone" binding:"required"`
 	IsWNI     bool       `json:"isWni" binding:"required"`
 	URL       string     `json:"url" binding:"omitempty,url"`
 }
