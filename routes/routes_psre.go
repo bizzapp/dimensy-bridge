@@ -36,6 +36,11 @@ func SetupPsreRoutes(api *gin.RouterGroup, deps *config.AppDependencies, rl *mid
 		user.POST("/phone-activation", deps.PsreClientUserHdl.PhoneActivation)
 		user.POST("/request-kyc", deps.PsreClientUserHdl.RequestKYC)
 		user.POST("/verify-kyc", deps.PsreClientUserHdl.VerifyKYC)
+		
+		user.POST("/register-otp", deps.PsreClientUserHdl.RegisterOtp)
+		user.POST("/register-otp-verify", deps.PsreClientUserHdl.RegisterOtpVerify)
+		user.POST("/register-otp-resend", deps.PsreClientUserHdl.RegisterOtpResend)
+		user.GET("/register-otp/:id", deps.PsreClientUserHdl.GetRegisterOtp)
 
 		certificate := psre.Group("/certificate")
 		certificate.Use(middleware.AuthJWE())

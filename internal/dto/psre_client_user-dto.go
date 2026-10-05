@@ -116,3 +116,22 @@ type PsreUserCompanyData struct {
 	CompanyID string `json:"companyId"`
 	// Add other company fields if needed
 }
+
+type ClientUserRegisterOtpRequest struct {
+	NIK       string     `json:"nik" binding:"required"`
+	FullName  string     `json:"fullName" binding:"required"`
+	BirthDate CustomDate `json:"birthDate" binding:"required"`
+	Email     string     `json:"email" binding:"required,email"`
+	Phone     string     `json:"phone" binding:"required"`
+	IsWNI     bool       `json:"isWni" binding:"required"`
+	URL       string     `json:"url" binding:"omitempty,url"`
+}
+
+type ClientUserRegisterOtpVerifyRequest struct {
+	UserID string `json:"userId" binding:"required"`
+	OTP    string `json:"otp" binding:"required"`
+}
+
+type ClientUserRegisterOtpResendRequest struct {
+	UserID string `json:"userId" binding:"required"`
+}

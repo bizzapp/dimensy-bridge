@@ -28,6 +28,10 @@ type ClientUserService interface {
 	RequestKYC(token, externalID string, req *dto.ClientUserKYCRequest) ([]byte, int, error)
 	VerifyKYC(token, externalID string, req *dto.ClientUserVerifyKYCRequest) ([]byte, int, error)
 	SyncUsers(token, externalID string) ([]byte, int, error)
+	RegisterOtp(token, externalID string, req *dto.ClientUserRegisterOtpRequest) ([]byte, int, error)
+	RegisterOtpVerify(token, externalID string, req *dto.ClientUserRegisterOtpVerifyRequest) ([]byte, int, error)
+	RegisterOtpResend(token, externalID string, req *dto.ClientUserRegisterOtpResendRequest) ([]byte, int, error)
+	GetRegisterOtp(token, externalID, userId string) ([]byte, int, error)
 }
 
 type clientUserService struct {
@@ -563,4 +567,155 @@ func (s *clientUserService) SyncUsers(token, externalID string) ([]byte, int, er
 	}
 
 	return respBody, status, nil
+}
+
+func (s *clientUserService) RegisterOtp(token, externalID string, req *dto.ClientUserRegisterOtpRequest) ([]byte, int, error) {
+	client, err := s.clientPsreSvc.GetByExternalID(externalID)
+	if err != nil {
+		return nil, http.StatusBadRequest, fmt.Errorf("failed get client psre: %w", err)
+	}
+
+	var (
+		respBody []byte
+		status   int
+	)
+
+	txErr := s.db.Transaction(func(tx *gorm.DB) error {
+		user := model.ClientUser{
+			NIK:       &req.NIK,
+			Name:      &req.FullName,
+			Birthdate: &req.BirthDate.Time,
+			Email:     &req.Email,
+			Phone:     &req.Phone,
+			IsWNI:     &req.IsWNI,
+			ClientID:  client.ID,
+		}
+
+		if err := tx.Create(&user).Error; err != nil {
+			return fmt.Errorf("failed create user: %w", err)
+		}
+		// utils.NewQuotaUtils().UseQuota(tx,)
+		quantity := int64(1)
+		_, err := utils.NewQuotaUtils().UseQuota(tx, dto.UseQuotaClientRequest{
+			MasterProductID: seeder.ID_PRODUCT_USER_PERSONAL,
+			ClientID:        client.ID,
+			Quantity:        quantity,
+		})
+		if err != nil {
+			return fmt.Errorf("failed use quota: %w", err)
+		}
+
+		// 🔹 Call PSrE Register Otp
+		data, st, err := utils.PsreRequest("POST", "/user/register-otp", req, token, nil)
+		respBody, status = data, st
+		if err != nil {
+			return fmt.Errorf("failed call psre api: %w", err)
+		}
+
+		if status >= 400 {
+			return fmt.Errorf("psre api error: %s", string(data))
+		}
+
+		var psreResp struct {
+			Code    int    `json:"code"`
+			Message string `json:"message"`
+			UserID  string `json:"userId"`
+		}
+		if err := json.Unmarshal(data, &psreResp); err != nil {
+			return errors.New("invalid psre response format")
+		}
+
+		if psreResp.Code != 0 {
+			return fmt.Errorf("psre register failed: %s", psreResp.Message)
+		}
+
+		externalUUID, err := uuid.Parse(psreResp.UserID)
+		if err != nil {
+			return fmt.Errorf("failed to parse user id as uuid: %w", err)
+		}
+		user.ExternalID = &externalUUID
+		if err := tx.Save(&user).Error; err != nil {
+			return fmt.Errorf("failed update external_id: %w", err)
+		}
+
+		return nil
+	})
+
+	if txErr != nil {
+		if respBody != nil {
+			return respBody, status, txErr
+		}
+		errJSON, _ := json.Marshal(map[string]any{"code": 400, "message": txErr.Error()})
+		return errJSON, http.StatusBadRequest, txErr
+	}
+
+	return respBody, status, nil
+}
+
+func (s *clientUserService) RegisterOtpVerify(token, externalID string, req *dto.ClientUserRegisterOtpVerifyRequest) ([]byte, int, error) {
+	data, status, err := utils.PsreRequest("POST", "/user/register-otp-verify", req, token, nil)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+
+	if status >= 400 {
+		return data, status, fmt.Errorf("psre register-otp-verify failed: %s", string(data))
+	}
+
+	var resp struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+		Data    struct {
+			UserID string `json:"userId"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return data, status, fmt.Errorf("failed to parse psre response: %w", err)
+	}
+
+	// ✅ Panggil repository untuk update DB
+	if resp.Code == 0 {
+		userIDStr := resp.Data.UserID
+		if userIDStr == "" {
+			userIDStr = req.UserID
+		}
+		
+		externalUUID, err := uuid.Parse(userIDStr)
+		if err != nil {
+			return data, status, fmt.Errorf("failed to parse user id as uuid: %w", err)
+		}
+		if err := s.clientUserRepo.UpdateActiveStatus(externalUUID, true); err != nil {
+			return data, status, fmt.Errorf("failed to update user active status: %w", err)
+		}
+	}
+
+	return data, status, nil
+}
+
+func (s *clientUserService) RegisterOtpResend(token, externalID string, req *dto.ClientUserRegisterOtpResendRequest) ([]byte, int, error) {
+	data, status, err := utils.PsreRequest("POST", "/user/register-otp-resend", req, token, nil)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+
+	if status >= 400 {
+		return data, status, fmt.Errorf("psre register-otp-resend failed: %s", string(data))
+	}
+
+	return data, status, nil
+}
+
+func (s *clientUserService) GetRegisterOtp(token, externalID, userId string) ([]byte, int, error) {
+	path := fmt.Sprintf("/user/register-otp/%s", userId)
+
+	data, status, err := utils.PsreRequest("GET", path, nil, token, nil)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+
+	if status >= 400 {
+		return data, status, fmt.Errorf("psre get register-otp failed: %s", string(data))
+	}
+
+	return data, status, nil
 }

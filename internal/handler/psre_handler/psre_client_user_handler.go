@@ -228,3 +228,88 @@ func (h *PsreClientUserHandler) VerifyKYC(c *gin.Context) {
 	}
 	c.Data(status, "application/json", respBody)
 }
+
+func (h *PsreClientUserHandler) RegisterOtp(c *gin.Context) {
+	externalID, token, err := utils.ValidateExternalID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	var req dto.ClientUserRegisterOtpRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.JSON(c, http.StatusBadRequest, err.Error(), nil, nil)
+		return
+	}
+
+	respBody, status, err := h.psreClientUserSvc.RegisterOtp(token, externalID, &req)
+	if err != nil {
+		c.Data(status, "application/json", respBody)
+		return
+	}
+	c.Data(status, "application/json", respBody)
+}
+
+func (h *PsreClientUserHandler) RegisterOtpVerify(c *gin.Context) {
+	externalID, token, err := utils.ValidateExternalID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	var req dto.ClientUserRegisterOtpVerifyRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.JSON(c, http.StatusBadRequest, err.Error(), nil, nil)
+		return
+	}
+
+	respBody, status, err := h.psreClientUserSvc.RegisterOtpVerify(token, externalID, &req)
+	if err != nil {
+		c.Data(status, "application/json", respBody)
+		return
+	}
+	c.Data(status, "application/json", respBody)
+}
+
+func (h *PsreClientUserHandler) RegisterOtpResend(c *gin.Context) {
+	externalID, token, err := utils.ValidateExternalID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	var req dto.ClientUserRegisterOtpResendRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.JSON(c, http.StatusBadRequest, err.Error(), nil, nil)
+		return
+	}
+
+	respBody, status, err := h.psreClientUserSvc.RegisterOtpResend(token, externalID, &req)
+	if err != nil {
+		c.Data(status, "application/json", respBody)
+		return
+	}
+	c.Data(status, "application/json", respBody)
+}
+
+func (h *PsreClientUserHandler) GetRegisterOtp(c *gin.Context) {
+	externalID, token, err := utils.ValidateExternalID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, err.Error())
+		return
+	}
+	
+	id := c.Param("id")
+	if id == "" {
+		// if missing param but sent in body as fallback?
+		// Wait, user curl was for /user/register-otp/:id
+		// let's just stick to param
+	}
+
+	data, status, err := h.psreClientUserSvc.GetRegisterOtp(token, externalID, id)
+	if err != nil {
+		c.Data(status, "application/json", data)
+		return
+	}
+	c.Data(status, "application/json", data)
+}
