@@ -45,8 +45,8 @@ func SetupPsreRoutes(api *gin.RouterGroup, deps *config.AppDependencies, rl *mid
 		kyc := psre.Group("/kyc")
 		kyc.Use(middleware.AuthJWE())
 		kyc.Use(middleware.JWEIPWhitelistWithClientPsreMiddleware(deps.ClientIPWhitelistRepo, deps.ClientPsreRepo)) // Strict IP whitelist
-		kyc.POST("/id-validation/full/:id", deps.PsreKycHdl.IdValidationFull)
-		kyc.POST("/liveness/full/:id", deps.PsreKycHdl.LivenessFull)
+		kyc.GET("/id-validation/full/:id", deps.PsreKycHdl.IdValidationFull)
+		kyc.GET("/liveness/full/:id", deps.PsreKycHdl.LivenessFull)
 
 		certificate := psre.Group("/certificate")
 		certificate.Use(middleware.AuthJWE())

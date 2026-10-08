@@ -122,8 +122,8 @@ type AppDependencies struct {
 	PsreKycHdl *psre_handler.PsreKycHandler
 	PsreKycSvc psreservice.KycService
 
-	WebhookHdl *handler.WebhookHandler // 👈 tambahkan ini
-	WebhookSvc service.WebhookService  // 👈 tambahkan ini
+	WebhookHdl *handler.WebhookHandler
+	WebhookSvc service.WebhookService
 
 	ClientCompanyInviteRepo repository.ClientCompanyInviteRepository
 	ClientCompanyInviteSvc  service.ClientCompanyInviteService
