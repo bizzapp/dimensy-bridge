@@ -118,6 +118,10 @@ type AppDependencies struct {
 	PsreBackendHdl *psre_handler.PsreBackendHandler
 	PsreBackendSvc psreservice.BackendService
 
+	// PSRE KYC Module
+	PsreKycHdl *psre_handler.PsreKycHandler
+	PsreKycSvc psreservice.KycService
+
 	WebhookHdl *handler.WebhookHandler // 👈 tambahkan ini
 	WebhookSvc service.WebhookService  // 👈 tambahkan ini
 
@@ -199,6 +203,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	psreDashboardSvc := psreservice.NewDashboardService()
 	psreBackendSvc := psreservice.NewBackendService()
 	clientIPWhitelistSvc := service.NewClientIPWhitelistService(clientIPWhitelistRepo)
+	psreKycSvc := psreservice.NewKycService(clientKYCHistoryRepo)
 
 	// === C
 	// === CORE HANDLERS ===
@@ -230,6 +235,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	clientIPWhitelistHdl := handler.NewClientIPWhitelistHandler(clientIPWhitelistSvc)
 	psreDashboardHdl := psre_handler.NewPsreDashboardHandler(psreDashboardSvc)
 	psreBackendHdl := psre_handler.NewPsreBackendHandler(psreBackendSvc)
+	psreKycHdl := psre_handler.NewPsreKycHandler(psreKycSvc)
 	webhookHdl := handler.NewWebhookHandler(webhookSvc)
 	return &AppDependencies{
 		DB:                 db,
@@ -303,6 +309,8 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 		ClientIPWhitelistHdl:  clientIPWhitelistHdl,
 		PsreBackendHdl:        psreBackendHdl,
 		PsreBackendSvc:        psreBackendSvc,
+		PsreKycHdl:            psreKycHdl,
+		PsreKycSvc:            psreKycSvc,
 		WebhookHdl:            webhookHdl,
 		WebhookSvc:            webhookSvc,
 
