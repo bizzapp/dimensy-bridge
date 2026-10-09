@@ -24,7 +24,7 @@ func NewKycService(clientKYCHistoryRepo repository.ClientKYCHistoryRepository) K
 
 func (s *kycService) IdValidationFull(token, externalID, id string, req *dto.ClientUserKYCRequest) ([]byte, int, error) {
 	path := fmt.Sprintf("/kyc/id-validation/full/%s", id)
-	data, status, err := utils.PsreRequest("POST", path, req, token, nil)
+	data, status, err := utils.PsreRequest("GET", path, req, token, nil)
 	if err != nil {
 		return data, status, fmt.Errorf("failed call psre api: %w", err)
 	}
@@ -36,7 +36,7 @@ func (s *kycService) IdValidationFull(token, externalID, id string, req *dto.Cli
 
 func (s *kycService) LivenessFull(token, externalID, id string, req *dto.ClientUserKYCRequest) ([]byte, int, error) {
 	path := fmt.Sprintf("/kyc/liveness/full/%s", id)
-	data, status, err := utils.PsreRequest("POST", path, req, token, nil)
+	data, status, err := utils.PsreRequest("GET", path, req, token, nil)
 	if err != nil {
 		return data, status, fmt.Errorf("failed call psre api: %w", err)
 	}
