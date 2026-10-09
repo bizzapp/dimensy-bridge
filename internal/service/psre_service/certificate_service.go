@@ -27,6 +27,7 @@ type CertificateService interface {
 	DownloadPublicKeys(token string, params map[string]string) ([]byte, int, error)
 	EjbcaCount(token string) ([]byte, int, error)
 	Rekey(token, externalID string, req *dto.RekeyCertificateDto) ([]byte, int, error)
+	RetryProcess(token, externalID string, req *dto.CertificateRetryProcessRequest) ([]byte, int, error)
 }
 
 type certificateService struct {
@@ -507,4 +508,17 @@ func (s *certificateService) Rekey(token, externalID string, req *dto.RekeyCerti
 	}
 
 	return respBody, status, nil
+}
+
+func (s *certificateService) RetryProcess(token, externalID string, req *dto.CertificateRetryProcessRequest) ([]byte, int, error) {
+	data, status, err := utils.PsreRequest("POST", "/certificate/retry-process", req, token, nil)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+
+	if status >= 400 {
+		return data, status, fmt.Errorf("psre certificate retry process failed: %s", string(data))
+	}
+
+	return data, status, nil
 }

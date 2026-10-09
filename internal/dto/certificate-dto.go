@@ -72,3 +72,7 @@ type RekeyCertificateDto struct {
 	CertificateID string `json:"certificateId" binding:"required"`
 	CallbackURL   string `json:"callbackUrl" binding:"required,url"`
 }
+
+type CertificateRetryProcessRequest struct {
+	SignatureID string `json:"signatureId" binding:"required"`
+}
