@@ -13,8 +13,8 @@ type BackendService interface {
 	ListClient(token string, filter, page, limit string) ([]byte, int, error)
 	UpdateClient(id, token string, req *dto.PsreBackendCreateClientRequest) ([]byte, int, error)
 	UpdateClientStatus(id, token string, req *dto.PsreBackendUpdateClientStatusRequest) ([]byte, int, error)
-	MailLog(token string, page, limit, filter, logType, to, startDate, endDate string, payload map[string]interface{}) ([]byte, int, error)
-	MailLogDownload(token string, page, limit, logType, to, startDate, endDate string, payload map[string]interface{}) ([]byte, int, error)
+	MailLog(token string, page, limit, filter, logType, to, startDate, endDate string) ([]byte, int, error)
+	MailLogDownload(token string, page, limit, logType, to, startDate, endDate string) ([]byte, int, error)
 }
 
 type backendService struct {
@@ -92,7 +92,7 @@ func (s *backendService) LoginBackend(req dto.PsreBackendLoginRequest) ([]byte, 
 	return data, status, nil
 }
 
-func (s *backendService) MailLog(token string, page, limit, filter, logType, to, startDate, endDate string, payload map[string]interface{}) ([]byte, int, error) {
+func (s *backendService) MailLog(token string, page, limit, filter, logType, to, startDate, endDate string) ([]byte, int, error) {
 	query := fmt.Sprintf("/backend/mail-log?page=%s&limit=%s", page, limit)
 	if filter != "" {
 		query += "&filter=" + url.QueryEscape(filter)
@@ -110,7 +110,7 @@ func (s *backendService) MailLog(token string, page, limit, filter, logType, to,
 		query += "&endDate=" + url.QueryEscape(endDate)
 	}
 
-	data, status, err := utils.PsreRequest("GET", query, payload, token, nil)
+	data, status, err := utils.PsreRequest("GET", query, nil, token, nil)
 	if err != nil {
 		return data, status, fmt.Errorf("failed call psre api: %w", err)
 	}
@@ -122,7 +122,7 @@ func (s *backendService) MailLog(token string, page, limit, filter, logType, to,
 	return data, status, nil
 }
 
-func (s *backendService) MailLogDownload(token string, page, limit, logType, to, startDate, endDate string, payload map[string]interface{}) ([]byte, int, error) {
+func (s *backendService) MailLogDownload(token string, page, limit, logType, to, startDate, endDate string) ([]byte, int, error) {
 	query := fmt.Sprintf("/backend/mail-log/download?page=%s&limit=%s", page, limit)
 	if logType != "" {
 		query += "&type=" + url.QueryEscape(logType)
@@ -137,7 +137,7 @@ func (s *backendService) MailLogDownload(token string, page, limit, logType, to,
 		query += "&endDate=" + url.QueryEscape(endDate)
 	}
 
-	data, status, err := utils.PsreRequest("GET", query, payload, token, nil)
+	data, status, err := utils.PsreRequest("GET", query, nil, token, nil)
 	if err != nil {
 		return data, status, fmt.Errorf("failed call psre api: %w", err)
 	}

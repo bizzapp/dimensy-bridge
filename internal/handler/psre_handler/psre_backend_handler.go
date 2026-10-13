@@ -109,16 +109,7 @@ func (h *PsreBackendHandler) MailLog(c *gin.Context) {
 	to := c.Query("to")
 	startDate := c.Query("startDate")
 	endDate := c.Query("endDate")
-
-	var payload map[string]interface{}
-	if c.Request.ContentLength > 0 {
-		if err := c.ShouldBindJSON(&payload); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-			return
-		}
-	}
-
-	data, status, err := h.backendSvc.MailLog(token, page, limit, filter, logType, to, startDate, endDate, payload)
+	data, status, err := h.backendSvc.MailLog(token, page, limit, filter, logType, to, startDate, endDate)
 	if err != nil {
 		c.Data(status, "application/json", data)
 		return
@@ -136,15 +127,7 @@ func (h *PsreBackendHandler) MailLogDownload(c *gin.Context) {
 	startDate := c.Query("startDate")
 	endDate := c.Query("endDate")
 
-	var payload map[string]interface{}
-	if c.Request.ContentLength > 0 {
-		if err := c.ShouldBindJSON(&payload); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-			return
-		}
-	}
-
-	data, status, err := h.backendSvc.MailLogDownload(token, page, limit, logType, to, startDate, endDate, payload)
+	data, status, err := h.backendSvc.MailLogDownload(token, page, limit, logType, to, startDate, endDate)
 	if err != nil {
 		c.Data(status, "application/json", data)
 		return
