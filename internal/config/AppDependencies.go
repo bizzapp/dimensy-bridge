@@ -122,6 +122,10 @@ type AppDependencies struct {
 	PsreKycHdl *psre_handler.PsreKycHandler
 	PsreKycSvc psreservice.KycService
 
+	// PSRE Request Change Module
+	PsreRequestChangeHdl *psre_handler.PsreRequestChangeHandler
+	PsreRequestChangeSvc psreservice.RequestChangeService
+
 	WebhookHdl *handler.WebhookHandler
 	WebhookSvc service.WebhookService
 
@@ -204,6 +208,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	psreBackendSvc := psreservice.NewBackendService()
 	clientIPWhitelistSvc := service.NewClientIPWhitelistService(clientIPWhitelistRepo)
 	psreKycSvc := psreservice.NewKycService(clientKYCHistoryRepo)
+	psreRequestChangeSvc := psreservice.NewRequestChangeService()
 
 	// === C
 	// === CORE HANDLERS ===
@@ -236,6 +241,7 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 	psreDashboardHdl := psre_handler.NewPsreDashboardHandler(psreDashboardSvc)
 	psreBackendHdl := psre_handler.NewPsreBackendHandler(psreBackendSvc)
 	psreKycHdl := psre_handler.NewPsreKycHandler(psreKycSvc)
+	psreRequestChangeHdl := psre_handler.NewPsreRequestChangeHandler(psreRequestChangeSvc)
 	webhookHdl := handler.NewWebhookHandler(webhookSvc)
 	return &AppDependencies{
 		DB:                 db,
@@ -311,6 +317,8 @@ func NewAppDependencies(db *gorm.DB) *AppDependencies {
 		PsreBackendSvc:        psreBackendSvc,
 		PsreKycHdl:            psreKycHdl,
 		PsreKycSvc:            psreKycSvc,
+		PsreRequestChangeHdl:  psreRequestChangeHdl,
+		PsreRequestChangeSvc:  psreRequestChangeSvc,
 		WebhookHdl:            webhookHdl,
 		WebhookSvc:            webhookSvc,
 
