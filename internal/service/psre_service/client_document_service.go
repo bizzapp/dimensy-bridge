@@ -140,6 +140,7 @@ func (s *clientDocumentService) UploadSingle(token, externalID string, req dto.P
 
 		// dto.CallbackURL = callbackURL
 		dtoSingleFile := dto.PsreDocumentSingleFileRequest{
+			RealName:    req.RealName,
 			FileName:    req.FileName,
 			Document:    req.Document,
 			CallbackURL: callbackURL,

@@ -5,6 +5,7 @@ import "github.com/google/uuid"
 // PsreDocumentSingleFileRequest untuk upload single document
 type PsreDocumentSingleFileRequest struct {
 	CallbackURL string `json:"callbackUrl" binding:"required,url"`
+	RealName    string `json:"realName" binding:"required"`
 	FileName    string `json:"fileName" binding:"required"`
 	Document    string `json:"document" binding:"required,base64"` // Base64 encoded document
 	UserID      string `json:"userId" binding:"required"`
@@ -19,6 +20,7 @@ type PsreDocumentBulkFileRequest struct {
 }
 
 type PsreDocumentBulkFileItem struct {
+	RealName string `json:"realName" binding:"required"`
 	FileName string `json:"fileName" binding:"required"`
 	Document string `json:"document" binding:"required"` // base64 string
 }
