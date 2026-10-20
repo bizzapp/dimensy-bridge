@@ -9,6 +9,7 @@ import (
 type KycService interface {
 	IdValidationFull(token, externalID, id string) ([]byte, int, error)
 	LivenessFull(token, externalID, id string) ([]byte, int, error)
+	FailedKyc(token, externalID, id string) ([]byte, int, error)
 }
 
 type kycService struct {
@@ -44,3 +45,21 @@ func (s *kycService) LivenessFull(token, externalID, id string) ([]byte, int, er
 	}
 	return data, status, nil
 }
+
+func (s *kycService) FailedKyc(token, externalID, id string) ([]byte, int, error) {
+	path := fmt.Sprintf("/kyc/failed-kyc/%s", id)
+	data, status, err := utils.PsreRequest("POST", path, nil, token, nil)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+	if status >= 400 {
+		return data, status, fmt.Errorf("psre failed-kyc failed: %s", string(data))
+	}
+
+	if s.clientKYCHistoryRepo != nil {
+		_ = s.clientKYCHistoryRepo.UpdateIsRejectStatus(id, true)
+	}
+
+	return data, status, nil
+}
+
