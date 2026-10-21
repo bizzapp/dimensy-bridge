@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type ClientUser struct {
@@ -23,6 +24,8 @@ type ClientUser struct {
 	ParentID        *int64     `json:"parent_id"`
 	CreatedAt       time.Time  `json:"created_at"`
 	UpdatedAt       time.Time  `json:"updated_at"`
+	// Diisi saat akun dihapus di psre (remove-account)
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
 
 	Client        Client        `json:"client" gorm:"foreignKey:ClientID"`
 	ClientCompany ClientCompany `json:"client_company" gorm:"foreignKey:ClientCompanyID"`

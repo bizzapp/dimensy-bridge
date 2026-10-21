@@ -42,6 +42,9 @@ func SetupPsreRoutes(api *gin.RouterGroup, deps *config.AppDependencies, rl *mid
 		user.POST("/register-otp-resend", deps.PsreClientUserHdl.RegisterOtpResend)
 		user.GET("/register-otp/:id", deps.PsreClientUserHdl.GetRegisterOtp)
 
+		user.POST("/request-remove-account", deps.PsreClientUserHdl.RequestRemoveAccount)
+		user.POST("/remove-account", deps.PsreClientUserHdl.RemoveAccount)
+
 		kyc := psre.Group("/kyc")
 		kyc.Use(middleware.AuthJWE())
 		kyc.Use(middleware.JWEIPWhitelistWithClientPsreMiddleware(deps.ClientIPWhitelistRepo, deps.ClientPsreRepo)) // Strict IP whitelist

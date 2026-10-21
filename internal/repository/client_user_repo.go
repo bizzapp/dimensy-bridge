@@ -2,6 +2,7 @@ package repository
 
 import (
 	"dimensy-bridge/internal/model"
+	"fmt"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -21,7 +22,13 @@ type ClientUserRepository interface {
 	FindByExternalID(externalID uuid.UUID) (*model.ClientUser, error)
 	CreateOrUpdate(user *model.ClientUser) error
 	FindByExternalIDs(externalIDs []uuid.UUID) ([]model.ClientUser, error)
+	SoftDeleteByExternalID(externalID uuid.UUID) error
 }
+
+const (
+	anonymizedName  = "Deleted User"
+	anonymizedValue = "-"
+)
 
 type clientUserRepository struct {
 	db *gorm.DB
@@ -93,6 +100,33 @@ func (r *clientUserRepository) CreateOrUpdate(user *model.ClientUser) error {
 	// User exists, update existing record
 	user.ID = existingUser.ID // Keep the existing ID
 	return r.db.Save(user).Error
+}
+
+// SoftDeleteByExternalID anonimkan, nonaktifkan & soft delete user yang akunnya dihapus di psre,
+// sekaligus soft delete undangan company yang belum diterima.
+// NIK asli hanya tersimpan di tabel penampung psre-backend (userRemoval) & client (deleted_users).
+func (r *clientUserRepository) SoftDeleteByExternalID(externalID uuid.UUID) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("external_user_id = ? AND is_verify = ?", externalID, false).
+			Delete(&model.ClientCompanyInvite{}).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Model(&model.ClientUser{}).
+			Where("external_id = ?", externalID).
+			Updates(map[string]interface{}{
+				"nik":       anonymizedValue,
+				"name":      anonymizedName,
+				"birthdate": nil,
+				"email":     fmt.Sprintf("deleted_%s@deleted.local", externalID),
+				"phone":     anonymizedValue,
+				"is_active": false,
+			}).Error; err != nil {
+			return err
+		}
+
+		return tx.Where("external_id = ?", externalID).Delete(&model.ClientUser{}).Error
+	})
 }
 
 // FindByExternalIDs finds multiple users by their external IDs
