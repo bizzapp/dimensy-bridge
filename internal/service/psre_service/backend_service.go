@@ -15,6 +15,8 @@ type BackendService interface {
 	UpdateClientStatus(id, token string, req *dto.PsreBackendUpdateClientStatusRequest) ([]byte, int, error)
 	MailLog(token string, page, limit, filter, logType, to, startDate, endDate string) ([]byte, int, error)
 	MailLogDownload(token string, page, limit, logType, to, startDate, endDate string) ([]byte, int, error)
+	UserDownload(token, year string) ([]byte, int, error)
+	UserKycDownload(token, year string) ([]byte, int, error)
 }
 
 type backendService struct {
@@ -144,6 +146,42 @@ func (s *backendService) MailLogDownload(token string, page, limit, logType, to,
 
 	if status >= 400 {
 		return data, status, fmt.Errorf("psre get mail log download failed: %s", string(data))
+	}
+
+	return data, status, nil
+}
+
+func (s *backendService) UserDownload(token, year string) ([]byte, int, error) {
+	query := "/backend/user/download"
+	if year != "" {
+		query += "?year=" + url.QueryEscape(year)
+	}
+
+	data, status, err := utils.PsreRequest("GET", query, nil, token, nil)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+
+	if status >= 400 {
+		return data, status, fmt.Errorf("psre get user download failed: %s", string(data))
+	}
+
+	return data, status, nil
+}
+
+func (s *backendService) UserKycDownload(token, year string) ([]byte, int, error) {
+	query := "/backend/user-kyc/download"
+	if year != "" {
+		query += "?year=" + url.QueryEscape(year)
+	}
+
+	data, status, err := utils.PsreRequest("GET", query, nil, token, nil)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+
+	if status >= 400 {
+		return data, status, fmt.Errorf("psre get user kyc download failed: %s", string(data))
 	}
 
 	return data, status, nil

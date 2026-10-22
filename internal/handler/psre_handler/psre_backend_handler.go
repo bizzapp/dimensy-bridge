@@ -134,3 +134,25 @@ func (h *PsreBackendHandler) MailLogDownload(c *gin.Context) {
 	}
 	c.Data(status, "application/json", data)
 }
+
+func (h *PsreBackendHandler) UserDownload(c *gin.Context) {
+	token := c.Request.Header.Get("Authorization")
+
+	data, status, err := h.backendSvc.UserDownload(token, c.Query("year"))
+	if err != nil {
+		c.Data(status, "application/json", data)
+		return
+	}
+	c.Data(status, "text/csv", data)
+}
+
+func (h *PsreBackendHandler) UserKycDownload(c *gin.Context) {
+	token := c.Request.Header.Get("Authorization")
+
+	data, status, err := h.backendSvc.UserKycDownload(token, c.Query("year"))
+	if err != nil {
+		c.Data(status, "application/json", data)
+		return
+	}
+	c.Data(status, "text/csv", data)
+}
