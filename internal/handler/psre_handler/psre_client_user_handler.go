@@ -314,6 +314,50 @@ func (h *PsreClientUserHandler) RegisterOtpResend(c *gin.Context) {
 	c.Data(status, "application/json", respBody)
 }
 
+func (h *PsreClientUserHandler) RequestRemoveAccount(c *gin.Context) {
+	externalID, token, err := utils.ValidateExternalID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	var req dto.ClientUserRequestRemoveAccountRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.JSON(c, http.StatusBadRequest, err.Error(), nil, nil)
+		return
+	}
+
+	respBody, status, err := h.psreClientUserSvc.RequestRemoveAccount(token, externalID, &req)
+	if err != nil {
+		c.Data(status, "application/json", respBody)
+		return
+	}
+
+	c.Data(status, "application/json", respBody)
+}
+
+func (h *PsreClientUserHandler) RemoveAccount(c *gin.Context) {
+	externalID, token, err := utils.ValidateExternalID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	var req dto.ClientUserRemoveAccountRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.JSON(c, http.StatusBadRequest, err.Error(), nil, nil)
+		return
+	}
+
+	respBody, status, err := h.psreClientUserSvc.RemoveAccount(token, externalID, &req)
+	if err != nil {
+		c.Data(status, "application/json", respBody)
+		return
+	}
+
+	c.Data(status, "application/json", respBody)
+}
+
 func (h *PsreClientUserHandler) GetRegisterOtp(c *gin.Context) {
 	externalID, token, err := utils.ValidateExternalID(c)
 	if err != nil {

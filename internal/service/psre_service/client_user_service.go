@@ -33,6 +33,8 @@ type ClientUserService interface {
 	RegisterOtpVerify(token, externalID string, req *dto.ClientUserRegisterOtpVerifyRequest) ([]byte, int, error)
 	RegisterOtpResend(token, externalID string, req *dto.ClientUserRegisterOtpResendRequest) ([]byte, int, error)
 	GetRegisterOtp(token, externalID, userId string) ([]byte, int, error)
+	RequestRemoveAccount(token, externalID string, req *dto.ClientUserRequestRemoveAccountRequest) ([]byte, int, error)
+	RemoveAccount(token, externalID string, req *dto.ClientUserRemoveAccountRequest) ([]byte, int, error)
 }
 
 type clientUserService struct {
@@ -741,6 +743,52 @@ func (s *clientUserService) RegisterOtpResend(token, externalID string, req *dto
 
 	if status >= 400 {
 		return data, status, fmt.Errorf("psre register-otp-resend failed: %s", string(data))
+	}
+
+	return data, status, nil
+}
+
+func (s *clientUserService) RequestRemoveAccount(token, externalID string, req *dto.ClientUserRequestRemoveAccountRequest) ([]byte, int, error) {
+	data, status, err := utils.PsreRequest("POST", "/user/request-remove-account", req, token, nil)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+
+	if status >= 400 {
+		return data, status, fmt.Errorf("psre request-remove-account failed: %s", string(data))
+	}
+
+	return data, status, nil
+}
+
+func (s *clientUserService) RemoveAccount(token, externalID string, req *dto.ClientUserRemoveAccountRequest) ([]byte, int, error) {
+	data, status, err := utils.PsreRequest("POST", "/user/remove-account", req, token, nil)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+
+	if status >= 400 {
+		return data, status, fmt.Errorf("psre remove-account failed: %s", string(data))
+	}
+
+	var resp struct {
+		Code int `json:"code"`
+	}
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return data, status, fmt.Errorf("failed to parse psre response: %w", err)
+	}
+
+	// Akun sudah terhapus di psre: cleanup data lokal bersifat best-effort,
+	// response psre tetap diteruskan agar client tidak mengulang penghapusan
+	if resp.Code == 0 {
+		externalUUID, err := uuid.Parse(req.UserID)
+		if err != nil {
+			fmt.Printf("Warning: Failed to parse removed user id as uuid: %v\n", err)
+			return data, status, nil
+		}
+		if err := s.clientUserRepo.SoftDeleteByExternalID(externalUUID); err != nil {
+			fmt.Printf("Warning: Failed to soft delete removed user %s: %v\n", req.UserID, err)
+		}
 	}
 
 	return data, status, nil
