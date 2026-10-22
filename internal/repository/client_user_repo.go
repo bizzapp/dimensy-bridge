@@ -21,6 +21,7 @@ type ClientUserRepository interface {
 	FindByExternalID(externalID uuid.UUID) (*model.ClientUser, error)
 	CreateOrUpdate(user *model.ClientUser) error
 	FindByExternalIDs(externalIDs []uuid.UUID) ([]model.ClientUser, error)
+	UpdateByExternalID(externalID uuid.UUID, updates map[string]interface{}) error
 }
 
 type clientUserRepository struct {
@@ -62,6 +63,12 @@ func (r *clientUserRepository) UpdateVerifyKYCStatus(externalID uuid.UUID, verif
 	return r.db.Model(&model.ClientUser{}).
 		Where("external_id = ?", externalID).
 		Update("is_verify_kyc", verify).Error
+}
+
+func (r *clientUserRepository) UpdateByExternalID(externalID uuid.UUID, updates map[string]interface{}) error {
+	return r.db.Model(&model.ClientUser{}).
+		Where("external_id = ?", externalID).
+		Updates(updates).Error
 }
 
 func (r *clientUserRepository) Create(user *model.ClientUser) error {

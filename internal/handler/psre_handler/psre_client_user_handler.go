@@ -165,6 +165,28 @@ func (h *PsreClientUserHandler) Detail(c *gin.Context) {
 	c.Data(status, "application/json", data)
 }
 
+func (h *PsreClientUserHandler) Update(c *gin.Context) {
+	externalID, token, err := utils.ValidateExternalID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, err.Error())
+		return
+	}
+	id := c.Param("id")
+
+	var req dto.ClientUserUpdateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.JSON(c, http.StatusBadRequest, err.Error(), nil, nil)
+		return
+	}
+
+	respBody, status, err := h.psreClientUserSvc.UpdateUser(token, externalID, id, &req)
+	if err != nil {
+		c.Data(status, "application/json", respBody)
+		return
+	}
+	c.Data(status, "application/json", respBody)
+}
+
 func (h *PsreClientUserHandler) Register(c *gin.Context) {
 
 	externalID, token, err := utils.ValidateExternalID(c)

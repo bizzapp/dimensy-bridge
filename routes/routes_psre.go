@@ -27,6 +27,7 @@ func SetupPsreRoutes(api *gin.RouterGroup, deps *config.AppDependencies, rl *mid
 		user.Use(middleware.AuthJWE())
 		user.Use(middleware.JWEIPWhitelistWithClientPsreMiddleware(deps.ClientIPWhitelistRepo, deps.ClientPsreRepo)) // Strict IP whitelist
 		user.GET("/", deps.PsreClientUserHdl.List)
+		user.PUT("/:id", deps.PsreClientUserHdl.Update)
 		user.GET("/sync", deps.PsreClientUserHdl.Sync)
 		user.GET("/:id", deps.PsreClientUserHdl.Detail)
 		user.POST("/register", deps.PsreClientUserHdl.Register)
