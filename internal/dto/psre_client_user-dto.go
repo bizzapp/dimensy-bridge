@@ -69,7 +69,7 @@ type ClientUserUpdateRequest struct {
 	FullName  string     `json:"fullName" binding:"required"`
 	BirthDate CustomDate `json:"birthDate" binding:"required"`
 	Email     string     `json:"email" binding:"required,email"`
-	Phone     string     `json:"phone" binding:"omitempty"`
+	Phone     string     `json:"phone,omitempty" binding:"omitempty"`
 }
 
 // CustomDate bisa mem-parse "1994-08-25" langsung ke time.Time

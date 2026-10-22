@@ -130,13 +130,17 @@ func (s *clientUserService) UpdateUser(token, externalID, id string, req *dto.Cl
 
 	// ✅ Sync data user di DB lokal
 	if resp.Code == 0 {
-		if err := s.clientUserRepo.UpdateByExternalID(userUUID, map[string]interface{}{
+		updates := map[string]interface{}{
 			"nik":       req.NIK,
 			"name":      req.FullName,
 			"birthdate": req.BirthDate.Time,
 			"email":     req.Email,
-			"phone":     req.Phone,
-		}); err != nil {
+		}
+		// phone opsional, jangan timpa phone lama jika tidak dikirim
+		if req.Phone != "" {
+			updates["phone"] = req.Phone
+		}
+		if err := s.clientUserRepo.UpdateByExternalID(userUUID, updates); err != nil {
 			return data, status, fmt.Errorf("failed to update user: %w", err)
 		}
 	}
