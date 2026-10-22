@@ -20,6 +20,7 @@ import (
 type ClientUserService interface {
 	GetUsers(token, externalID, filter, page, limit string) ([]byte, int, error)
 	GetUserDetail(token, externalID, id string) ([]byte, int, error)
+	UpdateUser(token, externalID, id string, req *dto.ClientUserUpdateRequest) ([]byte, int, error)
 	RegisterUser(token, externalID string, req *dto.ClientUserRequest) ([]byte, int, error)
 	ActivateUser(token, externalID string, req *dto.ClientUserActivateRequest) ([]byte, int, error)
 	ResendActivationUser(token, externalID string, req *dto.ClientUserResendActivationRequest) ([]byte, int, error)
@@ -97,6 +98,51 @@ func (s *clientUserService) GetUserDetail(token, externalID, id string) ([]byte,
 
 	if status >= 400 {
 		return data, status, fmt.Errorf("psre get user detail failed: %s", string(data))
+	}
+
+	return data, status, nil
+}
+
+func (s *clientUserService) UpdateUser(token, externalID, id string, req *dto.ClientUserUpdateRequest) ([]byte, int, error) {
+	userUUID, err := uuid.Parse(id)
+	if err != nil {
+		return utils.ResponseError("invalid user id", http.StatusBadRequest), http.StatusBadRequest, fmt.Errorf("failed to parse user id as uuid: %w", err)
+	}
+
+	path := fmt.Sprintf("/user/%s", id)
+
+	data, status, err := utils.PsreRequest("PUT", path, req, token, nil)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+
+	if status >= 400 {
+		return data, status, fmt.Errorf("psre update user failed: %s", string(data))
+	}
+
+	var resp struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+	}
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return data, status, fmt.Errorf("failed to parse psre response: %w", err)
+	}
+
+	// ✅ Sync data user di DB lokal
+	if resp.Code == 0 {
+		updates := map[string]interface{}{
+			"nik":       req.NIK,
+			"name":      req.FullName,
+			"birthdate": req.BirthDate.Time,
+			"email":     req.Email,
+		}
+		// phone opsional, jangan timpa phone lama jika tidak dikirim
+		if req.Phone != "" {
+			updates["phone"] = req.Phone
+		}
+		if err := s.clientUserRepo.UpdateByExternalID(userUUID, updates); err != nil {
+			return data, status, fmt.Errorf("failed to update user: %w", err)
+		}
 	}
 
 	return data, status, nil

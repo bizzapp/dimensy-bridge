@@ -64,6 +64,14 @@ type ClientUserRequest struct {
 	CompanyID *uuid.UUID `json:"companyId,omitempty"` // nullable
 }
 
+type ClientUserUpdateRequest struct {
+	NIK       string     `json:"nik" binding:"required"`
+	FullName  string     `json:"fullName" binding:"required"`
+	BirthDate CustomDate `json:"birthDate" binding:"required"`
+	Email     string     `json:"email" binding:"required,email"`
+	Phone     string     `json:"phone,omitempty" binding:"omitempty"`
+}
+
 // CustomDate bisa mem-parse "1994-08-25" langsung ke time.Time
 type CustomDate struct {
 	time.Time
