@@ -48,3 +48,23 @@ func (h *PsreKycHandler) LivenessFull(c *gin.Context) {
 	}
 	c.Data(status, "application/json", respBody)
 }
+
+func (h *PsreKycHandler) FailedKyc(c *gin.Context) {
+	externalID, token, err := utils.ValidateExternalID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, err.Error())
+		return
+	}
+	id := c.Param("id")
+
+	respBody, status, err := h.kycSvc.FailedKyc(token, externalID, id)
+	if err != nil {
+		if len(respBody) == 0 {
+			respBody = utils.ResponseError(err.Error(), status)
+		}
+		c.Data(status, "application/json", respBody)
+		return
+	}
+	c.Data(status, "application/json", respBody)
+}
+

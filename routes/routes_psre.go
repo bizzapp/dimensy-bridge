@@ -45,11 +45,23 @@ func SetupPsreRoutes(api *gin.RouterGroup, deps *config.AppDependencies, rl *mid
 		user.POST("/request-remove-account", deps.PsreClientUserHdl.RequestRemoveAccount)
 		user.POST("/remove-account", deps.PsreClientUserHdl.RemoveAccount)
 
+		requestChange := user.Group("/request-change")
+		requestChange.Use(middleware.AuthJWE())
+		requestChange.Use(middleware.JWEIPWhitelistWithClientPsreMiddleware(deps.ClientIPWhitelistRepo, deps.ClientPsreRepo)) // Strict IP whitelist
+		requestChange.POST("/phone", deps.PsreRequestChangeHdl.RequestChangePhone)
+		requestChange.POST("/resend-phone", deps.PsreRequestChangeHdl.ResendPhone)
+		requestChange.POST("/validate-phone", deps.PsreRequestChangeHdl.ValidatePhone)
+
+		requestChange.POST("/email", deps.PsreRequestChangeHdl.RequestChangeEmail)
+		requestChange.POST("/resend-email", deps.PsreRequestChangeHdl.ResendEmail)
+		requestChange.POST("/validate-email", deps.PsreRequestChangeHdl.ValidateEmail)
+
 		kyc := psre.Group("/kyc")
 		kyc.Use(middleware.AuthJWE())
 		kyc.Use(middleware.JWEIPWhitelistWithClientPsreMiddleware(deps.ClientIPWhitelistRepo, deps.ClientPsreRepo)) // Strict IP whitelist
 		kyc.GET("/id-validation/full/:id", deps.PsreKycHdl.IdValidationFull)
 		kyc.GET("/liveness/full/:id", deps.PsreKycHdl.LivenessFull)
+		kyc.POST("/failed-kyc/:id", deps.PsreKycHdl.FailedKyc)
 
 		certificate := psre.Group("/certificate")
 		certificate.Use(middleware.AuthJWE())
