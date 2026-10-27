@@ -35,6 +35,7 @@ type ClientUserService interface {
 	GetRegisterOtp(token, externalID, userId string) ([]byte, int, error)
 	RequestRemoveAccount(token, externalID string, req *dto.ClientUserRequestRemoveAccountRequest) ([]byte, int, error)
 	RemoveAccount(token, externalID string, req *dto.ClientUserRemoveAccountRequest) ([]byte, int, error)
+	AutoRemoveAccount(token, externalID string, req *dto.ClientUserAutoRemoveAccountRequest) ([]byte, int, error)
 }
 
 type clientUserService struct {
@@ -784,6 +785,38 @@ func (s *clientUserService) RemoveAccount(token, externalID string, req *dto.Cli
 
 	// Akun sudah terhapus di psre: cleanup data lokal bersifat best-effort,
 	// response psre tetap diteruskan agar client tidak mengulang penghapusan
+	if resp.Code == 0 {
+		externalUUID, err := uuid.Parse(req.UserID)
+		if err != nil {
+			fmt.Printf("Warning: Failed to parse removed user id as uuid: %v\n", err)
+			return data, status, nil
+		}
+		if err := s.clientUserRepo.SoftDeleteByExternalID(externalUUID); err != nil {
+			fmt.Printf("Warning: Failed to soft delete removed user %s: %v\n", req.UserID, err)
+		}
+	}
+
+	return data, status, nil
+}
+
+func (s *clientUserService) AutoRemoveAccount(token, externalID string, req *dto.ClientUserAutoRemoveAccountRequest) ([]byte, int, error) {
+	data, status, err := utils.PsreRequest("POST", "/user/auto-remove-account", req, token, nil)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+
+	if status >= 400 {
+		return data, status, fmt.Errorf("psre auto-remove-account failed: %s", string(data))
+	}
+
+	var resp struct {
+		Code int `json:"code"`
+	}
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return data, status, fmt.Errorf("failed to parse psre response: %w", err)
+	}
+
+	// Sama seperti RemoveAccount: cleanup lokal best-effort, response psre tetap diteruskan
 	if resp.Code == 0 {
 		externalUUID, err := uuid.Parse(req.UserID)
 		if err != nil {
