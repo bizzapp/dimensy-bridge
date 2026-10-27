@@ -20,6 +20,7 @@ type ClientKYCHistoryRepository interface {
 	FindByExternalUserID(externalUserID uuid.UUID) (*model.ClientKYCHistory, error)
 	FindByExternalUserIDAndSignature(externalUserID uuid.UUID, signature string) (*model.ClientKYCHistory, error)
 	UpdateIsRejectStatus(signatureID string, isReject bool) error
+	UpdateIsRejectStatusByExternalUserID(externalUserID uuid.UUID, isReject bool) error
 	UpdateIsVerifyStatus(signatureID string, isVerify bool) error
 	GetBySignatureID(signatureID string) (*model.ClientKYCHistory, error)
 }
@@ -96,6 +97,18 @@ func (r *clientKYCHistoryRepository) FindByExternalUserIDAndSignature(externalUs
 		return nil, err
 	}
 	return &result, nil
+}
+
+// UpdateIsRejectStatusByExternalUserID menandai semua KYC history user yang masih pending sebagai reject
+func (r *clientKYCHistoryRepository) UpdateIsRejectStatusByExternalUserID(externalUserID uuid.UUID, isReject bool) error {
+	return r.db.Model(&model.ClientKYCHistory{}).
+		Where("external_user_id = ?", externalUserID).
+		Where("is_verify = ?", false).
+		Where("reject_time IS NULL").
+		Updates(map[string]interface{}{
+			"is_reject":   isReject,
+			"reject_time": time.Now(),
+		}).Error
 }
 
 func (r *clientKYCHistoryRepository) UpdateIsRejectStatus(signatureID string, isReject bool) error {
