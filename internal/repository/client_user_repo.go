@@ -24,6 +24,7 @@ type ClientUserRepository interface {
 	FindByExternalIDs(externalIDs []uuid.UUID) ([]model.ClientUser, error)
 	UpdateByExternalID(externalID uuid.UUID, updates map[string]interface{}) error
 	SoftDeleteByExternalID(externalID uuid.UUID) error
+	FindByExternalIDUnscoped(externalID uuid.UUID) (*model.ClientUser, error)
 }
 
 const (
@@ -107,6 +108,13 @@ func (r *clientUserRepository) CreateOrUpdate(user *model.ClientUser) error {
 	// User exists, update existing record
 	user.ID = existingUser.ID // Keep the existing ID
 	return r.db.Save(user).Error
+}
+
+// FindByExternalIDUnscoped termasuk user yang sudah di-soft delete
+func (r *clientUserRepository) FindByExternalIDUnscoped(externalID uuid.UUID) (*model.ClientUser, error) {
+	var user model.ClientUser
+	err := r.db.Unscoped().Where("external_id = ?", externalID).First(&user).Error
+	return &user, err
 }
 
 // SoftDeleteByExternalID anonimkan, nonaktifkan & soft delete user yang akunnya dihapus di psre,

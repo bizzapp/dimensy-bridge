@@ -46,6 +46,7 @@ func SetupPsreRoutes(api *gin.RouterGroup, deps *config.AppDependencies, rl *mid
 		user.POST("/request-remove-account", deps.PsreClientUserHdl.RequestRemoveAccount)
 		user.POST("/remove-account", deps.PsreClientUserHdl.RemoveAccount)
 		user.POST("/auto-remove-account", deps.PsreClientUserHdl.AutoRemoveAccount)
+		user.POST("/remove-account-status", deps.PsreClientUserHdl.RemoveAccountStatus)
 
 		requestChange := user.Group("/request-change")
 		requestChange.Use(middleware.AuthJWE())

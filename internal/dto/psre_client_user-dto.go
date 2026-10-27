@@ -147,6 +147,11 @@ type ClientUserRequestRemoveAccountRequest struct {
 	UserID string `json:"userId" binding:"required"`
 }
 
+type ClientUserRemoveAccountStatusRequest struct {
+	UserID          string `json:"userId" binding:"required"`
+	RemoveAccountID string `json:"removeAccountId,omitempty"`
+}
+
 type ClientUserAutoRemoveAccountRequest struct {
 	UserID string `json:"userId" binding:"required"`
 }

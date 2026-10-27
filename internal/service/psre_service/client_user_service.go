@@ -36,6 +36,7 @@ type ClientUserService interface {
 	RequestRemoveAccount(token, externalID string, req *dto.ClientUserRequestRemoveAccountRequest) ([]byte, int, error)
 	RemoveAccount(token, externalID string, req *dto.ClientUserRemoveAccountRequest) ([]byte, int, error)
 	AutoRemoveAccount(token, externalID string, req *dto.ClientUserAutoRemoveAccountRequest) ([]byte, int, error)
+	RemoveAccountStatus(token, externalID string, req *dto.ClientUserRemoveAccountStatusRequest) ([]byte, int, error)
 }
 
 type clientUserService struct {
@@ -797,6 +798,58 @@ func (s *clientUserService) RemoveAccount(token, externalID string, req *dto.Cli
 	}
 
 	return data, status, nil
+}
+
+// RemoveAccountStatus mengecek status penghapusan di psre dan, bila sudah SUCCESS,
+// menyinkronkan client_users lokal (idempotent). Status bridge ditambahkan ke data response.
+func (s *clientUserService) RemoveAccountStatus(token, externalID string, req *dto.ClientUserRemoveAccountStatusRequest) ([]byte, int, error) {
+	data, status, err := utils.PsreRequest("POST", "/user/remove-account-status", req, token, nil)
+	if err != nil {
+		return data, status, fmt.Errorf("failed call psre api: %w", err)
+	}
+
+	if status >= 400 {
+		return data, status, fmt.Errorf("psre remove-account-status failed: %s", string(data))
+	}
+
+	var resp map[string]interface{}
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return data, status, fmt.Errorf("failed to parse psre response: %w", err)
+	}
+
+	externalUUID, err := uuid.Parse(req.UserID)
+	if err != nil {
+		return data, status, nil
+	}
+
+	removalData, _ := resp["data"].(map[string]interface{})
+	if code, _ := resp["code"].(float64); code == 0 && removalData != nil && removalData["status"] == "SUCCESS" {
+		if err := s.clientUserRepo.SoftDeleteByExternalID(externalUUID); err != nil {
+			fmt.Printf("Warning: Failed to soft delete removed user %s: %v\n", req.UserID, err)
+		}
+	}
+
+	bridgeStatus := map[string]interface{}{
+		"clientUserFound":   false,
+		"clientUserDeleted": false,
+	}
+	if user, err := s.clientUserRepo.FindByExternalIDUnscoped(externalUUID); err == nil {
+		bridgeStatus["clientUserFound"] = true
+		bridgeStatus["clientUserDeleted"] = user.DeletedAt.Valid
+	}
+	// Inside "data": callers (client-v2) only read the data object of psre responses
+	if removalData != nil {
+		removalData["bridge"] = bridgeStatus
+	} else {
+		resp["bridge"] = bridgeStatus
+	}
+
+	merged, err := json.Marshal(resp)
+	if err != nil {
+		return data, status, nil
+	}
+
+	return merged, status, nil
 }
 
 func (s *clientUserService) AutoRemoveAccount(token, externalID string, req *dto.ClientUserAutoRemoveAccountRequest) ([]byte, int, error) {
